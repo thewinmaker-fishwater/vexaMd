@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(npm install)",
+      "Bash(npm run tauri:*)",
+      "Bash(where rustc:*)",
+      "Bash(where:*)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
+      "Bash(rustup default:*)",
+      "Bash(npx tauri icon --help:*)",
+      "Bash(curl:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(taskkill:*)",
+      "Bash(netstat:*)",
+      "Bash(xargs:*)",
+      "Bash($env:Path = \"$env:USERPROFILE\\\\.cargo\\\\bin;\" + $env:Path)",
+      "Bash(tasklist:*)",
+      "Bash(cat:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(pkill:*)",
+      "Bash(kill:*)"
+    ]
+  }
+}
