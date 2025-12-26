@@ -67,6 +67,7 @@ const homeRecent = document.getElementById('home-recent');
 // View mode and zoom elements
 const btnViewSingle = document.getElementById('btn-view-single');
 const btnViewDouble = document.getElementById('btn-view-double');
+const btnViewPaging = document.getElementById('btn-view-paging');
 const btnZoomIn = document.getElementById('btn-zoom-in');
 const btnZoomOut = document.getElementById('btn-zoom-out');
 const btnZoomReset = document.getElementById('btn-zoom-reset');
@@ -293,6 +294,7 @@ function updateUITexts() {
   btnSearch.title = lang.search;
   btnViewSingle.title = lang.viewSingle;
   btnViewDouble.title = lang.viewDouble;
+  btnViewPaging.title = lang.viewPaging;
   btnZoomIn.title = lang.zoomIn;
   btnZoomOut.title = lang.zoomOut;
   btnZoomReset.title = lang.zoomReset;
@@ -476,13 +478,21 @@ function setViewMode(mode) {
   currentViewMode = mode;
   localStorage.setItem('viewMode', mode);
 
+  // Update button states
+  btnViewSingle.classList.remove('active');
+  btnViewDouble.classList.remove('active');
+  btnViewPaging.classList.remove('active');
+
   if (mode === 'single') {
     btnViewSingle.classList.add('active');
-    btnViewDouble.classList.remove('active');
-  } else {
-    btnViewSingle.classList.remove('active');
+  } else if (mode === 'double') {
     btnViewDouble.classList.add('active');
+  } else if (mode === 'paging') {
+    btnViewPaging.classList.add('active');
   }
+
+  // Reset page when switching modes
+  currentPage = 0;
 
   // Re-render pages if we have content
   if (activeTabId !== HOME_TAB_ID && pages.length > 0) {
@@ -1577,65 +1587,80 @@ function renderPages() {
   const lang = i18n[currentLanguage];
 
   if (currentViewMode === 'single') {
-    // Single view: Show all pages without paging (continuous scroll)
+    // Single view: Continuous scroll (all content)
     const allContent = pages.join('<hr class="page-break">');
     content.innerHTML = `<div class="markdown-content-wrapper">${allContent}</div>`;
-  } else if (currentViewMode === 'double' && pages.length > 1) {
-    // Two-page view with page navigation
-    const leftPage = pages[currentPage] || '';
-    const rightPage = pages[currentPage + 1] || '';
+  } else if (currentViewMode === 'double') {
+    // Double view: Two pages side by side, continuous scroll
+    let doubleContent = '';
+    for (let i = 0; i < pages.length; i += 2) {
+      const leftPage = pages[i] || '';
+      const rightPage = pages[i + 1] || '';
+      doubleContent += `
+        <div class="double-page-row">
+          <div class="page-left">${leftPage}</div>
+          <div class="page-right">${rightPage}</div>
+        </div>
+      `;
+      if (i + 2 < pages.length) {
+        doubleContent += '<hr class="page-break">';
+      }
+    }
+    content.innerHTML = `<div class="markdown-content-wrapper double-scroll-view">${doubleContent}</div>`;
+  } else if (currentViewMode === 'paging') {
+    // Paging view: One page at a time with navigation
     const totalPages = pages.length;
     const currentDisplay = currentPage + 1;
-    const endDisplay = Math.min(currentPage + 2, totalPages);
 
-    content.innerHTML = `
-      <div class="markdown-content-wrapper paged-view">
-        <div class="page-left">${leftPage}</div>
-        <div class="page-right">${rightPage}</div>
-      </div>
-      <div class="page-nav">
-        <button id="page-prev" class="page-nav-btn" ${currentPage === 0 ? 'disabled' : ''}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M15 18l-6-6 6-6"/>
-          </svg>
-        </button>
-        <div class="page-indicator-group">
-          <input type="number" id="page-input" class="page-input" value="${currentDisplay}" min="1" max="${totalPages}" />
-          <span class="page-total">/ ${totalPages}</span>
+    if (totalPages <= 1) {
+      content.innerHTML = `<div class="markdown-content-wrapper">${pages[0] || ''}</div>`;
+    } else {
+      content.innerHTML = `
+        <div class="markdown-content-wrapper paging-view">
+          ${pages[currentPage] || ''}
         </div>
-        <button id="page-next" class="page-nav-btn" ${currentPage + 2 >= totalPages ? 'disabled' : ''}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M9 18l6-6-6-6"/>
-          </svg>
-        </button>
-      </div>
-    `;
+        <div class="page-nav">
+          <button id="page-prev" class="page-nav-btn" ${currentPage === 0 ? 'disabled' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 18l-6-6 6-6"/>
+            </svg>
+          </button>
+          <div class="page-indicator-group">
+            <input type="number" id="page-input" class="page-input" value="${currentDisplay}" min="1" max="${totalPages}" />
+            <span class="page-total">/ ${totalPages}</span>
+          </div>
+          <button id="page-next" class="page-nav-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+      `;
 
-    // Add event listeners for page navigation
-    const prevBtn = document.getElementById('page-prev');
-    const nextBtn = document.getElementById('page-next');
-    const pageInput = document.getElementById('page-input');
+      // Add event listeners for paging navigation
+      const prevBtn = document.getElementById('page-prev');
+      const nextBtn = document.getElementById('page-next');
+      const pageInput = document.getElementById('page-input');
 
-    if (prevBtn) prevBtn.addEventListener('click', () => goToPage(currentPage - 2));
-    if (nextBtn) nextBtn.addEventListener('click', () => goToPage(currentPage + 2));
-    if (pageInput) {
-      pageInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
+      if (prevBtn) prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
+      if (nextBtn) nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
+      if (pageInput) {
+        pageInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            const targetPage = parseInt(pageInput.value) - 1;
+            goToPage(targetPage);
+          }
+        });
+        pageInput.addEventListener('blur', () => {
           const targetPage = parseInt(pageInput.value) - 1;
-          // For two-page view, align to even page
-          const alignedPage = Math.floor(targetPage / 2) * 2;
-          goToPage(alignedPage);
-        }
-      });
-      pageInput.addEventListener('blur', () => {
-        const targetPage = parseInt(pageInput.value) - 1;
-        const alignedPage = Math.floor(targetPage / 2) * 2;
-        goToPage(alignedPage);
-      });
+          goToPage(targetPage);
+        });
+      }
     }
   } else {
-    // Two-page view with only 1 page, or fallback
-    content.innerHTML = `<div class="markdown-content-wrapper">${pages[0] || ''}</div>`;
+    // Fallback: show all content
+    const allContent = pages.join('<hr class="page-break">');
+    content.innerHTML = `<div class="markdown-content-wrapper">${allContent}</div>`;
   }
 }
 
@@ -1860,16 +1885,16 @@ function setupKeyboard() {
       const nextIndex = (currentIndex + 1) % allTabs.length;
       switchToTab(allTabs[nextIndex]);
     }
-    // Arrow keys for page navigation (only in two-page view, when not in search or input)
+    // Arrow keys for page navigation (paging view only, when not in search or input)
     if (!isSearchVisible && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-      if (currentViewMode === 'double' && pages.length > 1) {
+      if (currentViewMode === 'paging' && pages.length > 1) {
         if (e.key === 'ArrowLeft') {
           e.preventDefault();
-          goToPage(currentPage - 2);
+          goToPage(currentPage - 1);
         }
         if (e.key === 'ArrowRight') {
           e.preventDefault();
-          goToPage(currentPage + 2);
+          goToPage(currentPage + 1);
         }
       }
     }
@@ -1982,6 +2007,7 @@ async function init() {
   // View mode buttons
   btnViewSingle.addEventListener('click', () => setViewMode('single'));
   btnViewDouble.addEventListener('click', () => setViewMode('double'));
+  btnViewPaging.addEventListener('click', () => setViewMode('paging'));
 
   // Zoom buttons
   btnZoomIn.addEventListener('click', zoomIn);

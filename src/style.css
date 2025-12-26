@@ -1037,31 +1037,35 @@ body {
 }
 
 /* ========== View Modes ========== */
-/* Two-page paged view */
-.paged-view {
+/* Double scroll view - two pages side by side with continuous scroll */
+.double-scroll-view {
+  max-width: 100% !important;
+}
+
+.double-page-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 48px;
-  min-height: calc(100vh - 200px);
+  margin-bottom: 32px;
 }
 
-.page-left,
-.page-right {
+.double-page-row .page-left,
+.double-page-row .page-right {
   max-width: 100%;
   padding: 0 16px;
 }
 
-.page-left {
+.double-page-row .page-left {
   border-right: 1px solid var(--border);
   padding-right: 32px;
 }
 
-.page-right {
+.double-page-row .page-right {
   padding-left: 16px;
 }
 
-/* .single-page - max-width는 .markdown-content-wrapper에서 처리 */
-.single-page {
+/* Paging view - single page with navigation */
+.paging-view {
   /* 추가 스타일 필요시 여기에 */
 }
 
