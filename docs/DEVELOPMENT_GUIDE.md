@@ -1,4 +1,4 @@
-# ChilBong MD Viewer 개발 가이드
+# SP MD Viewer 개발 가이드
 
 ## 완전한 개발 과정: 설계부터 배포까지
 
@@ -168,8 +168,8 @@ npm run tauri init
 ```
 
 다음 질문에 답변:
-- App name: `ChilBong MD Viewer`
-- Window title: `ChilBong MD Viewer`
+- App name: `SP MD Viewer`
+- Window title: `SP MD Viewer`
 - Web assets path: `../dist`
 - Dev server URL: `http://localhost:5173`
 - Dev command: `npm run dev`
@@ -301,7 +301,7 @@ pub fn run() {
 ```json
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ChilBong MD Viewer",
+  "productName": "SP MD Viewer",
   "version": "1.0.0",
   "identifier": "com.chilbong.mdviewer",
   "build": {
@@ -313,7 +313,7 @@ pub fn run() {
   "app": {
     "windows": [
       {
-        "title": "ChilBong MD Viewer",
+        "title": "SP MD Viewer",
         "width": 1200,
         "height": 800,
         "minWidth": 600,
@@ -357,7 +357,7 @@ pub fn run() {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChilBong MD Viewer</title>
+  <title>SP MD Viewer</title>
   <link rel="stylesheet" href="/src/style.css">
 </head>
 <body>
@@ -376,7 +376,7 @@ pub fn run() {
   <!-- 콘텐츠 영역 -->
   <main id="content" class="markdown-body">
     <div class="welcome">
-      <h1>ChilBong MD Viewer</h1>
+      <h1>SP MD Viewer</h1>
       <p>마크다운 파일을 열거나 드래그하세요.</p>
     </div>
   </main>
@@ -557,7 +557,7 @@ npm run tauri build
 src-tauri/target/release/
 ├── md-viewer.exe                    # 실행 파일
 └── bundle/nsis/
-    └── ChilBong MD Viewer_1.0.0_x64-setup.exe  # 설치 파일
+    └── SP MD Viewer_1.0.0_x64-setup.exe  # 설치 파일
 ```
 
 ### 7.3 빌드 최적화 옵션
@@ -577,7 +577,7 @@ src-tauri/target/release/
 
 ### 8.1 설치 프로그램으로 설치
 ```
-ChilBong MD Viewer_1.0.0_x64-setup.exe 실행
+SP MD Viewer_1.0.0_x64-setup.exe 실행
 → 설치 마법사 따라 진행
 → 시작 메뉴에서 실행
 ```
@@ -716,14 +716,19 @@ tauri = { version = "2", features = ["tray-icon", "devtools"] }
 ## 부록: 주요 파일 전체 경로
 
 ```
-C:\workspace-mdView\
+mdView/
 ├── docs\
 │   ├── README.md              # 프로젝트 개요
 │   ├── DEVELOPMENT_GUIDE.md   # 이 문서
+│   ├── ARCHITECTURE.md        # 기술 아키텍처
+│   ├── CHANGELOG.md           # 개발 이력
 │   └── RUST_TUTORIAL.md       # Rust 교육자료
+├── public\
+│   └── logo.jpg               # Seven Peaks 로고
 ├── src\
 │   ├── main.js                # 프론트엔드 로직
-│   └── style.css              # 스타일시트
+│   ├── style.css              # 스타일시트
+│   └── i18n.js                # 다국어 번역 (한국어/영어)
 ├── src-tauri\
 │   ├── src\
 │   │   ├── main.rs            # Rust 진입점

@@ -1,5 +1,6 @@
 /* ========================================
-   ChilBong MD Viewer - Multi Theme Styles
+   SP MD Viewer - Multi Theme Styles
+   Seven Peaks Software
    ======================================== */
 
 /* ========== Theme: Default Gray (Light) ========== */
@@ -202,11 +203,19 @@
 /* ========== Font Size Variables ========== */
 :root {
   --font-size-base: 16px;
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
 }
 [data-font-size="small"] { --font-size-base: 14px; }
 [data-font-size="medium"] { --font-size-base: 16px; }
 [data-font-size="large"] { --font-size-base: 18px; }
 [data-font-size="xlarge"] { --font-size-base: 20px; }
+
+/* ========== Font Family Options ========== */
+[data-font-family="system"] { --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; }
+[data-font-family="malgun"] { --font-family-base: 'Malgun Gothic', '맑은 고딕', sans-serif; }
+[data-font-family="nanum"] { --font-family-base: 'Nanum Gothic', '나눔고딕', sans-serif; }
+[data-font-family="pretendard"] { --font-family-base: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; }
+[data-font-family="noto"] { --font-family-base: 'Noto Sans KR', sans-serif; }
 
 * {
   margin: 0;
@@ -220,7 +229,7 @@ html, body {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  font-family: var(--font-family-base);
   background: var(--bg);
   color: var(--text);
   line-height: 1.6;
@@ -407,21 +416,30 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: 3px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
   color: var(--text-secondary);
-  transition: all 0.15s;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .search-nav:hover {
-  background: var(--accent-light);
-  color: var(--text);
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.search-nav:active {
+  transform: scale(0.95);
 }
 
 .search-nav:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+  transform: none;
 }
 
 /* Search Highlight */
@@ -493,25 +511,28 @@ body {
 .markdown-body {
   font-size: var(--font-size-base);
   line-height: 1.7;
+}
+
+/* 콘텐츠 영역 내부의 실제 콘텐츠에만 max-width 적용 */
+#content > .markdown-content-wrapper {
   max-width: 900px;
   margin: 0 auto;
 }
 
-/* Content Width Options */
-[data-content-width="narrow"] .markdown-body {
-  max-width: 900px;
-}
-
-[data-content-width="medium"] .markdown-body {
-  max-width: 1200px;
-}
-
-[data-content-width="wide"] .markdown-body {
-  max-width: 1600px;
-}
-
-[data-content-width="full"] .markdown-body {
+/* 두 페이지 보기는 전체 너비 사용 */
+#content > .markdown-content-wrapper.paged-view {
   max-width: 100%;
+}
+
+[data-content-width="narrow"] #content > .markdown-content-wrapper:not(.paged-view) { max-width: 900px; }
+[data-content-width="medium"] #content > .markdown-content-wrapper:not(.paged-view) { max-width: 1200px; }
+[data-content-width="wide"] #content > .markdown-content-wrapper:not(.paged-view) { max-width: 1600px; }
+[data-content-width="full"] #content > .markdown-content-wrapper:not(.paged-view) { max-width: 100%; }
+
+/* Welcome 화면에도 max-width 적용 */
+#content > .welcome {
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .markdown-body h1,
@@ -811,17 +832,38 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  border-radius: 3px;
-  opacity: 0.5;
-  transition: all 0.15s;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.tab:hover .tab-close {
+  opacity: 1;
 }
 
 .tab-close:hover {
   opacity: 1;
-  background: var(--accent);
+  background: #ef4444;
   color: white;
+  transform: scale(1.1);
+}
+
+.tab-close:active {
+  transform: scale(0.95);
+}
+
+.tab-close svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 2.5;
 }
 
 /* ========== Dropdown ========== */
@@ -981,8 +1023,13 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  overflow-y: auto;
+  overflow-y: scroll; /* 항상 스크롤바 표시 */
+  overflow-x: hidden;
   padding: 32px 48px;
+  /* 스크롤바를 항상 오른쪽 끝에 고정 */
+  max-width: none !important;
+  width: auto !important;
+  margin: 0 !important;
 }
 
 #content.no-tabs {
@@ -990,25 +1037,145 @@ body {
 }
 
 /* ========== View Modes ========== */
-#content.view-double {
+/* Two-page paged view */
+.paged-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  min-height: calc(100vh - 200px);
+}
+
+.page-left,
+.page-right {
+  max-width: 100%;
+  padding: 0 16px;
+}
+
+.page-left {
+  border-right: 1px solid var(--border);
+  padding-right: 32px;
+}
+
+.page-right {
+  padding-left: 16px;
+}
+
+/* .single-page - max-width는 .markdown-content-wrapper에서 처리 */
+.single-page {
+  /* 추가 스타일 필요시 여기에 */
+}
+
+/* Page Navigation */
+.page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px 0;
+  margin-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.page-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.page-nav-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.page-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-indicator {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 80px;
+  text-align: center;
+}
+
+.page-indicator-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-input {
+  width: 50px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  transition: all 0.15s;
+  -moz-appearance: textfield;
+}
+
+.page-input::-webkit-outer-spin-button,
+.page-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.page-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.page-total {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* Page break separator in single view */
+.page-break {
+  height: 2px;
+  margin: 48px 0;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  border: none;
+  opacity: 0.5;
+}
+
+/* Legacy column-based view (fallback) */
+#content.view-double-legacy {
   column-count: 2;
   column-gap: 48px;
   column-rule: 1px solid var(--border);
 }
 
-#content.view-double .markdown-body {
+#content.view-double-legacy .markdown-body {
   break-inside: avoid-column;
 }
 
-#content.view-double h1,
-#content.view-double h2,
-#content.view-double h3 {
+#content.view-double-legacy h1,
+#content.view-double-legacy h2,
+#content.view-double-legacy h3 {
   break-after: avoid;
 }
 
-#content.view-double pre,
-#content.view-double table,
-#content.view-double blockquote {
+#content.view-double-legacy pre,
+#content.view-double-legacy table,
+#content.view-double-legacy blockquote {
   break-inside: avoid;
 }
 
@@ -1029,6 +1196,25 @@ body {
 #content[data-zoom="200"] { transform: scale(2); }
 
 /* ========== Scrollbar ========== */
+#content::-webkit-scrollbar {
+  width: 10px;
+}
+
+#content::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+#content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 5px;
+  border: 2px solid var(--bg-secondary);
+}
+
+#content::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* 기타 스크롤바 */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -1504,4 +1690,327 @@ body {
 
 #theme-cancel {
   margin-left: auto;
+}
+
+/* ========== Help Menu Dropdown ========== */
+.help-menu-wrapper {
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+
+.help-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 160px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.help-dropdown.hidden {
+  display: none;
+}
+
+.help-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.help-menu-item:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.help-menu-item svg {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.help-menu-item:hover svg {
+  color: var(--accent);
+}
+
+.help-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+/* ========== Presentation Mode ========== */
+.presentation-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+}
+
+.presentation-overlay.hidden {
+  display: none;
+}
+
+.presentation-slide {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 80px;
+  overflow: auto;
+}
+
+.presentation-content {
+  max-width: 1200px;
+  width: 100%;
+  font-size: 1.5em;
+  line-height: 1.8;
+}
+
+.presentation-content h1 {
+  font-size: 2.5em;
+  margin-bottom: 0.5em;
+}
+
+.presentation-content h2 {
+  font-size: 2em;
+  margin-bottom: 0.4em;
+}
+
+.presentation-content h3 {
+  font-size: 1.5em;
+}
+
+.presentation-content p,
+.presentation-content li {
+  font-size: 1.2em;
+  margin-bottom: 0.6em;
+}
+
+.presentation-content code {
+  font-size: 0.9em;
+}
+
+.presentation-content pre {
+  font-size: 0.85em;
+}
+
+.presentation-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px var(--shadow);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.presentation-overlay:hover .presentation-controls {
+  opacity: 1;
+}
+
+.pres-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pres-nav-btn:hover:not(:disabled) {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.pres-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.pres-indicator {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  min-width: 80px;
+  text-align: center;
+}
+
+.pres-exit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-left: 8px;
+  transition: all 0.2s;
+}
+
+.pres-exit-btn:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* ========== About Modal ========== */
+.about-modal {
+  width: 420px;
+  max-width: 95vw;
+}
+
+.about-content {
+  padding: 24px;
+  text-align: center;
+}
+
+.about-logo {
+  margin-bottom: 16px;
+}
+
+.about-logo svg {
+  filter: drop-shadow(0 2px 4px var(--shadow));
+}
+
+.about-content h3 {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.about-version {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.about-description {
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.about-info {
+  text-align: left;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.about-info p {
+  font-size: 13px;
+  color: var(--text);
+  margin: 6px 0;
+}
+
+.about-info strong {
+  color: var(--text-secondary);
+  font-weight: 500;
+  display: inline-block;
+  width: 70px;
+}
+
+.about-shortcuts {
+  text-align: left;
+}
+
+.about-shortcuts h4 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.shortcut-item kbd {
+  display: inline-block;
+  padding: 3px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 1px 0 var(--border);
+  min-width: 60px;
+  text-align: center;
+}
+
+.about-footer {
+  justify-content: center;
+}
+
+/* ========== Shortcuts Modal ========== */
+.shortcuts-modal {
+  width: 480px;
+  max-width: 95vw;
+}
+
+.shortcuts-content {
+  padding: 20px 24px;
+}
+
+.shortcuts-section {
+  margin-bottom: 20px;
+}
+
+.shortcuts-section:last-child {
+  margin-bottom: 0;
+}
+
+.shortcuts-section h4 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
 }

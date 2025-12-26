@@ -1,4 +1,4 @@
-# ChilBong MD Viewer - 기술 아키텍처
+# SP MD Viewer - 기술 아키텍처
 
 ## 기술 스택
 
@@ -16,22 +16,37 @@
 ## 프로젝트 구조
 
 ```
-C:\workspace-mdView\
-├── src/
-│   ├── main.js          # 메인 JavaScript 로직
-│   └── style.css         # 전체 스타일시트
-├── src-tauri/
+mdView/
+├── src/                      # 프론트엔드 소스 (웹: JS, CSS)
+│   ├── main.js               # 메인 JavaScript 로직
+│   ├── style.css             # 전체 스타일시트
+│   └── i18n.js               # 다국어 지원 (한국어/영어)
+├── src-tauri/                # Tauri 백엔드 소스 (Rust)
 │   ├── src/
-│   │   ├── lib.rs        # Tauri 커맨드 정의
-│   │   └── main.rs       # 앱 엔트리포인트
+│   │   ├── lib.rs            # Tauri 커맨드 정의
+│   │   └── main.rs           # 앱 엔트리포인트
 │   ├── capabilities/
-│   │   └── default.json  # 권한 설정
-│   ├── Cargo.toml        # Rust 의존성
-│   └── tauri.conf.json   # Tauri 설정
-├── index.html            # 메인 HTML
-├── package.json          # npm 의존성
-└── vite.config.js        # Vite 설정
+│   │   └── default.json      # 권한 설정
+│   ├── icons/                # 앱 아이콘
+│   ├── Cargo.toml            # Rust 의존성
+│   └── tauri.conf.json       # Tauri 설정
+├── public/                   # 정적 파일
+│   └── logo.jpg              # Seven Peaks 로고
+├── docs/                     # 문서
+├── index.html                # 메인 HTML
+├── package.json              # npm 의존성
+└── vite.config.js            # Vite 설정
 ```
+
+### 폴더 역할 설명
+
+| 폴더 | 역할 | 실행 환경 |
+|------|------|----------|
+| `src/` | 프론트엔드 웹 코드 | 브라우저/WebView |
+| `src-tauri/` | 네이티브 백엔드 코드 | 운영체제 (Rust) |
+
+> `src-tauri`는 "src"가 아니라 **"Tauri용 소스"**라는 의미입니다.
+> 이것은 Tauri 프로젝트의 **표준 구조**입니다.
 
 ---
 
@@ -40,6 +55,8 @@ C:\workspace-mdView\
 ### index.html
 - 툴바, 탭바, 검색바, 콘텐츠 영역
 - 테마 커스터마이저 모달
+- 프로그램 정보 / 단축키 모달
+- 프레젠테이션 오버레이
 - 드롭 오버레이
 
 ### src/main.js
@@ -50,6 +67,8 @@ C:\workspace-mdView\
 - 검색 기능
 - 드래그 앤 드롭
 - 키보드 단축키
+- 프레젠테이션 모드
+- 다국어 UI 적용
 
 ### src/style.css
 - CSS 변수 기반 테마 시스템
@@ -57,6 +76,13 @@ C:\workspace-mdView\
 - 6개의 컬러 테마 정의
 - 마크다운 렌더링 스타일
 - 반응형 및 인쇄 스타일
+- 프레젠테이션 모드 스타일
+- 모달 스타일
+
+### src/i18n.js
+- 다국어 번역 데이터 (한국어/영어)
+- 모든 UI 텍스트 중앙 관리
+- 언어 전환 시 동적 업데이트
 
 ### src-tauri/src/lib.rs
 - `read_file`: 파일 읽기 커맨드
@@ -97,6 +123,39 @@ localStorage.setItem('customStyles', JSON.stringify(styles));
   accent: '#8b5cf6',
   // ... 모든 커스텀 속성
 }
+```
+
+---
+
+## 다국어 시스템 (i18n)
+
+### 지원 언어
+- 한국어 (ko) - 기본
+- English (en)
+
+### 구조
+```javascript
+// src/i18n.js
+export const i18n = {
+  ko: {
+    home: '홈',
+    openFile: '파일 열기',
+    // ... 모든 한국어 텍스트
+  },
+  en: {
+    home: 'Home',
+    openFile: 'Open File',
+    // ... 모든 영어 텍스트
+  }
+};
+```
+
+### 사용 방법
+```javascript
+import { i18n } from './i18n.js';
+
+const lang = i18n[currentLanguage];
+button.title = lang.openFile;
 ```
 
 ---
@@ -142,6 +201,14 @@ npm run tauri dev
 ### 프로덕션 빌드
 ```bash
 npm run tauri build
+```
+
+### 빌드 결과물
+```
+src-tauri/target/release/
+├── md-viewer.exe                              # 실행 파일
+└── bundle/nsis/
+    └── SP MD Viewer_1.0.0_x64-setup.exe       # 설치 파일
 ```
 
 ### 요구사항

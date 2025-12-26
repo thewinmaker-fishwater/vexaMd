@@ -1,28 +1,35 @@
 {
   "permissions": {
     "allow": [
-      "Bash(mkdir:*)",
-      "Bash(npm install)",
       "Bash(npm run tauri:*)",
+      "Bash(npx tauri build)",
+      "Bash(npm install:*)",
+      "Bash(npm install)",
+      "Bash(timeout 15 npx tauri dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run tauri:build:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx tauri icon --help:*)",
       "Bash(where rustc:*)",
       "Bash(where:*)",
       "Bash(winget install:*)",
       "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
       "Bash(rustup default:*)",
-      "Bash(npx tauri icon --help:*)",
       "Bash(curl:*)",
       "Bash(pip install:*)",
       "Bash(python:*)",
       "Bash(taskkill:*)",
+      "Bash(tasklist:*)",
       "Bash(netstat:*)",
       "Bash(xargs:*)",
+      "Bash(pkill:*)",
+      "Bash(kill:*)",
       "Bash($env:Path = \"$env:USERPROFILE\\\\.cargo\\\\bin;\" + $env:Path)",
-      "Bash(tasklist:*)",
-      "Bash(cat:*)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
-      "Bash(pkill:*)",
-      "Bash(kill:*)"
+      "Read(//tmp/claude/C--workspace-self-pj-mdView/tasks/**)"
     ]
   }
 }

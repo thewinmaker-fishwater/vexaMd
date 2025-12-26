@@ -1,9 +1,11 @@
 /**
- * ChilBong MD Viewer - Ultra Lightweight Markdown Viewer
+ * SP MD Viewer - Ultra Lightweight Markdown Viewer
+ * Seven Peaks Software
  * Main JavaScript Module
  */
 
 import { marked } from 'marked';
+import { i18n } from './i18n.js';
 
 // Tauri API (조건부 로드)
 let tauriApi = null;
@@ -45,8 +47,10 @@ const btnRecent = document.getElementById('btn-recent');
 const btnTheme = document.getElementById('btn-theme');
 const btnPrint = document.getElementById('btn-print');
 const colorTheme = document.getElementById('color-theme');
+const fontFamily = document.getElementById('font-family');
 const fontSize = document.getElementById('font-size');
 const contentWidth = document.getElementById('content-width');
+const languageSelect = document.getElementById('language');
 const importInput = document.getElementById('import-input');
 const dropOverlay = document.getElementById('drop-overlay');
 const iconDark = document.getElementById('icon-dark');
@@ -91,10 +95,33 @@ const themeCancel = document.getElementById('theme-cancel');
 const themeApply = document.getElementById('theme-apply');
 const btnCustomize = document.getElementById('btn-customize');
 
+// Presentation elements
+const btnPresentation = document.getElementById('btn-presentation');
+const presentationOverlay = document.getElementById('presentation-overlay');
+const presentationContent = document.querySelector('.presentation-content');
+const presIndicator = document.getElementById('pres-indicator');
+const presPrev = document.getElementById('pres-prev');
+const presNext = document.getElementById('pres-next');
+const presExit = document.getElementById('pres-exit');
+
+// Help menu elements
+const btnHelp = document.getElementById('btn-help');
+const helpDropdown = document.getElementById('help-dropdown');
+const helpShortcuts = document.getElementById('help-shortcuts');
+const helpAbout = document.getElementById('help-about');
+const aboutModal = document.getElementById('about-modal');
+const aboutClose = document.getElementById('about-close');
+const aboutOk = document.getElementById('about-ok');
+const shortcutsModal = document.getElementById('shortcuts-modal');
+const shortcutsClose = document.getElementById('shortcuts-close');
+const shortcutsOk = document.getElementById('shortcuts-ok');
+
 // ========== State ==========
 let currentTheme = localStorage.getItem('theme') || 'light';
 let currentColor = localStorage.getItem('colorTheme') || 'default';
+let currentFontFamily = localStorage.getItem('fontFamily') || 'system';
 let currentFontSize = localStorage.getItem('fontSize') || 'medium';
+let currentLanguage = localStorage.getItem('language') || 'ko';
 let currentViewMode = localStorage.getItem('viewMode') || 'single';
 let currentZoom = parseInt(localStorage.getItem('zoom') || '100');
 let currentContentWidth = localStorage.getItem('contentWidth') || 'narrow';
@@ -107,6 +134,14 @@ let searchMatches = [];
 let currentMatchIndex = -1;
 let originalContent = '';
 let isSearchVisible = false;
+
+// Paging state
+let pages = [];
+let currentPage = 0;
+
+// Presentation state
+let isPresentationMode = false;
+let presentationPage = 0;
 
 // Custom theme state
 let customStyles = JSON.parse(localStorage.getItem('customStyles') || 'null');
@@ -127,19 +162,22 @@ let activeTabId = null;
 const MAX_RECENT_FILES = 10;
 let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
 
-// Welcome HTML cache
-const welcomeHTML = `
+// Welcome HTML cache (will be updated by i18n)
+function getWelcomeHTML() {
+  const t = i18n[currentLanguage];
+  return `
   <div class="welcome">
-    <h1>ChilBong MD Viewer</h1>
-    <p class="subtitle">초경량 마크다운 뷰어</p>
-    <p>Markdown 파일을 열거나 이 영역에 드래그하세요.</p>
+    <h1>SP MD Viewer</h1>
+    <p class="subtitle">${t.welcomeSubtitle}</p>
+    <p>${t.welcomeInstruction}</p>
     <p><kbd>Ctrl</kbd>+<kbd>O</kbd> 열기 &nbsp; <kbd>Ctrl</kbd>+<kbd>D</kbd> 테마 &nbsp; <kbd>Ctrl</kbd>+<kbd>P</kbd> 인쇄 &nbsp; <kbd>Ctrl</kbd>+<kbd>F</kbd> 검색 &nbsp; <kbd>Esc</kbd> 홈</p>
     <div id="home-recent" class="home-recent">
-      <h3>최근 파일</h3>
+      <h3>${t.recentFiles}</h3>
       <div id="home-recent-list"></div>
     </div>
   </div>
 `;
+}
 
 // ========== Theme ==========
 function applyTheme(theme) {
@@ -206,6 +244,14 @@ function toggleTheme() {
   applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
 }
 
+// ========== Font Family ==========
+function applyFontFamily(family) {
+  document.documentElement.setAttribute('data-font-family', family);
+  currentFontFamily = family;
+  localStorage.setItem('fontFamily', family);
+  fontFamily.value = family;
+}
+
 // ========== Font Size ==========
 function applyFontSize(size) {
   document.documentElement.setAttribute('data-font-size', size);
@@ -222,19 +268,225 @@ function applyContentWidth(width) {
   contentWidth.value = width;
 }
 
+// ========== Language ==========
+function applyLanguage(lang) {
+  currentLanguage = lang;
+  localStorage.setItem('language', lang);
+  languageSelect.value = lang;
+  updateUITexts();
+}
+
+function t(key) {
+  return i18n[currentLanguage][key] || key;
+}
+
+function updateUITexts() {
+  const lang = i18n[currentLanguage];
+
+  // Toolbar buttons
+  btnHome.title = lang.homeTooltip;
+  btnOpen.title = lang.openFile;
+  btnRecent.title = lang.recentFiles;
+  btnTheme.title = lang.toggleTheme;
+  btnCustomize.title = lang.themeCustomizer;
+  if (btnPrint) btnPrint.title = lang.print;
+  btnSearch.title = lang.search;
+  btnViewSingle.title = lang.viewSingle;
+  btnViewDouble.title = lang.viewDouble;
+  btnZoomIn.title = lang.zoomIn;
+  btnZoomOut.title = lang.zoomOut;
+  btnZoomReset.title = lang.zoomReset;
+  btnPresentation.title = lang.presentation;
+  btnHelp.title = lang.help;
+
+  // Zoom level tooltip
+  zoomLevelDisplay.title = lang.zoomRatio;
+
+  // Search bar
+  searchInput.placeholder = lang.searchPlaceholder;
+  searchPrev.title = lang.searchPrev;
+  searchNext.title = lang.searchNext;
+  searchClose.title = lang.searchClose;
+
+  // Recent dropdown
+  document.getElementById('recent-empty').textContent = lang.recentEmpty;
+  document.getElementById('clear-recent').textContent = lang.clearList;
+  document.querySelector('.dropdown-header').textContent = lang.recentFiles;
+
+  // Drop overlay
+  document.querySelector('.drop-message').textContent = lang.dropMessage;
+
+  // Color theme select
+  const colorThemeSelect = document.getElementById('color-theme');
+  colorThemeSelect.title = lang.colorTheme;
+  colorThemeSelect.querySelector('[value="default"]').textContent = lang.themeDefault;
+  colorThemeSelect.querySelector('[value="purple"]').textContent = lang.themePurple;
+  colorThemeSelect.querySelector('[value="ocean"]').textContent = lang.themeOcean;
+  colorThemeSelect.querySelector('[value="sunset"]').textContent = lang.themeSunset;
+  colorThemeSelect.querySelector('[value="forest"]').textContent = lang.themeForest;
+  colorThemeSelect.querySelector('[value="rose"]').textContent = lang.themeRose;
+  colorThemeSelect.querySelector('[value="custom"]').textContent = lang.themeCustom;
+
+  // Font family select
+  const fontFamilySelect = document.getElementById('font-family');
+  fontFamilySelect.title = lang.fontFamily;
+  fontFamilySelect.querySelector('[value="system"]').textContent = lang.fontSystem;
+  fontFamilySelect.querySelector('[value="malgun"]').textContent = lang.fontMalgun;
+  fontFamilySelect.querySelector('[value="nanum"]').textContent = lang.fontNanum;
+  fontFamilySelect.querySelector('[value="pretendard"]').textContent = lang.fontPretendard;
+  fontFamilySelect.querySelector('[value="noto"]').textContent = lang.fontNoto;
+
+  // Font size select
+  const fontSizeSelect = document.getElementById('font-size');
+  fontSizeSelect.title = lang.fontSize;
+  fontSizeSelect.querySelector('[value="small"]').textContent = lang.fontSmall;
+  fontSizeSelect.querySelector('[value="medium"]').textContent = lang.fontMedium;
+  fontSizeSelect.querySelector('[value="large"]').textContent = lang.fontLarge;
+  fontSizeSelect.querySelector('[value="xlarge"]').textContent = lang.fontXlarge;
+
+  // Content width select
+  const contentWidthSelect = document.getElementById('content-width');
+  contentWidthSelect.title = lang.contentWidth;
+  contentWidthSelect.querySelector('[value="narrow"]').textContent = lang.widthNarrow;
+  contentWidthSelect.querySelector('[value="medium"]').textContent = lang.widthMedium;
+  contentWidthSelect.querySelector('[value="wide"]').textContent = lang.widthWide;
+  contentWidthSelect.querySelector('[value="full"]').textContent = lang.widthFull;
+
+  // Language select
+  languageSelect.title = lang.language;
+
+  // Help menu
+  document.querySelector('#help-shortcuts span').textContent = lang.shortcuts;
+  document.querySelector('#help-about span').textContent = lang.about;
+
+  // Presentation controls
+  presPrev.title = lang.prevSlide;
+  presNext.title = lang.nextSlide;
+  presExit.title = lang.exitPresentation;
+
+  // About modal
+  document.querySelector('#about-modal .modal-header h2').textContent = lang.aboutTitle;
+  document.querySelector('.about-version').textContent = `${lang.version} 1.0.0`;
+  document.querySelector('.about-description').textContent = lang.welcomeSubtitle;
+  const aboutInfoPs = document.querySelectorAll('.about-info p');
+  if (aboutInfoPs.length >= 3) {
+    aboutInfoPs[0].innerHTML = `<strong>${lang.developer}</strong>: Seven Peaks Software`;
+    aboutInfoPs[1].innerHTML = `<strong>${lang.technology}</strong>: Tauri 2.x + Vanilla JavaScript`;
+    aboutInfoPs[2].innerHTML = `<strong>${lang.license}</strong>: Apache 2.0`;
+  }
+  aboutOk.textContent = lang.confirm;
+
+  // Shortcuts modal
+  document.querySelector('#shortcuts-modal .modal-header h2').textContent = lang.shortcutsTitle;
+  const shortcutSections = document.querySelectorAll('.shortcuts-section h4');
+  if (shortcutSections.length >= 3) {
+    shortcutSections[0].textContent = lang.shortcutFile;
+    shortcutSections[1].textContent = lang.shortcutView;
+    shortcutSections[2].textContent = lang.shortcutNav;
+  }
+  // Shortcut items
+  const shortcutItems = document.querySelectorAll('.shortcut-item span');
+  const shortcutTexts = [
+    lang.scOpenFile, lang.scCloseTab, lang.scPrint, lang.scHome,
+    lang.scToggleTheme, lang.scZoomIn, lang.scZoomOut, lang.scZoomReset,
+    lang.scSearch, lang.scPageNav, lang.scNextTab, lang.scPresentation
+  ];
+  shortcutItems.forEach((item, idx) => {
+    if (shortcutTexts[idx]) item.textContent = shortcutTexts[idx];
+  });
+  shortcutsOk.textContent = lang.confirm;
+
+  // Theme editor modal
+  document.querySelector('#theme-editor-modal .modal-header h2').textContent = lang.themeEditorTitle;
+  const editorTabs = document.querySelectorAll('.editor-tab');
+  if (editorTabs.length >= 2) {
+    editorTabs[0].textContent = lang.tabUIEditor;
+    editorTabs[1].textContent = lang.tabCSSEditor;
+  }
+
+  // Theme editor sections
+  const sectionTitles = document.querySelectorAll('.editor-section h3');
+  const sectionTexts = [
+    lang.sectionColors, lang.sectionFont, lang.sectionCode, lang.sectionBlockquote,
+    lang.sectionTable, lang.sectionHeadings, lang.sectionTextMark, lang.sectionToolbar
+  ];
+  sectionTitles.forEach((title, idx) => {
+    if (sectionTexts[idx]) title.textContent = sectionTexts[idx];
+  });
+
+  // Theme editor labels
+  const labels = document.querySelectorAll('.editor-field label');
+  const labelTexts = [
+    lang.labelBgColor, lang.labelTextColor, lang.labelAccentColor, lang.labelBorderColor,
+    lang.labelBodyFont, lang.labelBaseFontSize, lang.labelLineHeight,
+    lang.labelBgColor, lang.labelTextColor, lang.labelCodeFont,
+    lang.labelBgColor, lang.labelBorderColor, lang.labelBorderWidth,
+    lang.labelHeaderBg, lang.labelHeaderText, lang.labelBorderRadius,
+    lang.labelH1Color, lang.labelH2Color, lang.labelUseGradient,
+    lang.labelLinkColor, lang.labelBoldColor, lang.labelItalicColor,
+    lang.labelHighlightBg, lang.labelHighlightText, lang.labelListMarker,
+    lang.labelToolbarBg, lang.labelToolbarGradient, lang.labelTabbarBg
+  ];
+  labels.forEach((label, idx) => {
+    if (labelTexts[idx]) label.textContent = labelTexts[idx];
+  });
+
+  // Theme editor font selects
+  const bodyFontSelect = document.getElementById('custom-font-family');
+  if (bodyFontSelect) {
+    const options = bodyFontSelect.querySelectorAll('option');
+    if (options.length >= 5) {
+      options[0].textContent = lang.fontSystem;
+      options[2].textContent = lang.fontMalgun;
+      options[3].textContent = lang.fontNanum;
+    }
+  }
+  const codeFontSelect = document.getElementById('custom-code-font');
+  if (codeFontSelect) {
+    const firstOption = codeFontSelect.querySelector('option');
+    if (firstOption) firstOption.textContent = lang.labelCodeFontDefault;
+  }
+
+  // CSS editor info
+  const cssInfo = document.querySelector('.css-editor-info p');
+  if (cssInfo) cssInfo.textContent = lang.cssEditorInfo;
+
+  // Theme editor buttons
+  themeReset.textContent = lang.reset;
+  themeImportBtn.textContent = lang.import;
+  themeExportBtn.textContent = lang.export;
+  themeCancel.textContent = lang.cancel;
+  themePreview.textContent = lang.preview;
+  themeApply.textContent = lang.apply;
+
+  // If on home, refresh welcome screen
+  if (activeTabId === HOME_TAB_ID) {
+    content.innerHTML = getWelcomeHTML();
+    renderHomeRecentFiles();
+  }
+
+  // Re-render pages to update page navigation text
+  if (activeTabId !== HOME_TAB_ID && pages.length > 0) {
+    renderPages();
+  }
+}
+
 // ========== View Mode ==========
 function setViewMode(mode) {
   currentViewMode = mode;
   localStorage.setItem('viewMode', mode);
 
   if (mode === 'single') {
-    content.classList.remove('view-double');
     btnViewSingle.classList.add('active');
     btnViewDouble.classList.remove('active');
   } else {
-    content.classList.add('view-double');
     btnViewSingle.classList.remove('active');
     btnViewDouble.classList.add('active');
+  }
+
+  // Re-render pages if we have content
+  if (activeTabId !== HOME_TAB_ID && pages.length > 0) {
+    renderPages();
   }
 }
 
@@ -690,7 +942,7 @@ function getStylesFromEditor() {
 
 function generateCustomCss(styles) {
   let css = `
-/* ChilBong MD Viewer - Custom Theme */
+/* SP MD Viewer - Custom Theme */
 :root {
   --bg: ${styles.bg} !important;
   --text: ${styles.text} !important;
@@ -833,7 +1085,7 @@ async function exportTheme() {
   const styles = getStylesFromEditor();
   const themeData = {
     version: '2.0',
-    app: 'ChilBong MD Viewer',
+    app: 'SP MD Viewer',
     exportedAt: new Date().toISOString(),
     baseTheme: currentTheme,
     colorTheme: currentColor,
@@ -947,6 +1199,95 @@ function printDocument() {
   window.print();
 }
 
+// ========== Presentation Mode ==========
+function startPresentation() {
+  if (pages.length === 0 || activeTabId === HOME_TAB_ID) {
+    showNotification(t('noPrintDoc'));
+    return;
+  }
+
+  isPresentationMode = true;
+  presentationPage = 0;
+  presentationOverlay.classList.remove('hidden');
+  renderPresentationSlide();
+
+  // Request fullscreen
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {
+      // Fullscreen not supported or denied, continue anyway
+    });
+  }
+}
+
+function exitPresentation() {
+  isPresentationMode = false;
+  presentationOverlay.classList.add('hidden');
+
+  // Exit fullscreen
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function renderPresentationSlide() {
+  if (!presentationContent) return;
+
+  presentationContent.innerHTML = pages[presentationPage] || '';
+  presIndicator.textContent = `${presentationPage + 1} / ${pages.length}`;
+
+  presPrev.disabled = presentationPage === 0;
+  presNext.disabled = presentationPage >= pages.length - 1;
+}
+
+function presentationPrev() {
+  if (presentationPage > 0) {
+    presentationPage--;
+    renderPresentationSlide();
+  }
+}
+
+function presentationNext() {
+  if (presentationPage < pages.length - 1) {
+    presentationPage++;
+    renderPresentationSlide();
+  }
+}
+
+// ========== Help Menu ==========
+function toggleHelpDropdown() {
+  if (helpDropdown.classList.contains('hidden')) {
+    showHelpDropdown();
+  } else {
+    hideHelpDropdown();
+  }
+}
+
+function showHelpDropdown() {
+  helpDropdown.classList.remove('hidden');
+}
+
+function hideHelpDropdown() {
+  helpDropdown.classList.add('hidden');
+}
+
+function showAboutModal() {
+  hideHelpDropdown();
+  aboutModal.classList.remove('hidden');
+}
+
+function closeAboutModal() {
+  aboutModal.classList.add('hidden');
+}
+
+function showShortcutsModal() {
+  hideHelpDropdown();
+  shortcutsModal.classList.remove('hidden');
+}
+
+function closeShortcutsModal() {
+  shortcutsModal.classList.add('hidden');
+}
+
 // ========== Tabs Management ==========
 function generateTabId() {
   return 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
@@ -975,7 +1316,7 @@ function switchToTab(tabId) {
 
   if (tabId === HOME_TAB_ID) {
     activeTabId = HOME_TAB_ID;
-    content.innerHTML = welcomeHTML;
+    content.innerHTML = getWelcomeHTML();
     content.classList.remove('view-double'); // 홈은 항상 한 페이지
     renderHomeRecentFiles();
     renderTabs();
@@ -1209,15 +1550,101 @@ function renderMarkdown(text, isNewFile = true) {
   const startTime = performance.now();
 
   try {
-    const html = marked.parse(text);
-    content.innerHTML = html;
-    content.classList.add('markdown-body');
+    // Normalize line endings to \n
+    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Split by --- (page breaks) for paging
+    // Matches: standalone line with 3+ dashes, with optional spaces
+    // Handles: ---  or ----  or -----  etc.
+    const pageTexts = normalizedText.split(/\n\s*-{3,}\s*\n|\n\s*-{3,}\s*$|^\s*-{3,}\s*\n/);
+    pages = pageTexts.filter(p => p.trim()).map(p => marked.parse(p));
+
+    if (isNewFile) {
+      currentPage = 0;
+    }
+
+    renderPages();
 
     const elapsed = (performance.now() - startTime).toFixed(1);
-    console.log(`Rendered in ${elapsed}ms`);
+    console.log(`Rendered ${pages.length} pages in ${elapsed}ms`);
   } catch (error) {
     showError('Markdown 파싱 오류', error.message);
   }
+}
+
+function renderPages() {
+  content.classList.add('markdown-body');
+  const lang = i18n[currentLanguage];
+
+  if (currentViewMode === 'single') {
+    // Single view: Show all pages without paging (continuous scroll)
+    const allContent = pages.join('<hr class="page-break">');
+    content.innerHTML = `<div class="markdown-content-wrapper">${allContent}</div>`;
+  } else if (currentViewMode === 'double' && pages.length > 1) {
+    // Two-page view with page navigation
+    const leftPage = pages[currentPage] || '';
+    const rightPage = pages[currentPage + 1] || '';
+    const totalPages = pages.length;
+    const currentDisplay = currentPage + 1;
+    const endDisplay = Math.min(currentPage + 2, totalPages);
+
+    content.innerHTML = `
+      <div class="markdown-content-wrapper paged-view">
+        <div class="page-left">${leftPage}</div>
+        <div class="page-right">${rightPage}</div>
+      </div>
+      <div class="page-nav">
+        <button id="page-prev" class="page-nav-btn" ${currentPage === 0 ? 'disabled' : ''}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <div class="page-indicator-group">
+          <input type="number" id="page-input" class="page-input" value="${currentDisplay}" min="1" max="${totalPages}" />
+          <span class="page-total">/ ${totalPages}</span>
+        </div>
+        <button id="page-next" class="page-nav-btn" ${currentPage + 2 >= totalPages ? 'disabled' : ''}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    `;
+
+    // Add event listeners for page navigation
+    const prevBtn = document.getElementById('page-prev');
+    const nextBtn = document.getElementById('page-next');
+    const pageInput = document.getElementById('page-input');
+
+    if (prevBtn) prevBtn.addEventListener('click', () => goToPage(currentPage - 2));
+    if (nextBtn) nextBtn.addEventListener('click', () => goToPage(currentPage + 2));
+    if (pageInput) {
+      pageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const targetPage = parseInt(pageInput.value) - 1;
+          // For two-page view, align to even page
+          const alignedPage = Math.floor(targetPage / 2) * 2;
+          goToPage(alignedPage);
+        }
+      });
+      pageInput.addEventListener('blur', () => {
+        const targetPage = parseInt(pageInput.value) - 1;
+        const alignedPage = Math.floor(targetPage / 2) * 2;
+        goToPage(alignedPage);
+      });
+    }
+  } else {
+    // Two-page view with only 1 page, or fallback
+    content.innerHTML = `<div class="markdown-content-wrapper">${pages[0] || ''}</div>`;
+  }
+}
+
+function goToPage(pageNum) {
+  if (pageNum < 0) pageNum = 0;
+  if (pageNum >= pages.length) pageNum = pages.length - 1;
+  currentPage = pageNum;
+  renderPages();
+  content.scrollTop = 0;
 }
 
 // ========== File Handling ==========
@@ -1338,6 +1765,31 @@ function setupDragDrop() {
 // ========== Keyboard Shortcuts ==========
 function setupKeyboard() {
   document.addEventListener('keydown', (e) => {
+    // Presentation mode keyboard handling
+    if (isPresentationMode) {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        exitPresentation();
+        return;
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault();
+        presentationPrev();
+        return;
+      }
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        presentationNext();
+        return;
+      }
+      return; // Block other keys in presentation mode
+    }
+
+    // F5: Start presentation
+    if (e.key === 'F5') {
+      e.preventDefault();
+      startPresentation();
+    }
     // Ctrl+O: Open file
     if (e.ctrlKey && e.key === 'o') {
       e.preventDefault();
@@ -1385,11 +1837,16 @@ function setupKeyboard() {
         closeTab(activeTabId);
       }
     }
-    // Escape: Hide search bar first, then go home
+    // Escape: Close modals/dropdowns or go home
     if (e.key === 'Escape') {
       e.preventDefault();
       hideRecentDropdown();
-      if (isSearchVisible) {
+      hideHelpDropdown();
+      if (!aboutModal.classList.contains('hidden')) {
+        closeAboutModal();
+      } else if (!shortcutsModal.classList.contains('hidden')) {
+        closeShortcutsModal();
+      } else if (isSearchVisible) {
         hideSearchBar();
       } else {
         showHome();
@@ -1402,6 +1859,19 @@ function setupKeyboard() {
       const currentIndex = allTabs.indexOf(activeTabId);
       const nextIndex = (currentIndex + 1) % allTabs.length;
       switchToTab(allTabs[nextIndex]);
+    }
+    // Arrow keys for page navigation (only in two-page view, when not in search or input)
+    if (!isSearchVisible && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      if (currentViewMode === 'double' && pages.length > 1) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          goToPage(currentPage - 2);
+        }
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          goToPage(currentPage + 2);
+        }
+      }
     }
   });
 
@@ -1417,10 +1887,13 @@ function setupKeyboard() {
     }
   }, { passive: false });
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   document.addEventListener('click', (e) => {
     if (!recentDropdown.contains(e.target) && !btnRecent.contains(e.target)) {
       hideRecentDropdown();
+    }
+    if (!helpDropdown.contains(e.target) && !btnHelp.contains(e.target)) {
+      hideHelpDropdown();
     }
   });
 }
@@ -1465,6 +1938,7 @@ async function init() {
 
   // 1. UI 먼저 렌더링 (즉시 화면 표시)
   applyTheme(currentTheme);
+  applyFontFamily(currentFontFamily);
   applyFontSize(currentFontSize);
 
   if (customStyles && customThemeOption) {
@@ -1480,6 +1954,8 @@ async function init() {
   setViewMode(currentViewMode);
   setZoom(currentZoom);
   applyContentWidth(currentContentWidth);
+  languageSelect.value = currentLanguage;
+  updateUITexts();
 
   setupDragDrop();
   setupKeyboard();
@@ -1547,12 +2023,20 @@ async function init() {
     applyColorTheme(e.target.value);
   });
 
+  fontFamily.addEventListener('change', (e) => {
+    applyFontFamily(e.target.value);
+  });
+
   fontSize.addEventListener('change', (e) => {
     applyFontSize(e.target.value);
   });
 
   contentWidth.addEventListener('change', (e) => {
     applyContentWidth(e.target.value);
+  });
+
+  languageSelect.addEventListener('change', (e) => {
+    applyLanguage(e.target.value);
   });
 
   importInput.addEventListener('change', (e) => {
@@ -1581,6 +2065,32 @@ async function init() {
   themeExportBtn.addEventListener('click', exportTheme);
   themeCancel.addEventListener('click', cancelThemeEditor);
   themeApply.addEventListener('click', applyAndSaveTheme);
+
+  // Presentation mode event listeners
+  btnPresentation.addEventListener('click', startPresentation);
+  presPrev.addEventListener('click', presentationPrev);
+  presNext.addEventListener('click', presentationNext);
+  presExit.addEventListener('click', exitPresentation);
+
+  // Handle fullscreen change
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && isPresentationMode) {
+      exitPresentation();
+    }
+  });
+
+  // Help menu event listeners
+  btnHelp.addEventListener('click', toggleHelpDropdown);
+  helpShortcuts.addEventListener('click', showShortcutsModal);
+  helpAbout.addEventListener('click', showAboutModal);
+  aboutClose.addEventListener('click', closeAboutModal);
+  aboutOk.addEventListener('click', closeAboutModal);
+  aboutModal.querySelector('.modal-backdrop').addEventListener('click', closeAboutModal);
+
+  // Shortcuts modal event listeners
+  shortcutsClose.addEventListener('click', closeShortcutsModal);
+  shortcutsOk.addEventListener('click', closeShortcutsModal);
+  shortcutsModal.querySelector('.modal-backdrop').addEventListener('click', closeShortcutsModal);
 
 }
 

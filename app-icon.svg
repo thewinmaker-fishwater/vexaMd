@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="250" fill="#ffffff"/>
+
+  <!-- Outer ring - navy blue -->
+  <circle cx="256" cy="256" r="240" fill="none" stroke="#1e4a6e" stroke-width="20"/>
+
+  <!-- Inner ring - green -->
+  <circle cx="256" cy="256" r="205" fill="none" stroke="#2d7a4e" stroke-width="12"/>
+
+  <!-- SP Text -->
+  <text x="256" y="295"
+        font-family="Arial Black, Arial, sans-serif"
+        font-size="180"
+        font-weight="900"
+        text-anchor="middle"
+        fill="#1e4a6e">SP</text>
+</svg>

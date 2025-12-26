@@ -1,8 +1,8 @@
-# ChilBong MD Viewer - 개발 문서
+# SP MD Viewer - 개발 문서
 
 ## 프로젝트 개요
 
-**ChilBong MD Viewer**는 Tauri 2.x + Vanilla JavaScript로 개발된 초경량 마크다운 뷰어입니다.
+**SP MD Viewer**는 Tauri 2.x + Vanilla JavaScript로 개발된 초경량 마크다운 뷰어입니다.
 
 ### 주요 특징
 - 1초 미만의 빠른 렌더링 속도
@@ -11,7 +11,9 @@
 - 다크/라이트 모드 지원
 - 탭 기능으로 여러 파일 동시 열기
 - 최근 파일 목록 관리
-- 확대/축소 및 뷰 모드 (1페이지/2페이지)
+- 확대/축소 및 뷰 모드 (한 페이지/여러 페이지)
+- 프레젠테이션 모드 (F5)
+- 다국어 지원 (한국어/영어)
 - 인쇄 기능
 
 ---
@@ -32,13 +34,15 @@
 ## 프로젝트 구조
 
 ```
-C:\workspace-mdView\
+mdView/
 ├── docs/                    # 문서
 ├── dist/                    # 빌드 결과물 (Vite)
-├── node_modules/            # npm 패키지
+├── public/                  # 정적 파일
+│   └── logo.jpg            # Seven Peaks 로고
 ├── src/                     # 프론트엔드 소스
 │   ├── main.js             # 메인 JavaScript
-│   └── style.css           # 스타일시트
+│   ├── style.css           # 스타일시트
+│   └── i18n.js             # 다국어 번역
 ├── src-tauri/              # Tauri/Rust 소스
 │   ├── src/
 │   │   ├── main.rs         # Rust 메인 (Windows)
@@ -82,10 +86,24 @@ C:\workspace-mdView\
 ### 4. 뷰 옵션
 - **글씨 크기**: 작게 / 보통 / 크게 / 아주 크게
 - **콘텐츠 너비**: 좁게(900px) / 보통(1200px) / 넓게(1600px) / 전체
-- **뷰 모드**: 한 페이지 / 두 페이지 (2단 레이아웃)
+- **뷰 모드**:
+  - 한 페이지 보기: 전체 내용 연속 스크롤
+  - 여러 페이지로 보기: `---` 기준 페이징
 - **확대/축소**: 50% ~ 200% (Ctrl+마우스 휠 지원)
 
-### 5. 인쇄
+### 5. 프레젠테이션 모드
+- `F5` 키로 시작
+- 전체 화면 슬라이드쇼
+- `---` 구분선 기준 페이지 분할
+- 키보드 네비게이션 (←/→/Space)
+- `ESC`로 종료
+
+### 6. 다국어 지원
+- 한국어 / English 지원
+- 툴바에서 언어 선택
+- 모든 UI 요소 동적 번역
+
+### 7. 인쇄
 - `Ctrl+P`로 인쇄
 - 인쇄 시 UI 요소 자동 숨김
 - 깔끔한 흑백 인쇄 스타일
@@ -99,13 +117,15 @@ C:\workspace-mdView\
 | `Ctrl+O` | 파일 열기 |
 | `Ctrl+D` | 다크/라이트 전환 |
 | `Ctrl+P` | 인쇄 |
+| `Ctrl+F` | 검색 |
 | `Ctrl+W` | 현재 탭 닫기 |
 | `Ctrl+Tab` | 다음 탭 |
 | `Ctrl++` | 확대 |
 | `Ctrl+-` | 축소 |
 | `Ctrl+0` | 원래 크기 |
-| `Ctrl+E` | 테마 내보내기 |
-| `Esc` | 홈으로 |
+| `F5` | 프레젠테이션 시작 |
+| `←/→` | 페이지 이동 (여러 페이지 모드) |
+| `Esc` | 홈으로 / 종료 |
 
 ---
 
@@ -129,7 +149,7 @@ npm run tauri build
 
 빌드 결과물:
 - `src-tauri/target/release/md-viewer.exe` (실행 파일)
-- `src-tauri/target/release/bundle/nsis/ChilBong MD Viewer_1.0.0_x64-setup.exe` (설치 파일)
+- `src-tauri/target/release/bundle/nsis/SP MD Viewer_1.0.0_x64-setup.exe` (설치 파일)
 
 ---
 
@@ -142,13 +162,21 @@ npm run tauri build
 | `theme` | 라이트/다크 | `light` |
 | `colorTheme` | 컬러 테마 | `default` |
 | `fontSize` | 글씨 크기 | `medium` |
+| `fontFamily` | 글꼴 | `system` |
 | `contentWidth` | 콘텐츠 너비 | `narrow` |
 | `viewMode` | 뷰 모드 | `single` |
 | `zoom` | 확대/축소 | `100` |
+| `language` | 언어 | `ko` |
 | `recentFiles` | 최근 파일 목록 | `[]` |
 
 ---
 
 ## 라이선스
 
-MIT License
+Apache 2.0 License
+
+---
+
+## 개발사
+
+**Seven Peaks Software**
