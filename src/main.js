@@ -13,13 +13,16 @@ let fsWriteTextFile = null;
 
 async function initTauri() {
   try {
-    tauriApi = await import('@tauri-apps/api/core');
-    const dialogModule = await import('@tauri-apps/plugin-dialog');
+    // 모든 모듈을 병렬로 로드하여 초기화 시간 단축
+    const [coreModule, dialogModule, fsModule] = await Promise.all([
+      import('@tauri-apps/api/core'),
+      import('@tauri-apps/plugin-dialog'),
+      import('@tauri-apps/plugin-fs')
+    ]);
+
+    tauriApi = coreModule;
     dialogOpen = dialogModule.open;
     dialogSave = dialogModule.save;
-
-    // fs 플러그인
-    const fsModule = await import('@tauri-apps/plugin-fs');
     fsWriteTextFile = fsModule.writeTextFile;
   } catch (e) {
     console.log('Running in browser mode', e);
@@ -1456,32 +1459,38 @@ async function setupTauriEvents() {
 
 // ========== Initialize ==========
 async function init() {
-  await initTauri();
+  // [PERF] 성능 측정 코드 (필요시 주석 해제)
+  // const initStart = performance.now();
+  // console.log('[PERF] init() 시작');
 
-  // Apply saved themes
+  // 1. UI 먼저 렌더링 (즉시 화면 표시)
   applyTheme(currentTheme);
   applyFontSize(currentFontSize);
 
-  // 커스텀 테마가 저장되어 있으면 먼저 옵션을 보이게
   if (customStyles && customThemeOption) {
     customThemeOption.hidden = false;
   }
   applyColorTheme(currentColor);
 
-  setupDragDrop();
-  setupKeyboard();
-  await setupTauriEvents();
-
-  // Initial state - start with home tab
   activeTabId = HOME_TAB_ID;
   updateTabBarVisibility();
   renderTabs();
   renderHomeRecentFiles();
 
-  // Apply saved view mode, zoom, and content width
   setViewMode(currentViewMode);
   setZoom(currentZoom);
   applyContentWidth(currentContentWidth);
+
+  setupDragDrop();
+  setupKeyboard();
+  // console.log(`[PERF] UI 초기화: ${(performance.now() - initStart).toFixed(1)}ms`);
+
+  // 2. Tauri 초기화 (백그라운드)
+  initTauri().then(() => {
+    // console.log(`[PERF] Tauri 완료: ${(performance.now() - initStart).toFixed(1)}ms`);
+    setupTauriEvents();
+    handleCliArgs();
+  });
 
   // Event listeners
   btnHome.addEventListener('click', showHome);
@@ -1573,8 +1582,6 @@ async function init() {
   themeCancel.addEventListener('click', cancelThemeEditor);
   themeApply.addEventListener('click', applyAndSaveTheme);
 
-  // CLI 인자로 파일이 전달된 경우 로드
-  await handleCliArgs();
 }
 
 // Add CSS animation

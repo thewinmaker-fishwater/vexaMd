@@ -636,7 +636,73 @@ npm run tauri build
 
 ---
 
-## 10. 배포 체크리스트
+## 10. 성능 최적화
+
+### 10.1 초기 로딩 최적화
+
+**Tauri API 병렬 로드:**
+```javascript
+// 기존: 순차 로드 (느림)
+tauriApi = await import('@tauri-apps/api/core');
+const dialogModule = await import('@tauri-apps/plugin-dialog');
+const fsModule = await import('@tauri-apps/plugin-fs');
+
+// 개선: 병렬 로드 (빠름)
+const [coreModule, dialogModule, fsModule] = await Promise.all([
+  import('@tauri-apps/api/core'),
+  import('@tauri-apps/plugin-dialog'),
+  import('@tauri-apps/plugin-fs')
+]);
+```
+
+**UI 우선 렌더링:**
+```javascript
+async function init() {
+  // 1. UI 먼저 렌더링 (즉시 화면 표시)
+  applyTheme(currentTheme);
+  renderTabs();
+  // ... 기타 UI 초기화 ...
+
+  // 2. Tauri 초기화 (백그라운드)
+  initTauri().then(() => {
+    setupTauriEvents();
+    handleCliArgs();
+  });
+}
+```
+
+### 10.2 성능 측정
+
+`main.js`에 성능 측정 코드가 주석으로 포함되어 있습니다:
+```javascript
+// [PERF] 성능 측정 코드 (필요시 주석 해제)
+// const initStart = performance.now();
+// console.log('[PERF] init() 시작');
+// ...
+// console.log(`[PERF] UI 초기화: ${(performance.now() - initStart).toFixed(1)}ms`);
+```
+
+### 10.3 개발자 도구 (F12)
+
+프로덕션 빌드에서 F12 개발자 도구를 사용하려면:
+
+`src-tauri/Cargo.toml`:
+```toml
+# devtools 활성화
+tauri = { version = "2", features = ["tray-icon", "devtools"] }
+```
+
+### 10.4 성능 목표
+
+| 항목 | 목표 | 현재 |
+|------|------|------|
+| UI 초기화 | < 10ms | ~1ms |
+| Tauri 초기화 | < 100ms | ~32ms |
+| 전체 로딩 | < 100ms | ~35ms |
+
+---
+
+## 11. 배포 체크리스트
 
 - [ ] 버전 번호 업데이트 (package.json, Cargo.toml, tauri.conf.json)
 - [ ] 아이콘 확인
