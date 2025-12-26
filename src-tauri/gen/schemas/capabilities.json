@@ -1,1 +1,0 @@
-{"default":{"identifier":"default","description":"Default capabilities for MD Viewer","local":true,"windows":["main"],"permissions":["core:default","dialog:default","dialog:allow-open","dialog:allow-save","fs:default","fs:allow-read","fs:write-all","fs:allow-download-write","fs:allow-desktop-write","fs:allow-document-write","fs:allow-home-write"]}}
