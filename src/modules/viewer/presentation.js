@@ -1,5 +1,6 @@
 /**
  * Presentation Mode - 프레젠테이션 모드
+ * Generates overlay HTML dynamically with i18n support
  */
 
 import { store } from '../../core/store.js';
@@ -8,6 +9,7 @@ import { $id, $ } from '../../core/dom.js';
 import { i18n } from '../../i18n.js';
 import { markdownViewer } from './markdown.js';
 import { tabsManager } from '../tabs/tabs.js';
+import { ICONS } from '../../components/icons.js';
 
 class PresentationMode {
   constructor() {
@@ -16,9 +18,63 @@ class PresentationMode {
     this.elements = {};
   }
 
+  get lang() {
+    return i18n[store.get('language') || 'ko'];
+  }
+
   init() {
+    this.createOverlay();
     this.cacheElements();
     this.setupEventListeners();
+
+    // Update on language change
+    store.subscribe('language', () => this.updateTexts());
+  }
+
+  /**
+   * Create presentation overlay HTML
+   */
+  createOverlay() {
+    const overlay = document.createElement('div');
+    overlay.id = 'presentation-overlay';
+    overlay.className = 'presentation-overlay hidden';
+    overlay.innerHTML = this.getOverlayHTML();
+    document.body.appendChild(overlay);
+  }
+
+  /**
+   * Get overlay HTML
+   */
+  getOverlayHTML() {
+    return `
+      <div class="presentation-slide markdown-body">
+        <div class="presentation-content"></div>
+      </div>
+      <div class="presentation-controls">
+        <button id="pres-prev" class="pres-nav-btn" title="${this.lang.prevSlide}">
+          ${ICONS.chevronLeft}
+        </button>
+        <span id="pres-indicator" class="pres-indicator">1 / 1</span>
+        <button id="pres-next" class="pres-nav-btn" title="${this.lang.nextSlide}">
+          ${ICONS.chevronRight}
+        </button>
+        <button id="pres-exit" class="pres-exit-btn" title="${this.lang.exitPresentation}">
+          ${ICONS.close}
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Update texts when language changes
+   */
+  updateTexts() {
+    const overlay = $id('presentation-overlay');
+    if (overlay && !this.isActive) {
+      overlay.innerHTML = this.getOverlayHTML();
+      this.cacheElements();
+      this.setupEventListeners();
+    }
   }
 
   cacheElements() {
@@ -48,8 +104,7 @@ class PresentationMode {
     const pages = markdownViewer.getPages();
 
     if (pages.length === 0 || tabsManager.isHome()) {
-      const lang = i18n[store.get('language') || 'ko'];
-      this.showNotification(lang.noPrintDoc || '표시할 문서가 없습니다.');
+      this.showNotification(this.lang.noDocForPresentation);
       return;
     }
 

@@ -4,10 +4,23 @@
  * Main Entry Point
  */
 
+// Styles
+import './style.css';
+import './modules/theme/theme.css';
+import './modules/tabs/tabs.css';
+import './modules/search/search.css';
+import './modules/viewer/viewer.css';
+import './modules/files/files.css';
+import './modules/ui/ui.css';
+
 // Core
 import { store, DEFAULT_STATE } from './core/store.js';
 import { eventBus, EVENTS } from './core/events.js';
 import { $id } from './core/dom.js';
+import { i18n } from './i18n.js';
+
+// Components
+import { toolbar } from './components/toolbar.js';
 
 // Theme
 import { themeManager } from './modules/theme/theme-manager.js';
@@ -36,6 +49,13 @@ import { settingsManager } from './modules/ui/settings.js';
 import { keyboardHandler } from './modules/ui/keyboard.js';
 
 /**
+ * Get current language translations
+ */
+function getLang() {
+  return i18n[store.get('language') || 'ko'];
+}
+
+/**
  * 애플리케이션 초기화
  */
 async function init() {
@@ -45,7 +65,10 @@ async function init() {
   // 1. Store 초기화
   store.init(DEFAULT_STATE);
 
-  // 2. UI 모듈 초기화 (순서 중요)
+  // 2. 툴바 초기화 (먼저 렌더링)
+  toolbar.init();
+
+  // 3. UI 모듈 초기화 (순서 중요)
   themeManager.init();
   tabsManager.init();
   markdownViewer.init();
@@ -58,25 +81,46 @@ async function init() {
   settingsManager.init();
   themeEditor.init();
 
-  // 3. 입력 핸들러 초기화
+  // 4. 입력 핸들러 초기화
   dragDropHandler.init();
   keyboardHandler.init();
 
-  // 4. 툴바 버튼 이벤트 연결
+  // 5. 툴바 버튼 이벤트 연결
   setupToolbarEvents();
 
-  // 5. 애니메이션 CSS 추가
+  // 6. Drop message 초기화
+  updateDropMessage();
+
+  // 7. 애니메이션 CSS 추가
   addAnimationStyles();
 
-  // 6. Tauri 초기화 (백그라운드)
+  // 8. Tauri 초기화 (백그라운드)
   fileHandler.init().then(() => {
     console.log('[SP MD Viewer] Tauri initialized');
+  });
+
+  // 언어 변경 시 drop message 업데이트
+  store.subscribe('language', updateDropMessage);
+
+  // 툴바 업데이트 시 이벤트 재연결
+  eventBus.on(EVENTS.TOOLBAR_UPDATED, () => {
+    setupToolbarEvents();
   });
 
   const elapsed = (performance.now() - startTime).toFixed(1);
   console.log(`[SP MD Viewer] Initialized in ${elapsed}ms`);
 
   eventBus.emit(EVENTS.APP_INITIALIZED);
+}
+
+/**
+ * Drop message 업데이트
+ */
+function updateDropMessage() {
+  const dropMessage = $id('drop-message');
+  if (dropMessage) {
+    dropMessage.textContent = getLang().dropMessage;
+  }
 }
 
 /**
@@ -95,7 +139,7 @@ function setupToolbarEvents() {
   // 인쇄
   $id('btn-print')?.addEventListener('click', () => {
     if (tabsManager.getAllTabs().length === 0) {
-      showNotification('인쇄할 문서가 없습니다.');
+      showNotification(getLang().noPrintDoc);
       return;
     }
     window.print();

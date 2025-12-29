@@ -1,12 +1,15 @@
 /**
  * Search Manager - 검색 기능
+ * Generates search bar HTML dynamically with i18n support
  */
 
 import { store } from '../../core/store.js';
 import { eventBus, EVENTS } from '../../core/events.js';
-import { $id, $, $$ } from '../../core/dom.js';
+import { $id } from '../../core/dom.js';
 import { escapeRegex, debounce } from '../../utils/helpers.js';
 import { tabsManager } from '../tabs/tabs.js';
+import { i18n } from '../../i18n.js';
+import { ICONS } from '../../components/icons.js';
 
 class SearchManager {
   constructor() {
@@ -18,10 +21,76 @@ class SearchManager {
     this.searchTimeout = null;
   }
 
+  get lang() {
+    return i18n[store.get('language') || 'ko'];
+  }
+
   init() {
+    this.createSearchBar();
     this.cacheElements();
     this.setupEventListeners();
     this.setupSubscriptions();
+
+    // Update on language change
+    store.subscribe('language', () => this.updateTexts());
+  }
+
+  /**
+   * Create search bar HTML
+   */
+  createSearchBar() {
+    const searchBar = document.createElement('div');
+    searchBar.id = 'search-bar';
+    searchBar.className = 'hidden';
+    searchBar.innerHTML = this.getSearchBarHTML();
+    document.body.appendChild(searchBar);
+  }
+
+  /**
+   * Get search bar HTML
+   */
+  getSearchBarHTML() {
+    return `
+      <div class="search-box">
+        <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="${this.lang.searchPlaceholder}" />
+        <span id="search-count" class="search-count"></span>
+        <button id="search-prev" class="search-nav" title="${this.lang.searchPrev}">
+          ${ICONS.chevronUp}
+        </button>
+        <button id="search-next" class="search-nav" title="${this.lang.searchNext}">
+          ${ICONS.chevronDown}
+        </button>
+        <button id="search-close" class="search-nav" title="${this.lang.searchClose}">
+          ${ICONS.closeSmall}
+        </button>
+      </div>
+    `;
+  }
+
+  /**
+   * Update texts when language changes
+   */
+  updateTexts() {
+    const searchBar = $id('search-bar');
+    if (searchBar) {
+      const wasVisible = this.isVisible;
+      const currentValue = this.elements.searchInput?.value || '';
+
+      searchBar.innerHTML = this.getSearchBarHTML();
+      this.cacheElements();
+      this.setupEventListeners();
+
+      if (wasVisible) {
+        searchBar.classList.remove('hidden');
+        if (currentValue) {
+          this.elements.searchInput.value = currentValue;
+        }
+      }
+    }
   }
 
   cacheElements() {
@@ -127,7 +196,7 @@ class SearchManager {
       this.scrollToMatch(this.currentIndex);
       this.updateCount();
     } else {
-      this.updateCount('0개');
+      this.updateCount('0');
       this.currentIndex = -1;
     }
 
@@ -198,7 +267,7 @@ class SearchManager {
       if (text !== undefined) {
         this.elements.searchCount.textContent = text;
       } else if (this.matches.length === 0) {
-        this.elements.searchCount.textContent = '0개';
+        this.elements.searchCount.textContent = '0';
       } else {
         this.elements.searchCount.textContent = `${this.currentIndex + 1}/${this.matches.length}`;
       }

@@ -1,0 +1,234 @@
+/* ========================================
+   SP MD Viewer - Theme Styles
+   ======================================== */
+
+/* ========== Theme: Default Gray (Light) ========== */
+:root {
+  --bg: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --text: #1f2328;
+  --text-secondary: #656d76;
+  --border: #d0d7de;
+  --accent: #656d76;
+  --accent-light: rgba(101, 109, 118, 0.08);
+  --code-bg: #f6f8fa;
+  --code-text: #1f2328;
+  --toolbar-bg: #f6f8fa;
+  --shadow: rgba(31, 35, 40, 0.12);
+  --gradient-start: #24292f;
+  --gradient-end: #57606a;
+  --table-header-bg: #f6f8fa;
+  --table-header-text: #1f2328;
+  --blockquote-bg: #f6f8fa;
+  --blockquote-border: #d0d7de;
+}
+
+/* ========== Theme: Default Gray (Dark) ========== */
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-secondary: #161b22;
+  --text: #e6edf3;
+  --text-secondary: #8b949e;
+  --border: #30363d;
+  --accent: #8b949e;
+  --accent-light: rgba(139, 148, 158, 0.1);
+  --code-bg: #161b22;
+  --code-text: #e6edf3;
+  --toolbar-bg: #161b22;
+  --shadow: rgba(0, 0, 0, 0.4);
+  --gradient-start: #e6edf3;
+  --gradient-end: #8b949e;
+  --table-header-bg: #21262d;
+  --table-header-text: #e6edf3;
+  --blockquote-bg: #161b22;
+  --blockquote-border: #3b434b;
+}
+
+/* ========== Theme: Purple Violet ========== */
+[data-color="purple"] {
+  --accent: #8b5cf6;
+  --accent-light: rgba(139, 92, 246, 0.1);
+  --gradient-start: #8b5cf6;
+  --gradient-end: #a78bfa;
+  --toolbar-bg: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  --code-bg: #faf5ff;
+  --code-text: #6b21a8;
+  --table-header-bg: #f3e8ff;
+  --table-header-text: #7c3aed;
+  --blockquote-bg: #faf5ff;
+  --blockquote-border: #a78bfa;
+}
+[data-color="purple"][data-theme="dark"] {
+  --accent: #a78bfa;
+  --accent-light: rgba(167, 139, 250, 0.15);
+  --gradient-start: #a78bfa;
+  --gradient-end: #c4b5fd;
+  --toolbar-bg: linear-gradient(135deg, #1e1033 0%, #2d1f4e 100%);
+  --bg: #0f0a1a;
+  --bg-secondary: #1a1028;
+  --border: #3d2d5c;
+  --code-bg: #1e1033;
+  --code-text: #c4b5fd;
+  --table-header-bg: #2d1f4e;
+  --table-header-text: #c4b5fd;
+  --blockquote-bg: #1e1033;
+  --blockquote-border: #7c3aed;
+}
+
+/* ========== Theme: Ocean Cyan ========== */
+[data-color="ocean"] {
+  --accent: #0891b2;
+  --accent-light: rgba(8, 145, 178, 0.1);
+  --gradient-start: #06b6d4;
+  --gradient-end: #22d3ee;
+  --toolbar-bg: linear-gradient(135deg, #ecfeff 0%, #cffafe 100%);
+  --code-bg: #ecfeff;
+  --code-text: #0e7490;
+  --table-header-bg: #cffafe;
+  --table-header-text: #0891b2;
+  --blockquote-bg: #ecfeff;
+  --blockquote-border: #22d3ee;
+}
+[data-color="ocean"][data-theme="dark"] {
+  --accent: #22d3ee;
+  --accent-light: rgba(34, 211, 238, 0.15);
+  --gradient-start: #22d3ee;
+  --gradient-end: #67e8f9;
+  --toolbar-bg: linear-gradient(135deg, #0c1a1f 0%, #134e4a 100%);
+  --bg: #0a1214;
+  --bg-secondary: #0f1c20;
+  --border: #1e4a5c;
+  --code-bg: #0c1a1f;
+  --code-text: #67e8f9;
+  --table-header-bg: #134e4a;
+  --table-header-text: #5eead4;
+  --blockquote-bg: #0c1a1f;
+  --blockquote-border: #0891b2;
+}
+
+/* ========== Theme: Sunset Orange ========== */
+[data-color="sunset"] {
+  --accent: #ea580c;
+  --accent-light: rgba(234, 88, 12, 0.1);
+  --gradient-start: #f97316;
+  --gradient-end: #fb923c;
+  --toolbar-bg: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  --code-bg: #fff7ed;
+  --code-text: #c2410c;
+  --table-header-bg: #ffedd5;
+  --table-header-text: #ea580c;
+  --blockquote-bg: #fff7ed;
+  --blockquote-border: #fb923c;
+}
+[data-color="sunset"][data-theme="dark"] {
+  --accent: #fb923c;
+  --accent-light: rgba(251, 146, 60, 0.15);
+  --gradient-start: #fb923c;
+  --gradient-end: #fdba74;
+  --toolbar-bg: linear-gradient(135deg, #1c1008 0%, #431407 100%);
+  --bg: #120c08;
+  --bg-secondary: #1c1410;
+  --border: #5c3a1e;
+  --code-bg: #1c1008;
+  --code-text: #fdba74;
+  --table-header-bg: #431407;
+  --table-header-text: #fdba74;
+  --blockquote-bg: #1c1008;
+  --blockquote-border: #ea580c;
+}
+
+/* ========== Theme: Forest Green ========== */
+[data-color="forest"] {
+  --accent: #16a34a;
+  --accent-light: rgba(22, 163, 74, 0.1);
+  --gradient-start: #22c55e;
+  --gradient-end: #4ade80;
+  --toolbar-bg: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  --code-bg: #f0fdf4;
+  --code-text: #166534;
+  --table-header-bg: #dcfce7;
+  --table-header-text: #16a34a;
+  --blockquote-bg: #f0fdf4;
+  --blockquote-border: #4ade80;
+}
+[data-color="forest"][data-theme="dark"] {
+  --accent: #4ade80;
+  --accent-light: rgba(74, 222, 128, 0.15);
+  --gradient-start: #4ade80;
+  --gradient-end: #86efac;
+  --toolbar-bg: linear-gradient(135deg, #071a0f 0%, #14532d 100%);
+  --bg: #060f0a;
+  --bg-secondary: #0c1a12;
+  --border: #1e5c3a;
+  --code-bg: #071a0f;
+  --code-text: #86efac;
+  --table-header-bg: #14532d;
+  --table-header-text: #86efac;
+  --blockquote-bg: #071a0f;
+  --blockquote-border: #16a34a;
+}
+
+/* ========== Theme: Rose Pink ========== */
+[data-color="rose"] {
+  --accent: #e11d48;
+  --accent-light: rgba(225, 29, 72, 0.1);
+  --gradient-start: #f43f5e;
+  --gradient-end: #fb7185;
+  --toolbar-bg: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+  --code-bg: #fff1f2;
+  --code-text: #be123c;
+  --table-header-bg: #ffe4e6;
+  --table-header-text: #e11d48;
+  --blockquote-bg: #fff1f2;
+  --blockquote-border: #fb7185;
+}
+[data-color="rose"][data-theme="dark"] {
+  --accent: #fb7185;
+  --accent-light: rgba(251, 113, 133, 0.15);
+  --gradient-start: #fb7185;
+  --gradient-end: #fda4af;
+  --toolbar-bg: linear-gradient(135deg, #1c0a10 0%, #4c0519 100%);
+  --bg: #120608;
+  --bg-secondary: #1c0c10;
+  --border: #5c1e3a;
+  --code-bg: #1c0a10;
+  --code-text: #fda4af;
+  --table-header-bg: #4c0519;
+  --table-header-text: #fda4af;
+  --blockquote-bg: #1c0a10;
+  --blockquote-border: #e11d48;
+}
+
+/* ========== Font Size Variables ========== */
+:root {
+  --font-size-base: 16px;
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+}
+[data-font-size="small"] { --font-size-base: 14px; }
+[data-font-size="medium"] { --font-size-base: 16px; }
+[data-font-size="large"] { --font-size-base: 18px; }
+[data-font-size="xlarge"] { --font-size-base: 20px; }
+
+/* ========== Font Family Options ========== */
+[data-font-family="system"] { --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif; }
+[data-font-family="malgun"] { --font-family-base: 'Malgun Gothic', '맑은 고딕', sans-serif; }
+[data-font-family="nanum"] { --font-family-base: 'Nanum Gothic', '나눔고딕', sans-serif; }
+[data-font-family="pretendard"] { --font-family-base: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; }
+[data-font-family="noto"] { --font-family-base: 'Noto Sans KR', sans-serif; }
+
+/* ========== Syntax Highlighting ========== */
+.hljs-keyword { color: #cf222e; }
+.hljs-string { color: #0a3069; }
+.hljs-number { color: #0550ae; }
+.hljs-comment { color: #6e7781; font-style: italic; }
+.hljs-function { color: #8250df; }
+.hljs-class { color: #953800; }
+.hljs-variable { color: #24292f; }
+
+[data-theme="dark"] .hljs-keyword { color: #ff7b72; }
+[data-theme="dark"] .hljs-string { color: #a5d6ff; }
+[data-theme="dark"] .hljs-number { color: #79c0ff; }
+[data-theme="dark"] .hljs-comment { color: #8b949e; }
+[data-theme="dark"] .hljs-function { color: #d2a8ff; }
+[data-theme="dark"] .hljs-class { color: #ffa657; }
+[data-theme="dark"] .hljs-variable { color: #c9d1d9; }

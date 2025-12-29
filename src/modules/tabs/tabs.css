@@ -1,0 +1,114 @@
+/* ========================================
+   SP MD Viewer - Tab Bar Styles
+   ======================================== */
+
+/* ========== Tab Bar ========== */
+#tab-bar {
+  position: fixed;
+  top: 80px;
+  left: 0;
+  right: 0;
+  height: 36px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 8px;
+  z-index: 99;
+}
+
+#tab-bar:empty,
+#tab-bar:not(:has(.tab)) {
+  display: none;
+}
+
+#tab-bar:not(:has(.tab)) + #content {
+  top: 80px;
+}
+
+#tabs-container {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  max-width: 180px;
+  transition: all 0.15s;
+}
+
+.tab:hover {
+  background: var(--accent-light);
+  color: var(--text);
+}
+
+.tab.active {
+  background: var(--bg);
+  color: var(--accent);
+  border-bottom-color: var(--bg);
+  font-weight: 500;
+}
+
+.tab-icon {
+  flex-shrink: 0;
+}
+
+.tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tab-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+
+.tab:hover .tab-close {
+  opacity: 1;
+}
+
+.tab-close:hover {
+  opacity: 1;
+  background: #ef4444;
+  color: white;
+  transform: scale(1.1);
+}
+
+.tab-close:active {
+  transform: scale(0.95);
+}
+
+.tab-close svg {
+  width: 10px;
+  height: 10px;
+  stroke-width: 2.5;
+}
+
+/* ========== Tab Bar Hidden ========== */
+#tab-bar.hidden {
+  display: none;
+}

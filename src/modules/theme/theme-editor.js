@@ -1,5 +1,6 @@
 /**
  * Theme Editor - 테마 편집기 모달
+ * Generates modal HTML dynamically with i18n support
  */
 
 import { store } from '../../core/store.js';
@@ -7,6 +8,8 @@ import { eventBus, EVENTS } from '../../core/events.js';
 import { $id, $, $$ } from '../../core/dom.js';
 import { rgbToHex } from '../../utils/helpers.js';
 import { themeManager } from './theme-manager.js';
+import { i18n } from '../../i18n.js';
+import { ICONS } from '../../components/icons.js';
 
 class ThemeEditor {
   constructor() {
@@ -15,9 +18,314 @@ class ThemeEditor {
     this.elements = {};
   }
 
+  get lang() {
+    return i18n[store.get('language') || 'ko'];
+  }
+
   init() {
+    this.createModal();
     this.cacheElements();
     this.setupEventListeners();
+
+    // Update on language change
+    store.subscribe('language', () => this.updateTexts());
+  }
+
+  /**
+   * Create modal HTML
+   */
+  createModal() {
+    const modal = document.createElement('div');
+    modal.id = 'theme-editor-modal';
+    modal.className = 'modal hidden';
+    modal.innerHTML = this.getModalHTML();
+    document.body.appendChild(modal);
+  }
+
+  /**
+   * Get modal HTML
+   */
+  getModalHTML() {
+    return `
+      <div class="modal-backdrop">
+        <div class="modal-content theme-editor-content">
+          <div class="modal-header">
+            <h2 class="modal-title">${this.lang.themeEditorTitle}</h2>
+            <button id="theme-editor-close" class="modal-close" title="${this.lang.close}">
+              ${ICONS.close}
+            </button>
+          </div>
+
+          <div class="editor-tabs">
+            <button class="editor-tab active" data-tab="ui">${this.lang.tabUIEditor}</button>
+            <button class="editor-tab" data-tab="css">${this.lang.tabCSSEditor}</button>
+          </div>
+
+          <div class="editor-panels">
+            <!-- UI Editor Tab -->
+            <div class="tab-panel active" id="tab-ui">
+              <div class="editor-scroll">
+                ${this.getUIEditorHTML()}
+              </div>
+            </div>
+
+            <!-- CSS Editor Tab -->
+            <div class="tab-panel" id="tab-css">
+              <div class="css-editor-info">${this.lang.cssEditorInfo}</div>
+              <textarea id="custom-css" class="css-textarea" placeholder="${this.lang.cssPlaceholder}"></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer editor-footer">
+            <div class="footer-left">
+              <button id="theme-reset" class="btn btn-text">${this.lang.reset}</button>
+              <button id="theme-preview" class="btn btn-text">${this.lang.preview}</button>
+            </div>
+            <div class="footer-right">
+              <button id="theme-import" class="btn btn-outline">${this.lang.import}</button>
+              <button id="theme-export" class="btn btn-outline">${this.lang.export}</button>
+              <button id="theme-cancel" class="btn btn-outline">${this.lang.cancel}</button>
+              <button id="theme-apply" class="btn btn-primary">${this.lang.apply}</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Get UI Editor sections HTML
+   */
+  getUIEditorHTML() {
+    return `
+      <!-- Basic Colors -->
+      <div class="editor-section">
+        <h3 class="section-title">${this.lang.sectionColors}</h3>
+        <div class="editor-grid">
+          ${this.colorField('custom-bg', this.lang.labelBgColor)}
+          ${this.colorField('custom-text', this.lang.labelTextColor)}
+          ${this.colorField('custom-accent', this.lang.labelAccentColor)}
+          ${this.colorField('custom-border', this.lang.labelBorderColor)}
+        </div>
+      </div>
+
+      <!-- Font -->
+      <div class="editor-section">
+        <h3 class="section-title">${this.lang.sectionFont}</h3>
+        <div class="editor-grid">
+          ${this.selectField('custom-font-family', this.lang.labelBodyFont, [
+            { value: 'system-ui', label: this.lang.fontSystem },
+            { value: "'Malgun Gothic', sans-serif", label: this.lang.fontMalgun },
+            { value: "'Nanum Gothic', sans-serif", label: this.lang.fontNanum },
+            { value: "'Pretendard', sans-serif", label: this.lang.fontPretendard },
+            { value: "'Noto Sans KR', sans-serif", label: this.lang.fontNoto }
+          ])}
+          ${this.rangeField('custom-font-size', this.lang.labelBaseFontSize, 12, 24, 1, 16, 'px')}
+          ${this.rangeField('custom-line-height', this.lang.labelLineHeight, 1.2, 2.2, 0.1, 1.7, '')}
+        </div>
+      </div>
+
+      <!-- Code Block -->
+      <div class="editor-section">
+        <h3 class="section-title">${this.lang.sectionCode}</h3>
+        <div class="editor-grid">
+          ${this.colorField('custom-code-bg', this.lang.labelBgColor)}
+          ${this.colorField('custom-code-text', this.lang.labelTextColor)}
+          ${this.selectField('custom-code-font', this.lang.labelCodeFont, [
+            { value: "'SFMono-Regular', Consolas, monospace", label: this.lang.labelCodeFontDefault },
+            { value: "'Fira Code', monospace", label: 'Fira Code' },
+            { value: "'JetBrains Mono', monospace", label: 'JetBrains Mono' }
+          ])}
+        </div>
+      </div>
+
+      <!-- Blockquote -->
+      <div class="editor-section">
+        <h3 class="section-title">${this.lang.sectionBlockquote}</h3>
+        <div class="editor-grid">
+          ${this.colorField('custom-blockquote-bg', this.lang.labelBgColor)}
+          ${this.colorField('custom-blockquote-border', this.lang.labelBorderColor)}
+          ${this.rangeField('custom-blockquote-border-width', this.lang.labelBorderWidth, 1, 10, 1, 4, 'px')}
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="editor-section">
+        <h3 class="section-title">${this.lang.sectionTable}</h3>
+        <div class="editor-grid">
+          ${this.colorField('custom-table-header-bg', this.lang.labelHeaderBg)}
+          ${this.colorField('custom-table-header-text', this.lang.labelHeaderText)}
+          ${this.rangeField('custom-table-radius', this.lang.labelBorderRadius, 0, 16, 1, 8, 'px')}
+        </div>
+      </div>
+
+      <!-- Headings -->
+      <div class="editor-section">
+        <h3 class="section-title">${this.lang.sectionHeadings}</h3>
+        <div class="editor-grid">
+          ${this.colorField('custom-h1-color', this.lang.labelH1Color)}
+          ${this.colorField('custom-h2-color', this.lang.labelH2Color)}
+          ${this.checkboxField('custom-h1-gradient', this.lang.labelUseGradient)}
+        </div>
+      </div>
+
+      <!-- Text Marks -->
+      <div class="editor-section">
+        <h3 class="section-title">${this.lang.sectionTextMark}</h3>
+        <div class="editor-grid">
+          ${this.colorField('custom-link-color', this.lang.labelLinkColor)}
+          ${this.colorField('custom-bold-color', this.lang.labelBoldColor)}
+          ${this.colorField('custom-italic-color', this.lang.labelItalicColor)}
+          ${this.colorField('custom-mark-bg', this.lang.labelHighlightBg)}
+          ${this.colorField('custom-mark-text', this.lang.labelHighlightText)}
+          ${this.colorField('custom-list-marker', this.lang.labelListMarker)}
+        </div>
+      </div>
+
+      <!-- Toolbar -->
+      <div class="editor-section">
+        <h3 class="section-title">${this.lang.sectionToolbar}</h3>
+        <div class="editor-grid">
+          ${this.colorField('custom-toolbar-bg', this.lang.labelToolbarBg)}
+          ${this.colorField('custom-toolbar-bg2', this.lang.labelToolbarGradient)}
+          ${this.colorField('custom-tabbar-bg', this.lang.labelTabbarBg)}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Helper: Color input field
+   */
+  colorField(id, label) {
+    return `
+      <div class="editor-field">
+        <label for="${id}">${label}</label>
+        <div class="color-input-wrapper">
+          <input type="color" id="${id}" class="color-input">
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Helper: Select field
+   */
+  selectField(id, label, options) {
+    const optionsHtml = options.map(opt =>
+      `<option value="${opt.value}">${opt.label}</option>`
+    ).join('');
+
+    return `
+      <div class="editor-field">
+        <label for="${id}">${label}</label>
+        <select id="${id}" class="editor-select">${optionsHtml}</select>
+      </div>
+    `;
+  }
+
+  /**
+   * Helper: Range input field
+   */
+  rangeField(id, label, min, max, step, defaultVal, unit) {
+    return `
+      <div class="editor-field">
+        <label for="${id}">${label}</label>
+        <div class="range-wrapper">
+          <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${defaultVal}">
+          <span class="range-value">${defaultVal}${unit}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * Helper: Checkbox field
+   */
+  checkboxField(id, label) {
+    return `
+      <div class="editor-field checkbox-field">
+        <input type="checkbox" id="${id}" checked>
+        <label for="${id}">${label}</label>
+      </div>
+    `;
+  }
+
+  /**
+   * Update texts when language changes
+   */
+  updateTexts() {
+    const modal = $id('theme-editor-modal');
+    if (modal && !modal.classList.contains('hidden')) {
+      // Modal is open, save current values
+      const currentStyles = this.getStylesFromEditor();
+      modal.innerHTML = this.getModalHTML();
+      this.cacheElements();
+      this.setupEventListeners();
+      this.applyStylesToEditor(currentStyles);
+      modal.classList.remove('hidden');
+    } else if (modal) {
+      // Modal is closed, just update HTML
+      modal.innerHTML = this.getModalHTML();
+      this.cacheElements();
+      this.setupEventListeners();
+    }
+  }
+
+  /**
+   * Apply styles object to editor inputs
+   */
+  applyStylesToEditor(styles) {
+    // Colors
+    this.setInputValue('custom-bg', styles.bg);
+    this.setInputValue('custom-text', styles.text);
+    this.setInputValue('custom-accent', styles.accent);
+    this.setInputValue('custom-border', styles.border);
+
+    // Font
+    this.setInputValue('custom-font-family', styles.fontFamily);
+    this.setInputValue('custom-font-size', styles.fontSize);
+    this.setInputValue('custom-line-height', styles.lineHeight);
+
+    // Code
+    this.setInputValue('custom-code-bg', styles.codeBg);
+    this.setInputValue('custom-code-text', styles.codeText);
+    this.setInputValue('custom-code-font', styles.codeFont);
+
+    // Blockquote
+    this.setInputValue('custom-blockquote-bg', styles.blockquoteBg);
+    this.setInputValue('custom-blockquote-border', styles.blockquoteBorder);
+    this.setInputValue('custom-blockquote-border-width', styles.blockquoteBorderWidth);
+
+    // Table
+    this.setInputValue('custom-table-header-bg', styles.tableHeaderBg);
+    this.setInputValue('custom-table-header-text', styles.tableHeaderText);
+    this.setInputValue('custom-table-radius', styles.tableRadius);
+
+    // Headings
+    this.setInputValue('custom-h1-color', styles.h1Color);
+    this.setInputValue('custom-h2-color', styles.h2Color);
+    this.setCheckboxValue('custom-h1-gradient', styles.h1Gradient);
+
+    // Text Marks
+    this.setInputValue('custom-link-color', styles.linkColor);
+    this.setInputValue('custom-bold-color', styles.boldColor);
+    this.setInputValue('custom-italic-color', styles.italicColor);
+    this.setInputValue('custom-mark-bg', styles.markBg);
+    this.setInputValue('custom-mark-text', styles.markText);
+    this.setInputValue('custom-list-marker', styles.listMarker);
+
+    // Toolbar
+    this.setInputValue('custom-toolbar-bg', styles.toolbarBg);
+    this.setInputValue('custom-toolbar-bg2', styles.toolbarBg2);
+    this.setInputValue('custom-tabbar-bg', styles.tabbarBg);
+
+    // CSS
+    if (this.elements.cssTextarea) {
+      this.elements.cssTextarea.value = styles.customCss || '';
+    }
+
+    this.updateRangeDisplays();
   }
 
   cacheElements() {
@@ -40,7 +348,11 @@ class ThemeEditor {
     if (!this.modal) return;
 
     this.elements.close?.addEventListener('click', () => this.close());
-    this.modal.querySelector('.modal-backdrop')?.addEventListener('click', () => this.close());
+    this.modal.querySelector('.modal-backdrop')?.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-backdrop')) {
+        this.close();
+      }
+    });
 
     this.elements.tabs.forEach(tab => {
       tab.addEventListener('click', () => this.switchTab(tab.dataset.tab));
@@ -250,7 +562,7 @@ class ThemeEditor {
   preview() {
     const styles = this.getStylesFromEditor();
     themeManager.applyCustomStyles(styles);
-    this.showNotification('미리보기 적용됨');
+    this.showNotification(this.lang.previewApplied);
   }
 
   applyAndSave() {
@@ -259,7 +571,7 @@ class ThemeEditor {
     themeManager.applyCustomStyles(styles);
     themeManager.selectCustomTheme();
     this.close();
-    this.showNotification('테마가 적용되었습니다!');
+    this.showNotification(this.lang.themeApplied);
   }
 
   reset() {
@@ -267,7 +579,7 @@ class ThemeEditor {
     themeManager.removeCustomStyles();
     themeManager.hideCustomThemeOption();
     this.loadCurrentStyles();
-    this.showNotification('테마가 초기화되었습니다');
+    this.showNotification(this.lang.themeReset);
   }
 
   async export() {
@@ -297,7 +609,7 @@ class ThemeEditor {
 
       if (filePath) {
         await writeTextFile(filePath, jsonContent);
-        this.showNotification('테마를 저장했습니다!');
+        this.showNotification(this.lang.themeSaved);
       }
     } catch {
       // 브라우저 환경 폴백
@@ -336,49 +648,28 @@ class ThemeEditor {
           themeManager.applyCustomStyles(data.customStyles);
           themeManager.selectCustomTheme();
           this.loadCurrentStyles();
-          this.showNotification('커스텀 테마를 불러왔습니다!');
+          this.showNotification(this.lang.themeImported);
         } else if (data.theme || data.colorTheme) {
           if (data.theme) themeManager.applyTheme(data.theme);
           if (data.colorTheme) themeManager.applyColorTheme(data.colorTheme);
-          this.showNotification('테마 설정을 불러왔습니다!');
+          this.showNotification(this.lang.themeImported);
         } else {
-          throw new Error('알 수 없는 테마 형식');
+          throw new Error('Unknown theme format');
         }
       } catch (error) {
-        this.showError('테마 불러오기 실패', '유효한 테마 파일이 아닙니다.');
+        this.showError(this.lang.themeImportError, this.lang.invalidTheme);
       }
     };
     reader.readAsText(file);
   }
 
   showNotification(message) {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 12px 24px;
-      background: var(--accent);
-      color: white;
-      border-radius: 8px;
-      font-size: 14px;
-      z-index: 1001;
-      animation: slideIn 0.3s ease;
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.style.animation = 'slideOut 0.3s ease';
-      setTimeout(() => notification.remove(), 300);
-    }, 2000);
-
     eventBus.emit(EVENTS.NOTIFICATION_SHOWN, message);
   }
 
   showError(title, message) {
     console.error(`${title}: ${message}`);
-    this.showNotification(`${title}: ${message}`);
+    eventBus.emit(EVENTS.NOTIFICATION_SHOWN, `${title}: ${message}`);
   }
 }
 

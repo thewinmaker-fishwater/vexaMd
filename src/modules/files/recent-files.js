@@ -1,11 +1,14 @@
 /**
  * Recent Files Manager - 최근 파일 관리
+ * Generates dropdown HTML dynamically with i18n support
  */
 
 import { store } from '../../core/store.js';
 import { eventBus, EVENTS } from '../../core/events.js';
 import { $id, createElement, positionBelow } from '../../core/dom.js';
 import { fileHandler } from './file-handler.js';
+import { i18n } from '../../i18n.js';
+import { ICONS } from '../../components/icons.js';
 
 const MAX_RECENT_FILES = 10;
 
@@ -15,11 +18,59 @@ class RecentFilesManager {
     this.elements = {};
   }
 
+  get lang() {
+    return i18n[store.get('language') || 'ko'];
+  }
+
   init() {
+    this.createDropdown();
     this.cacheElements();
     this.loadFromStorage();
     this.setupEventListeners();
     this.render();
+
+    // Update on language change
+    store.subscribe('language', () => this.updateTexts());
+  }
+
+  /**
+   * Create dropdown HTML
+   */
+  createDropdown() {
+    const dropdown = document.createElement('div');
+    dropdown.id = 'recent-dropdown';
+    dropdown.className = 'dropdown hidden';
+    dropdown.innerHTML = this.getDropdownHTML();
+    document.body.appendChild(dropdown);
+  }
+
+  /**
+   * Get dropdown HTML
+   */
+  getDropdownHTML() {
+    return `
+      <div class="dropdown-header" data-i18n="recentFiles">${this.lang.recentFiles}</div>
+      <div id="recent-list"></div>
+      <div class="dropdown-empty" id="recent-empty" data-i18n="recentEmpty">${this.lang.recentEmpty}</div>
+      <button id="clear-recent" class="dropdown-btn" data-i18n="clearList">${this.lang.clearList}</button>
+    `;
+  }
+
+  /**
+   * Update texts when language changes
+   */
+  updateTexts() {
+    const dropdown = $id('recent-dropdown');
+    if (dropdown) {
+      const wasHidden = dropdown.classList.contains('hidden');
+      dropdown.innerHTML = this.getDropdownHTML();
+      this.cacheElements();
+      this.setupEventListeners();
+      this.render();
+      if (wasHidden) {
+        dropdown.classList.add('hidden');
+      }
+    }
     this.renderHomeList();
   }
 
@@ -122,11 +173,8 @@ class RecentFilesManager {
             <div class="recent-item-name">${file.name}</div>
             <div class="recent-item-path">${file.path}</div>
           </div>
-          <button class="recent-item-remove" title="목록에서 제거">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
+          <button class="recent-item-remove" title="${this.lang.removeFromList}">
+            ${ICONS.remove}
           </button>
         `
       });
@@ -146,8 +194,6 @@ class RecentFilesManager {
   }
 
   renderHomeList() {
-    const { homeList, homeSection } = this.elements;
-
     // 동적으로 다시 찾기 (홈 화면이 다시 렌더링될 수 있으므로)
     const actualHomeList = $id('home-recent-list');
     const actualHomeSection = $id('home-recent');
@@ -166,10 +212,7 @@ class RecentFilesManager {
       const item = createElement('div', {
         className: 'home-recent-item',
         html: `
-          <svg class="home-recent-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
+          ${ICONS.markdown}
           <div class="home-recent-info">
             <div class="home-recent-name">${file.name}</div>
             <div class="home-recent-path">${file.path}</div>
