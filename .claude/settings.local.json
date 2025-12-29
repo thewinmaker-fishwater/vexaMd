@@ -29,7 +29,27 @@
       "Bash($env:Path = \"$env:USERPROFILE\\\\.cargo\\\\bin;\" + $env:Path)",
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
-      "Read(//tmp/claude/C--workspace-self-pj-mdView/tasks/**)"
+      "Read(//tmp/claude/C--workspace-self-pj-mdView/tasks/**)",
+      "Bash(dir \"C:\\\\workspace-self-pj\\\\mdView\" /s /b)",
+      "Bash(start \"\" \"C:\\\\workspace-self-pj\\\\mdView\\\\src-tauri\\\\target\\\\release\\\\md-viewer.exe\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(npm run:*)",
+      "Bash(npm version:*)",
+      "Bash(git tag:*)",
+      "Bash(git push:*)",
+      "Bash(gh release create:*)",
+      "Bash(\"/mnt/c/Program Files/GitHub CLI/gh.exe\" --version)",
+      "Bash(cmd.exe /c \"gh --version\")",
+      "Bash(cmd.exe /c \"where gh\")",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" --version)",
+      "Bash(\"C:\\\\Program Files \\(x86\\)\\\\GitHub CLI\\\\gh.exe\" --version)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" auth status)",
+      "Bash(del \"C:\\\\workspace-self-pj\\\\mdView\\\\nul\")",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" auth login --web)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" release create:*)",
+      "Bash(\"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\" auth logout --hostname github.com)"
     ]
   }
 }
