@@ -1,5 +1,46 @@
 # SP MD Viewer - 개발 이력
 
+## 2024-12-29 모듈화 리팩토링
+
+### 코드 구조 개선
+- **main.js**: 2,138줄 → **172줄** (92% 감소)
+- 19개 ES 모듈로 분리
+- 전역 변수 20개 → Store 패턴으로 중앙 관리
+
+### 새로운 아키텍처
+
+#### Core 인프라 (`src/core/`)
+- **store.js**: Observer 패턴 상태 관리
+  - `store.subscribe(key, callback)` - 상태 변경 구독
+  - `store.set(key, value)` - 상태 변경 + 자동 알림
+  - localStorage 자동 영속화
+- **events.js**: 이벤트 버스
+  - `eventBus.on(event, callback)` - 이벤트 구독
+  - `eventBus.emit(event, data)` - 이벤트 발생
+  - 모듈 간 느슨한 결합
+- **dom.js**: DOM 유틸리티 함수
+
+#### 기능별 모듈 (`src/modules/`)
+| 모듈 | 파일 | 역할 |
+|------|------|------|
+| theme | theme-manager.js, theme-editor.js | 테마 시스템 |
+| tabs | tabs.js | 탭 관리 |
+| search | search.js | 검색 기능 |
+| viewer | markdown.js, presentation.js | 마크다운 렌더링 |
+| files | file-handler.js, drag-drop.js, recent-files.js | 파일 처리 |
+| ui | keyboard.js, view-mode.js, zoom.js, help-menu.js, settings.js | UI 컴포넌트 |
+
+#### 유틸리티 (`src/utils/`)
+- **helpers.js**: debounce, throttle, generateId, rgbToHex 등
+
+### 개선 효과
+- 각 모듈이 독립적으로 관리 가능
+- 상태 변경 추적 용이
+- 테스트 용이성 향상
+- 코드 재사용성 증가
+
+---
+
 ## 2024-12-26 v1.0.0 주요 업데이트
 
 ### 네이밍 변경
@@ -133,7 +174,9 @@
 
 1. ~~다국어 지원~~ ✅ 완료
 2. ~~프레젠테이션 모드~~ ✅ 완료
-3. 여러 커스텀 테마 저장 및 관리
-4. 테마 프리셋 추가
-5. 마크다운 편집 기능
-6. 파일 시스템 감시 (자동 리로드)
+3. ~~모듈화 리팩토링~~ ✅ 완료
+4. 여러 커스텀 테마 저장 및 관리
+5. 테마 프리셋 추가
+6. 마크다운 편집 기능
+7. 파일 시스템 감시 (자동 리로드)
+8. 모듈별 CSS 분리

@@ -18,9 +18,45 @@
 ```
 mdView/
 ├── src/                      # 프론트엔드 소스 (웹: JS, CSS)
-│   ├── main.js               # 메인 JavaScript 로직
+│   ├── main.js               # 진입점 (172줄) - 모듈 초기화만
 │   ├── style.css             # 전체 스타일시트
-│   └── i18n.js               # 다국어 지원 (한국어/영어)
+│   ├── i18n.js               # 다국어 지원 (한국어/영어)
+│   │
+│   ├── core/                 # 핵심 인프라
+│   │   ├── store.js          # 중앙 상태 관리 (Observer 패턴)
+│   │   ├── events.js         # 이벤트 버스 (모듈 간 통신)
+│   │   └── dom.js            # DOM 유틸리티
+│   │
+│   ├── modules/              # 기능별 모듈
+│   │   ├── theme/            # 테마 시스템
+│   │   │   ├── theme-manager.js   # 테마 전환 로직
+│   │   │   └── theme-editor.js    # 테마 편집기 모달
+│   │   │
+│   │   ├── tabs/             # 탭 관리
+│   │   │   └── tabs.js       # 탭 생성/전환/닫기
+│   │   │
+│   │   ├── search/           # 검색 기능
+│   │   │   └── search.js     # 텍스트 검색 및 하이라이트
+│   │   │
+│   │   ├── viewer/           # 마크다운 뷰어
+│   │   │   ├── markdown.js   # 마크다운 렌더링
+│   │   │   └── presentation.js # 프레젠테이션 모드
+│   │   │
+│   │   ├── files/            # 파일 처리
+│   │   │   ├── file-handler.js   # 파일 열기/저장
+│   │   │   ├── drag-drop.js      # 드래그앤드롭
+│   │   │   └── recent-files.js   # 최근 파일 관리
+│   │   │
+│   │   └── ui/               # UI 컴포넌트
+│   │       ├── keyboard.js   # 키보드 단축키
+│   │       ├── view-mode.js  # 보기 모드 관리
+│   │       ├── zoom.js       # 줌 관리
+│   │       ├── help-menu.js  # 도움말 메뉴
+│   │       └── settings.js   # 설정 (폰트, 언어 등)
+│   │
+│   └── utils/                # 공통 유틸리티
+│       └── helpers.js        # 헬퍼 함수
+│
 ├── src-tauri/                # Tauri 백엔드 소스 (Rust)
 │   ├── src/
 │   │   ├── lib.rs            # Tauri 커맨드 정의
@@ -59,16 +95,52 @@ mdView/
 - 프레젠테이션 오버레이
 - 드롭 오버레이
 
-### src/main.js
-- 앱 초기화 및 이벤트 핸들러
-- 마크다운 렌더링 (marked.js)
-- 테마 시스템 로직
-- 탭 관리
-- 검색 기능
-- 드래그 앤 드롭
-- 키보드 단축키
-- 프레젠테이션 모드
-- 다국어 UI 적용
+### src/main.js (172줄)
+- 앱 진입점
+- 모듈 import 및 초기화
+- 툴바 이벤트 연결
+
+### src/core/ (핵심 인프라)
+
+#### store.js - 중앙 상태 관리
+```javascript
+// Observer 패턴으로 상태 변경 시 자동 UI 업데이트
+store.subscribe('theme', (value) => applyTheme(value));
+store.set('theme', 'dark');  // 구독자에게 자동 알림
+```
+
+#### events.js - 이벤트 버스
+```javascript
+// 모듈 간 느슨한 결합
+eventBus.emit('file:opened', { name, path });
+eventBus.on('file:opened', (data) => { /* 처리 */ });
+```
+
+#### dom.js - DOM 유틸리티
+```javascript
+$id('btn-home')  // document.getElementById
+$('.tab')        // document.querySelector
+$$('.tabs')      // querySelectorAll → Array
+```
+
+### src/modules/ (기능별 모듈)
+
+| 모듈 | 파일 | 역할 |
+|------|------|------|
+| theme | theme-manager.js | 테마 전환, CSS 변수 관리 |
+| theme | theme-editor.js | 테마 편집기 모달 |
+| tabs | tabs.js | 탭 생성/전환/닫기 |
+| search | search.js | 텍스트 검색, 하이라이트 |
+| viewer | markdown.js | 마크다운 렌더링, 페이징 |
+| viewer | presentation.js | 프레젠테이션 모드 |
+| files | file-handler.js | 파일 열기/저장, Tauri 연동 |
+| files | drag-drop.js | 드래그앤드롭 처리 |
+| files | recent-files.js | 최근 파일 목록 관리 |
+| ui | keyboard.js | 키보드 단축키 |
+| ui | view-mode.js | 보기 모드 (single/double/paging) |
+| ui | zoom.js | 줌 레벨 관리 |
+| ui | help-menu.js | 도움말/정보 모달 |
+| ui | settings.js | 폰트, 언어 설정 + i18n 적용 |
 
 ### src/style.css
 - CSS 변수 기반 테마 시스템
