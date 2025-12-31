@@ -168,6 +168,9 @@ function getWelcomeHTML() {
   const t = i18n[currentLanguage];
   return `
   <div class="welcome">
+    <div class="welcome-logo">
+      <img src="/logo.png" alt="Vexa MD" width="120">
+    </div>
     <h1>Vexa MD</h1>
     <p class="subtitle">${t.welcomeSubtitle}</p>
     <p>${t.welcomeInstruction}</p>

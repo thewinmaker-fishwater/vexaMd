@@ -192,7 +192,10 @@ class MarkdownViewer {
     const lang = i18n[store.get('language') || 'ko'];
     return `
     <div class="welcome">
-      <h1>SP MD Viewer</h1>
+      <div class="welcome-logo">
+        <img src="/logo.png" alt="Vexa MD" width="120">
+      </div>
+      <h1>Vexa MD</h1>
       <p class="subtitle">${lang.welcomeSubtitle}</p>
       <p>${lang.welcomeInstruction}</p>
       <p><kbd>Ctrl</kbd>+<kbd>O</kbd> 열기 &nbsp; <kbd>Ctrl</kbd>+<kbd>D</kbd> 테마 &nbsp; <kbd>Ctrl</kbd>+<kbd>P</kbd> 인쇄 &nbsp; <kbd>Ctrl</kbd>+<kbd>F</kbd> 검색 &nbsp; <kbd>Esc</kbd> 홈</p>
