@@ -1,12 +1,12 @@
 [package]
-name = "md-viewer"
+name = "vexa-md"
 version = "1.1.0"
-description = "Ultra-lightweight Markdown Viewer"
-authors = ["MD Viewer"]
+description = "Ultra-lightweight Markdown Viewer - Vexa MD"
+authors = ["Vexa MD"]
 edition = "2021"
 
 [lib]
-name = "md_viewer_lib"
+name = "vexa_md_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

@@ -1,7 +1,7 @@
 {
-  "name": "md-viewer",
+  "name": "vexa-md",
   "version": "1.1.0",
-  "description": "Ultra-lightweight Markdown Viewer",
+  "description": "Ultra-lightweight Markdown Viewer - Vexa MD",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
