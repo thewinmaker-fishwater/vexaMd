@@ -1952,6 +1952,16 @@ async function setupTauriEvents() {
           }
         }
       });
+
+      // 싱글 인스턴스: 두 번째 인스턴스에서 파일 열기 요청
+      await listen('open-files-from-instance', async (event) => {
+        const filePaths = event.payload;
+        if (filePaths && filePaths.length > 0) {
+          for (const filePath of filePaths) {
+            await loadFile(filePath);
+          }
+        }
+      });
     } catch (e) {
       console.log('Tauri events not available');
     }
