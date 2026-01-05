@@ -1,5 +1,35 @@
 # SP MD Viewer - 개발 이력
 
+## 2025-01-06 싱글 인스턴스 구현
+
+### 주요 기능
+- **싱글 인스턴스 지원**: MD 파일 더블클릭 시 새 앱이 열리지 않고, 기존 앱의 새 탭으로 열림
+- **기존 윈도우 활성화**: 새 인스턴스 시도 시 기존 창이 포커스됨
+
+### 기술적 구현
+- **프로세스 감지**: Windows `tasklist` 명령어로 중복 프로세스 체크
+- **콘솔 창 숨김**: `CREATE_NO_WINDOW` 플래그 (0x08000000) 사용
+- **IPC 통신**: 임시 파일 기반 파일 경로 전달 (`%TEMP%/vexa_md_open_files.txt`)
+- **실시간 감지**: 백그라운드 스레드에서 500ms 폴링
+- **이벤트 시스템**: Tauri `emit` → Frontend `listen` → `loadFile()`
+
+### 시도했던 방법들 (실패)
+1. tauri-plugin-single-instance - Windows에서 작동 안 함
+2. TCP 소켓 IPC - 포트 바인딩 실패
+3. Windows Named Mutex (CreateMutexA) - API 호환성 문제
+4. fslock crate - 파일 락 실패
+5. sysinfo crate - 앱 크래시 발생
+
+### 관련 파일
+- `src-tauri/src/lib.rs`: 싱글 인스턴스 로직
+- `src-tauri/src/main.rs`: `vexa_md_lib::run()` 호출
+- `src/main.js`: `open-files-from-instance` 이벤트 리스너
+
+### 참고
+- 상세 아키텍처: `docs/ARCHITECTURE.md` "싱글 인스턴스 구현" 섹션 참조
+
+---
+
 ## 2024-12-29 모듈화 리팩토링
 
 ### 코드 구조 개선
