@@ -160,6 +160,115 @@ $$('.tabs')      // querySelectorAll → Array
 - `read_file`: 파일 읽기 커맨드
 - `write_file`: 파일 쓰기 커맨드
 - `get_cli_args`: CLI 인자 처리
+- **싱글 인스턴스**: 중복 실행 방지 및 파일 전달
+
+---
+
+## 싱글 인스턴스 구현
+
+### 개요
+MD 파일을 더블클릭할 때 새 앱이 열리지 않고, 기존 앱의 새 탭으로 열리도록 구현.
+
+### 기술적 접근
+
+#### 시도했던 방법들 (실패)
+1. **tauri-plugin-single-instance**: Windows에서 작동 안 함
+2. **TCP 소켓 IPC**: 포트 바인딩 실패
+3. **Windows Named Mutex (CreateMutexA)**: API 호환성 문제
+4. **fslock crate**: 파일 락 실패
+5. **sysinfo crate**: 앱 크래시 발생
+
+#### 최종 구현 (성공)
+**Windows tasklist 명령어 + 임시 파일 IPC**
+
+```
+┌─────────────────┐     ┌─────────────────┐
+│  1st Instance   │     │  2nd Instance   │
+│  (Running)      │     │  (New)          │
+└────────┬────────┘     └────────┬────────┘
+         │                       │
+         │              ┌────────▼────────┐
+         │              │ is_already_     │
+         │              │ running()       │
+         │              │ (tasklist)      │
+         │              └────────┬────────┘
+         │                       │ true
+         │              ┌────────▼────────┐
+         │              │ Save file path  │
+         │              │ to temp file    │
+         │              └────────┬────────┘
+         │                       │
+         │              ┌────────▼────────┐
+         │              │ Activate window │
+         │              │ & Exit          │
+         │              └─────────────────┘
+         │
+┌────────▼────────┐
+│ Background      │
+│ thread (500ms)  │
+│ polls temp file │
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│ emit('open-     │
+│ files-from-     │
+│ instance')      │
+└────────┬────────┘
+         │
+┌────────▼────────┐
+│ Frontend:       │
+│ loadFile()      │
+│ → New Tab       │
+└─────────────────┘
+```
+
+### 핵심 코드
+
+#### 1. 프로세스 중복 체크 (lib.rs)
+```rust
+fn is_already_running() -> bool {
+    use std::os::windows::process::CommandExt;
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+
+    let output = Command::new("tasklist")
+        .args(["/FI", "IMAGENAME eq vexa-md.exe", "/FO", "CSV", "/NH"])
+        .creation_flags(CREATE_NO_WINDOW)  // 콘솔 창 숨김
+        .output();
+
+    // 현재 PID가 아닌 다른 vexa-md.exe가 있으면 true
+}
+```
+
+#### 2. 임시 파일 IPC (lib.rs)
+```rust
+// 저장: %TEMP%/vexa_md_open_files.txt
+fn save_file_paths_to_temp(paths: &[String])
+
+// 읽기 (500ms 폴링)
+fn read_file_paths_from_temp() -> Vec<String>
+```
+
+#### 3. 이벤트 emit (lib.rs)
+```rust
+app.emit("open-files-from-instance", paths);
+window.set_focus();
+window.unminimize();
+```
+
+#### 4. 프론트엔드 수신 (main.js)
+```javascript
+await listen('open-files-from-instance', async (event) => {
+    for (const filePath of event.payload) {
+        await loadFile(filePath);  // 새 탭으로 열기
+    }
+});
+```
+
+### 주요 특징
+- **콘솔 창 없음**: `CREATE_NO_WINDOW` 플래그 사용
+- **크로스 플랫폼 준비**: `#[cfg(windows)]` 조건부 컴파일
+- **안정성**: tasklist는 Windows 기본 명령어로 항상 사용 가능
+- **응답성**: 500ms 폴링으로 빠른 파일 전달
 
 ---
 
