@@ -125,6 +125,13 @@ let currentFontSize = localStorage.getItem('fontSize') || 'medium';
 let currentLanguage = localStorage.getItem('language') || 'ko';
 let currentViewMode = localStorage.getItem('viewMode') || 'single';
 let currentZoom = parseInt(localStorage.getItem('zoom') || '100');
+
+// Pan state (for dragging content when zoomed in)
+let isPanning = false;
+let panStartX = 0;
+let panStartY = 0;
+let panScrollLeft = 0;
+let panScrollTop = 0;
 let currentContentWidth = localStorage.getItem('contentWidth') || 'narrow';
 
 // Zoom levels
@@ -517,6 +524,81 @@ function setZoom(level) {
   localStorage.setItem('zoom', nearest.toString());
   content.setAttribute('data-zoom', nearest.toString());
   zoomLevelDisplay.textContent = `${nearest}%`;
+
+  // Enable/disable pan mode based on zoom level
+  updatePanMode();
+}
+
+// ========== Pan (Drag to scroll when zoomed) ==========
+function updatePanMode() {
+  if (currentZoom > 100) {
+    content.classList.add('pan-enabled');
+  } else {
+    content.classList.remove('pan-enabled');
+    content.classList.remove('panning');
+    isPanning = false;
+  }
+}
+
+function isInteractivePanElement(element) {
+  // Don't start panning on interactive elements
+  const interactiveTags = ['A', 'BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'LABEL'];
+  const interactiveClasses = ['tab', 'tab-close', 'page-nav-btn', 'search-nav', 'search-box'];
+
+  let current = element;
+  while (current && current !== content) {
+    if (interactiveTags.includes(current.tagName)) {
+      return true;
+    }
+    if (interactiveClasses.some(cls => current.classList?.contains(cls))) {
+      return true;
+    }
+    current = current.parentElement;
+  }
+
+  return false;
+}
+
+function onPanMouseDown(e) {
+  if (currentZoom <= 100) return;
+  if (e.button !== 0) return; // Only left mouse button
+  if (isInteractivePanElement(e.target)) return;
+
+  isPanning = true;
+  panStartX = e.pageX;
+  panStartY = e.pageY;
+  panScrollLeft = content.scrollLeft;
+  panScrollTop = content.scrollTop;
+
+  content.classList.add('panning');
+  e.preventDefault();
+}
+
+function onPanMouseMove(e) {
+  if (!isPanning) return;
+
+  e.preventDefault();
+
+  const deltaX = e.pageX - panStartX;
+  const deltaY = e.pageY - panStartY;
+
+  // Move in opposite direction of mouse movement
+  content.scrollLeft = panScrollLeft - deltaX;
+  content.scrollTop = panScrollTop - deltaY;
+}
+
+function onPanMouseUp(e) {
+  if (!isPanning) return;
+
+  isPanning = false;
+  content.classList.remove('panning');
+}
+
+function onPanMouseLeave(e) {
+  if (!isPanning) return;
+
+  isPanning = false;
+  content.classList.remove('panning');
 }
 
 function zoomIn() {
@@ -1558,6 +1640,70 @@ function showHome() {
   switchToTab(HOME_TAB_ID);
 }
 
+// ========== GitHub-style Alerts (Callout Boxes) ==========
+// Supports: [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
+const ALERT_TYPES = {
+  NOTE: {
+    icon: '📝',
+    class: 'alert-note',
+    label: { ko: '참고', en: 'Note' }
+  },
+  TIP: {
+    icon: '💡',
+    class: 'alert-tip',
+    label: { ko: '팁', en: 'Tip' }
+  },
+  IMPORTANT: {
+    icon: '❗',
+    class: 'alert-important',
+    label: { ko: '중요', en: 'Important' }
+  },
+  WARNING: {
+    icon: '⚠️',
+    class: 'alert-warning',
+    label: { ko: '경고', en: 'Warning' }
+  },
+  CAUTION: {
+    icon: '🚨',
+    class: 'alert-caution',
+    label: { ko: '주의', en: 'Caution' }
+  }
+};
+
+function processAlerts(text) {
+  // Match GitHub-style alerts: > [!TYPE] followed by content lines starting with >
+  const alertPattern = /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*\n((?:>.*\n?)*)/gim;
+
+  return text.replace(alertPattern, (match, type, content) => {
+    const alertType = ALERT_TYPES[type.toUpperCase()];
+    if (!alertType) return match;
+
+    // Remove leading > from each line and trim
+    const contentText = content
+      .split('\n')
+      .map(line => line.replace(/^>\s?/, ''))
+      .join('\n')
+      .trim();
+
+    const label = alertType.label[currentLanguage] || alertType.label.en;
+
+    // Return a placeholder that will be converted to HTML after marked parsing
+    return `<div class="alert-box ${alertType.class}">
+<div class="alert-header">
+<span class="alert-icon">${alertType.icon}</span>
+<span class="alert-title">${label}</span>
+</div>
+<div class="alert-content">
+
+${contentText}
+
+</div>
+</div>
+
+`;
+  });
+}
+
 // ========== Markdown Rendering ==========
 function renderMarkdown(text, isNewFile = true) {
   const startTime = performance.now();
@@ -1566,10 +1712,13 @@ function renderMarkdown(text, isNewFile = true) {
     // Normalize line endings to \n
     const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
+    // Process GitHub-style alerts before markdown parsing
+    const processedText = processAlerts(normalizedText);
+
     // Split by --- (page breaks) for paging
     // Matches: standalone line with 3+ dashes, with optional spaces
     // Handles: ---  or ----  or -----  etc.
-    const pageTexts = normalizedText.split(/\n\s*-{3,}\s*\n|\n\s*-{3,}\s*$|^\s*-{3,}\s*\n/);
+    const pageTexts = processedText.split(/\n\s*-{3,}\s*\n|\n\s*-{3,}\s*$|^\s*-{3,}\s*\n/);
     pages = pageTexts.filter(p => p.trim()).map(p => marked.parse(p));
 
     if (isNewFile) {
@@ -2026,6 +2175,12 @@ async function init() {
   btnZoomIn.addEventListener('click', zoomIn);
   btnZoomOut.addEventListener('click', zoomOut);
   btnZoomReset.addEventListener('click', zoomReset);
+
+  // Pan event listeners (drag to scroll when zoomed in)
+  content.addEventListener('mousedown', onPanMouseDown);
+  content.addEventListener('mousemove', onPanMouseMove);
+  content.addEventListener('mouseup', onPanMouseUp);
+  content.addEventListener('mouseleave', onPanMouseLeave);
 
   // Search event listeners
   let searchTimeout;
