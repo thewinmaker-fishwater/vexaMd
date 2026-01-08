@@ -12,6 +12,12 @@ let tauriApi = null;
 let dialogOpen = null;
 let dialogSave = null;
 let fsWriteTextFile = null;
+let fsWatchImmediate = null;
+
+// File watchers map (filePath -> { unwatch: Function, tabIds: Set })
+const fileWatchers = new Map();
+// Debounce map for file change events
+const fileChangeDebounce = new Map();
 
 async function initTauri() {
   try {
@@ -26,6 +32,7 @@ async function initTauri() {
     dialogOpen = dialogModule.open;
     dialogSave = dialogModule.save;
     fsWriteTextFile = fsModule.writeTextFile;
+    fsWatchImmediate = fsModule.watchImmediate;
   } catch (e) {
     console.log('Running in browser mode', e);
   }
@@ -599,6 +606,90 @@ function onPanMouseLeave(e) {
 
   isPanning = false;
   content.classList.remove('panning');
+}
+
+// ========== File Watcher (Auto-reload on external change) ==========
+async function startWatching(filePath, tabId) {
+  if (!fsWatchImmediate || !filePath) return;
+
+  try {
+    // Check if already watching this file
+    if (fileWatchers.has(filePath)) {
+      fileWatchers.get(filePath).tabIds.add(tabId);
+      return;
+    }
+
+    // Start watching with watchImmediate for real-time updates
+    const unwatch = await fsWatchImmediate(filePath, (event) => {
+      handleFileChange(filePath, event);
+    }, { recursive: false });
+
+    fileWatchers.set(filePath, {
+      unwatch: unwatch,
+      tabIds: new Set([tabId])
+    });
+  } catch (error) {
+    console.error('Failed to watch file:', filePath, error);
+  }
+}
+
+async function stopWatching(filePath, tabId) {
+  if (!fileWatchers.has(filePath)) return;
+
+  const watcher = fileWatchers.get(filePath);
+  watcher.tabIds.delete(tabId);
+
+  // If no more tabs are watching this file, stop the watcher
+  if (watcher.tabIds.size === 0) {
+    try {
+      if (typeof watcher.unwatch === 'function') {
+        await watcher.unwatch();
+      }
+      fileWatchers.delete(filePath);
+      console.log(`Stopped watching: ${filePath}`);
+    } catch (error) {
+      console.error(`Failed to stop watching: ${filePath}`, error);
+    }
+  }
+}
+
+function handleFileChange(filePath, event) {
+  // Debounce: file changes can trigger multiple events in quick succession
+  if (fileChangeDebounce.has(filePath)) {
+    clearTimeout(fileChangeDebounce.get(filePath));
+  }
+
+  fileChangeDebounce.set(filePath, setTimeout(async () => {
+    fileChangeDebounce.delete(filePath);
+
+    // Check event type - watchImmediate returns different event structure
+    const eventType = event?.type;
+    const isModify = eventType === 'modify' ||
+                     eventType === 'any' ||
+                     eventType?.modify ||
+                     eventType?.Modify ||
+                     (typeof eventType === 'object' && eventType !== null);
+
+    if (isModify) {
+      // Find all tabs with this file path and reload them
+      const tabsToReload = tabs.filter(t => t.filePath === filePath);
+
+      for (const tab of tabsToReload) {
+        try {
+          const text = await tauriApi.invoke('read_file', { path: filePath });
+          tab.content = text;
+
+          // If this tab is active, re-render
+          if (activeTabId === tab.id) {
+            renderMarkdown(text, false);
+            showNotification(t('fileReloaded') || '파일이 새로고침되었습니다');
+          }
+        } catch (error) {
+          console.error('Failed to reload file:', filePath, error);
+        }
+      }
+    }
+  }, 300)); // 300ms debounce
 }
 
 function zoomIn() {
@@ -1400,6 +1491,12 @@ function createTab(name, filePath, content) {
   renderTabs();
   switchToTab(tabId);
   updateTabBarVisibility();
+
+  // Start watching for file changes (if it's a real file path)
+  if (filePath && filePath !== name) {
+    startWatching(filePath, tabId);
+  }
+
   return tabId;
 }
 
@@ -1440,6 +1537,12 @@ function closeTab(tabId, event) {
 
   const tabIndex = tabs.findIndex(t => t.id === tabId);
   if (tabIndex === -1) return;
+
+  // Stop watching this file
+  const tab = tabs[tabIndex];
+  if (tab.filePath && tab.filePath !== tab.name) {
+    stopWatching(tab.filePath, tabId);
+  }
 
   tabs.splice(tabIndex, 1);
 

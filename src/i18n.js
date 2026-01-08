@@ -83,6 +83,7 @@ export const i18n = {
     themeImported: '커스텀 테마를 불러왔습니다!',
     previewApplied: '미리보기 적용됨',
     noPrintDoc: '인쇄할 문서가 없습니다.',
+    fileReloaded: '파일이 변경되어 새로고침되었습니다.',
 
     // Errors
     unsupportedFormat: '지원하지 않는 형식',
@@ -265,6 +266,7 @@ export const i18n = {
     themeImported: 'Custom theme imported!',
     previewApplied: 'Preview applied',
     noPrintDoc: 'No document to print.',
+    fileReloaded: 'File changed and reloaded.',
 
     // Errors
     unsupportedFormat: 'Unsupported Format',

@@ -1,5 +1,28 @@
 # SP MD Viewer - 개발 이력
 
+## 2025-01-09 파일 시스템 감시
+
+### 주요 기능
+- **자동 리로드**: 열린 MD 파일이 외부에서 수정되면 자동으로 새로고침
+- **실시간 감시**: Tauri `watchImmediate` API 사용
+- **디바운싱**: 300ms 디바운스로 중복 이벤트 방지
+- **탭 연동**: 탭 닫을 때 자동으로 감시 해제
+
+### 기술적 구현
+- **Tauri fs 플러그인**: `watch` 기능 활성화 (`Cargo.toml`)
+- **스코프 권한**: 모든 경로 접근 허용 (`capabilities/default.json`)
+- **이벤트 처리**: `handleFileChange()` 함수로 파일 변경 감지
+
+### 관련 파일
+- `src/main.js`:
+  - `startWatching()`, `stopWatching()`, `handleFileChange()` 함수
+  - `fileWatchers` Map으로 감시 상태 관리
+- `src/i18n.js`: `fileReloaded` 번역 추가
+- `src-tauri/Cargo.toml`: `tauri-plugin-fs` watch 기능 활성화
+- `src-tauri/capabilities/default.json`: fs:scope 권한 추가
+
+---
+
 ## 2025-01-08 UI/UX 개선
 
 ### 주요 기능

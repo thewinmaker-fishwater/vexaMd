@@ -10,10 +10,22 @@
     "dialog:allow-save",
     "fs:default",
     "fs:allow-read",
+    "fs:allow-watch",
+    "fs:allow-unwatch",
     "fs:write-all",
     "fs:allow-download-write",
     "fs:allow-desktop-write",
     "fs:allow-document-write",
-    "fs:allow-home-write"
+    "fs:allow-home-write",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "**" },
+        { "path": "$HOME/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$DESKTOP/**" }
+      ]
+    }
   ]
 }
