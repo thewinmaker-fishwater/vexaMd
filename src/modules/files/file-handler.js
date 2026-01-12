@@ -113,10 +113,11 @@ class FileHandler {
       try {
         const { listen } = await import('@tauri-apps/api/event');
 
-        await listen('tauri://file-drop', async (event) => {
-          const files = event.payload;
-          if (files && files.length > 0) {
-            const filePath = files[0];
+        await listen('tauri://drag-drop', async (event) => {
+          console.log('Drag drop event in file-handler:', event);
+          const paths = event.payload?.paths || event.payload;
+          if (paths && paths.length > 0) {
+            const filePath = paths[0];
             if (filePath.match(/\.(md|markdown|txt)$/i)) {
               await this.loadFile(filePath);
             }

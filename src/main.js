@@ -2194,13 +2194,30 @@ async function setupTauriEvents() {
     try {
       const { listen } = await import('@tauri-apps/api/event');
 
-      // 파일 드롭 이벤트 (Tauri 네이티브)
-      await listen('tauri://file-drop', async (event) => {
-        const files = event.payload;
-        if (files && files.length > 0) {
-          const filePath = files[0];
-          if (filePath.match(/\.(md|markdown|txt)$/i)) {
-            await loadFile(filePath);
+      // 파일 드롭 이벤트 (Tauri 2.0)
+      await listen('tauri://drag-drop', async (event) => {
+        console.log('Drag drop event:', event);
+        const paths = event.payload?.paths || event.payload;
+        if (paths && paths.length > 0) {
+          for (const filePath of paths) {
+            if (filePath.match(/\.(md|markdown|txt)$/i)) {
+              await loadFile(filePath);
+            } else if (filePath.match(/\.json$/i)) {
+              // 테마 파일
+              try {
+                const text = await tauriApi.invoke('read_file', { path: filePath });
+                const data = JSON.parse(text);
+                if (data.customStyles) {
+                  customStyles = data.customStyles;
+                  localStorage.setItem('customStyles', JSON.stringify(customStyles));
+                  applyCustomStyles(customStyles);
+                  selectCustomTheme();
+                  showNotification(t('themeImported') || '테마를 불러왔습니다');
+                }
+              } catch (e) {
+                console.error('Failed to import theme:', e);
+              }
+            }
           }
         }
       });
