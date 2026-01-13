@@ -1,6 +1,6 @@
 /**
  * SP MD Viewer - Internationalization (i18n)
- * Language support: Korean (ko), English (en)
+ * Language support: Korean (ko), English (en), Japanese (ja)
  */
 
 export const i18n = {
@@ -368,6 +368,189 @@ export const i18n = {
     // CSS Editor
     cssEditorInfo: 'Edit CSS variables and styles directly.',
     cssPlaceholder: '/* Custom CSS */'
+  },
+
+  ja: {
+    // Navigation
+    home: 'ホーム',
+    homeTooltip: 'ホームへ (Esc)',
+    openFile: 'ファイルを開く (Ctrl+O)',
+    recentFiles: '最近のファイル',
+
+    // Color Themes
+    colorTheme: 'カラーテーマ',
+    themeDefault: 'デフォルト (グレー)',
+    themePurple: 'パープル',
+    themeOcean: 'オーシャン',
+    themeSunset: 'サンセット',
+    themeForest: 'フォレスト',
+    themeRose: 'ローズ',
+    themeCustom: 'カスタム',
+
+    // Font
+    fontFamily: 'フォント',
+    fontSystem: 'システムデフォルト',
+    fontMalgun: 'Malgun Gothic',
+    fontNanum: 'Nanum Gothic',
+    fontPretendard: 'Pretendard',
+    fontNoto: 'Noto Sans JP',
+
+    // Font Size
+    fontSize: 'フォントサイズ',
+    fontSmall: '小',
+    fontMedium: '中',
+    fontLarge: '大',
+    fontXlarge: '特大',
+
+    // Content Width
+    contentWidth: 'コンテンツ幅',
+    widthNarrow: '狭い (900px)',
+    widthMedium: '普通 (1200px)',
+    widthWide: '広い (1600px)',
+    widthFull: '全幅',
+
+    // Language
+    language: '言語',
+
+    // Theme Toggle
+    toggleTheme: 'ライト/ダーク切替 (Ctrl+D)',
+    themeCustomizer: 'テーマカスタマイザー',
+
+    // Actions
+    print: '印刷 (Ctrl+P)',
+    search: '検索 (Ctrl+F)',
+    viewSingle: 'シングルページ表示',
+    viewDouble: '2ページ表示',
+    viewPaging: 'ページ表示',
+    zoomOut: '縮小 (Ctrl+-)',
+    zoomIn: '拡大 (Ctrl++)',
+    zoomReset: '元のサイズ (Ctrl+0)',
+    zoomRatio: 'ズーム比率',
+
+    // Search
+    searchPlaceholder: '検索...',
+    searchPrev: '前へ (Shift+Enter)',
+    searchNext: '次へ (Enter)',
+    searchClose: '閉じる (Esc)',
+
+    // Recent Files
+    recentEmpty: '最近のファイルはありません',
+    clearList: 'リストをクリア',
+
+    // Welcome Screen
+    welcomeSubtitle: '超軽量マークダウンビューア',
+    welcomeInstruction: 'Markdownファイルを開くか、ここにドラッグしてください。',
+    dropMessage: 'ファイルをドロップ',
+
+    // Notifications
+    themeApplied: 'テーマが適用されました！',
+    themeReset: 'テーマがリセットされました',
+    themeSaved: 'テーマを保存しました！',
+    themeImported: 'カスタムテーマをインポートしました！',
+    previewApplied: 'プレビュー適用',
+    noPrintDoc: '印刷するドキュメントがありません。',
+    fileReloaded: 'ファイルが変更され、再読み込みされました。',
+
+    // Errors
+    unsupportedFormat: 'サポートされていない形式',
+    unsupportedFormatMsg: 'Markdown (.md, .markdown, .txt) またはテーマ (.json) ファイルのみサポートされています。',
+    fileReadError: 'ファイルの読み込みに失敗しました',
+    themeImportError: 'テーマのインポートに失敗しました',
+    invalidTheme: '無効なテーマファイルです。',
+
+    // Common
+    close: '閉じる',
+    confirm: 'OK',
+    cancel: 'キャンセル',
+    apply: '適用',
+    preview: 'プレビュー',
+    reset: 'リセット',
+    import: 'インポート',
+    export: 'エクスポート',
+    removeFromList: 'リストから削除',
+
+    // Presentation
+    presentation: 'プレゼンテーション (F5)',
+    prevSlide: '前のスライド (←)',
+    nextSlide: '次のスライド (→)',
+    exitPresentation: '終了 (Esc)',
+    noDocForPresentation: 'プレゼンテーション用のドキュメントがありません。',
+
+    // Help Menu
+    help: 'ヘルプ',
+    shortcuts: 'ショートカット',
+    about: 'プログラム情報',
+
+    // About Modal
+    aboutTitle: 'プログラム情報',
+    version: 'バージョン',
+    developer: '開発',
+    technology: '技術',
+    license: 'ライセンス',
+
+    // Shortcuts Modal
+    shortcutsTitle: 'ショートカット',
+    shortcutFile: 'ファイル',
+    shortcutView: '表示',
+    shortcutNav: 'ナビゲーション',
+    scOpenFile: 'ファイルを開く',
+    scCloseTab: 'タブを閉じる',
+    scPrint: '印刷',
+    scHome: 'ホームへ',
+    scToggleTheme: 'テーマ切替',
+    scZoomIn: '拡大',
+    scZoomOut: '縮小',
+    scZoomReset: '元のサイズ',
+    scSearch: '検索',
+    scPageNav: 'ページ移動',
+    scNextTab: '次のタブ',
+    scPresentation: 'プレゼンテーション',
+
+    // Theme Editor
+    themeEditorTitle: 'テーマカスタマイザー',
+    tabUIEditor: 'UIエディター',
+    tabCSSEditor: 'CSSエディター',
+
+    // Theme Editor Sections
+    sectionColors: '🎨 基本色',
+    sectionFont: '📝 フォント',
+    sectionCode: '📦 コードブロック',
+    sectionBlockquote: '💬 引用文',
+    sectionTable: '📊 テーブル',
+    sectionHeadings: '📰 見出し',
+    sectionTextMark: '✏️ テキストマーク',
+    sectionToolbar: '🔧 ツールバー',
+
+    // Theme Editor Labels
+    labelBgColor: '背景色',
+    labelTextColor: 'テキスト色',
+    labelAccentColor: 'アクセント色',
+    labelBorderColor: '枠線色',
+    labelBodyFont: '本文フォント',
+    labelBaseFontSize: '基本フォントサイズ',
+    labelLineHeight: '行の高さ',
+    labelCodeFont: 'コードフォント',
+    labelCodeFontDefault: 'デフォルト (Consolas)',
+    labelBorderWidth: '枠線の太さ',
+    labelHeaderBg: 'ヘッダー背景',
+    labelHeaderText: 'ヘッダーテキスト',
+    labelBorderRadius: '角丸',
+    labelH1Color: 'H1色',
+    labelH2Color: 'H2色',
+    labelUseGradient: 'グラデーション使用',
+    labelLinkColor: 'リンク色',
+    labelBoldColor: '太字',
+    labelItalicColor: '斜体',
+    labelHighlightBg: 'ハイライト背景',
+    labelHighlightText: 'ハイライトテキスト',
+    labelListMarker: 'リストマーカー',
+    labelToolbarBg: 'ツールバー背景',
+    labelToolbarGradient: 'ツールバーグラデーション',
+    labelTabbarBg: 'タブバー背景',
+
+    // CSS Editor
+    cssEditorInfo: 'CSS変数とスタイルを直接編集できます。',
+    cssPlaceholder: '/* カスタムCSS */'
   }
 };
 
