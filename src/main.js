@@ -124,6 +124,17 @@ const shortcutsModal = document.getElementById('shortcuts-modal');
 const shortcutsClose = document.getElementById('shortcuts-close');
 const shortcutsOk = document.getElementById('shortcuts-ok');
 
+// Image modal elements
+const imageModal = document.getElementById('image-modal');
+const imageModalImg = document.getElementById('image-modal-img');
+const imageZoomInfo = document.getElementById('image-zoom-info');
+const imageZoomIn = document.getElementById('image-zoom-in');
+const imageZoomOut = document.getElementById('image-zoom-out');
+const imageZoomReset = document.getElementById('image-zoom-reset');
+const imageModalClose = document.getElementById('image-modal-close');
+const imageModalBackdrop = imageModal?.querySelector('.image-modal-backdrop');
+const imageModalContent = imageModal?.querySelector('.image-modal-content');
+
 // ========== State ==========
 let currentTheme = localStorage.getItem('theme') || 'light';
 let currentColor = localStorage.getItem('colorTheme') || 'default';
@@ -140,6 +151,16 @@ let panStartY = 0;
 let panScrollLeft = 0;
 let panScrollTop = 0;
 let currentContentWidth = localStorage.getItem('contentWidth') || 'narrow';
+
+// Image modal state
+let imageModalZoom = 1;
+const imageModalMinZoom = 0.5;
+const imageModalMaxZoom = 3;
+let isImageDragging = false;
+let imageStartX = 0;
+let imageStartY = 0;
+let imageTranslateX = 0;
+let imageTranslateY = 0;
 
 // Zoom levels
 const ZOOM_LEVELS = [50, 75, 90, 100, 110, 125, 150, 175, 200];
@@ -477,6 +498,12 @@ function updateUITexts() {
   themeCancel.textContent = lang.cancel;
   themePreview.textContent = lang.preview;
   themeApply.textContent = lang.apply;
+
+  // Image modal buttons
+  if (imageZoomIn) imageZoomIn.title = lang.zoomIn?.replace(' (Ctrl++)', '') || '확대';
+  if (imageZoomOut) imageZoomOut.title = lang.zoomOut?.replace(' (Ctrl+-)', '') || '축소';
+  if (imageZoomReset) imageZoomReset.title = lang.zoomReset?.replace(' (Ctrl+0)', '') || '원래 크기';
+  if (imageModalClose) imageModalClose.title = lang.close || '닫기';
 
   // If on home, refresh welcome screen
   if (activeTabId === HOME_TAB_ID) {
@@ -1474,6 +1501,103 @@ function closeShortcutsModal() {
   shortcutsModal.classList.add('hidden');
 }
 
+// ========== Image Modal ==========
+function openImageModal(src, alt = '') {
+  if (!imageModal || !imageModalImg) return;
+
+  imageModalImg.src = src;
+  imageModalImg.alt = alt;
+  resetImageModalZoom();
+  imageModal.classList.remove('hidden');
+}
+
+function closeImageModal() {
+  if (!imageModal) return;
+
+  imageModal.classList.add('hidden');
+  if (imageModalImg) {
+    imageModalImg.src = '';
+  }
+}
+
+function imageModalZoomIn(amount = 0.25) {
+  imageModalZoom = Math.min(imageModalMaxZoom, imageModalZoom + amount);
+  applyImageModalZoom();
+}
+
+function imageModalZoomOut(amount = 0.25) {
+  imageModalZoom = Math.max(imageModalMinZoom, imageModalZoom - amount);
+  applyImageModalZoom();
+}
+
+function resetImageModalZoom() {
+  imageModalZoom = 1;
+  imageTranslateX = 0;
+  imageTranslateY = 0;
+  applyImageModalZoom();
+}
+
+function applyImageModalZoom() {
+  if (!imageModalImg || !imageZoomInfo) return;
+
+  imageModalImg.style.transform = `translate(${imageTranslateX}px, ${imageTranslateY}px) scale(${imageModalZoom})`;
+  imageZoomInfo.textContent = `${Math.round(imageModalZoom * 100)}%`;
+
+  // Update cursor based on zoom level
+  if (imageModalContent) {
+    if (imageModalZoom > 1) {
+      imageModalContent.style.cursor = isImageDragging ? 'grabbing' : 'grab';
+    } else {
+      imageModalContent.style.cursor = 'default';
+    }
+  }
+}
+
+function onImageDragStart(e) {
+  if (imageModalZoom <= 1) return;
+
+  isImageDragging = true;
+  imageStartX = e.clientX - imageTranslateX;
+  imageStartY = e.clientY - imageTranslateY;
+
+  if (imageModalContent) {
+    imageModalContent.style.cursor = 'grabbing';
+  }
+}
+
+function onImageDrag(e) {
+  if (!isImageDragging) return;
+
+  imageTranslateX = e.clientX - imageStartX;
+  imageTranslateY = e.clientY - imageStartY;
+  applyImageModalZoom();
+}
+
+function onImageDragEnd() {
+  isImageDragging = false;
+  if (imageModalContent && imageModalZoom > 1) {
+    imageModalContent.style.cursor = 'grab';
+  }
+}
+
+function attachImageClickListeners() {
+  // Find all images in markdown content
+  const images = content.querySelectorAll('img');
+  images.forEach(img => {
+    // Skip if already has listener
+    if (img.dataset.modalEnabled) return;
+
+    img.dataset.modalEnabled = 'true';
+    img.style.cursor = 'zoom-in';
+
+    img.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openImageModal(img.src, img.alt);
+    });
+  });
+}
+
 // ========== Tabs Management ==========
 function generateTabId() {
   return 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
@@ -1917,6 +2041,9 @@ function renderPages() {
     const allContent = pages.join('<hr class="page-break">');
     content.innerHTML = `<div class="markdown-content-wrapper">${allContent}</div>`;
   }
+
+  // Attach click listeners to images for modal
+  attachImageClickListeners();
 }
 
 function goToPage(pageNum) {
@@ -2122,7 +2249,9 @@ function setupKeyboard() {
       e.preventDefault();
       hideRecentDropdown();
       hideHelpDropdown();
-      if (!aboutModal.classList.contains('hidden')) {
+      if (imageModal && !imageModal.classList.contains('hidden')) {
+        closeImageModal();
+      } else if (!aboutModal.classList.contains('hidden')) {
         closeAboutModal();
       } else if (!shortcutsModal.classList.contains('hidden')) {
         closeShortcutsModal();
@@ -2405,6 +2534,31 @@ async function init() {
   shortcutsClose.addEventListener('click', closeShortcutsModal);
   shortcutsOk.addEventListener('click', closeShortcutsModal);
   shortcutsModal.querySelector('.modal-backdrop').addEventListener('click', closeShortcutsModal);
+
+  // Image modal event listeners
+  if (imageModal) {
+    imageModalClose?.addEventListener('click', closeImageModal);
+    imageModalBackdrop?.addEventListener('click', closeImageModal);
+    imageZoomIn?.addEventListener('click', () => imageModalZoomIn());
+    imageZoomOut?.addEventListener('click', () => imageModalZoomOut());
+    imageZoomReset?.addEventListener('click', resetImageModalZoom);
+
+    // Mouse wheel zoom on image modal
+    imageModalContent?.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        imageModalZoomIn(0.1);
+      } else {
+        imageModalZoomOut(0.1);
+      }
+    }, { passive: false });
+
+    // Drag to pan image
+    imageModalContent?.addEventListener('mousedown', onImageDragStart);
+    imageModalContent?.addEventListener('mousemove', onImageDrag);
+    imageModalContent?.addEventListener('mouseup', onImageDragEnd);
+    imageModalContent?.addEventListener('mouseleave', onImageDragEnd);
+  }
 
 }
 

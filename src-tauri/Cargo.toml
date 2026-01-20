@@ -1,6 +1,6 @@
 [package]
 name = "vexa-md"
-version = "1.1.0"
+version = "1.5.0"
 description = "Ultra-lightweight Markdown Viewer - Vexa MD"
 authors = ["Vexa MD"]
 edition = "2021"
@@ -14,7 +14,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 # devtools: 개발 시 F12 개발자도구 사용하려면 "devtools" 추가
-tauri = { version = "2", features = ["tray-icon"] }
+tauri = { version = "2", features = ["tray-icon", "devtools"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = { version = "2", features = ["watch"] }
 serde = { version = "1", features = ["derive"] }
