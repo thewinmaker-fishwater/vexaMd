@@ -600,9 +600,56 @@ SP MD Viewer_1.0.0_x64-setup.exe 실행
 
 ---
 
-## 9. 문제 해결
+## 9. 빌드 vs 설치 테스트
 
-### 9.1 Rust 관련 오류
+### 9.0 테스트 환경 차이점
+
+Tauri 앱을 테스트할 때 **빌드 후 직접 실행**과 **설치 후 실행**은 다른 결과를 낼 수 있습니다.
+
+#### 차이점 비교
+
+| 항목 | 빌드 후 직접 실행 | NSIS 설치 후 실행 |
+|------|------------------|-------------------|
+| 실행 경로 | `target/release/vexa-md.exe` | `C:/Users/.../AppData/.../vexa-md.exe` |
+| 파일 연결 | 이전 설치 버전 유지 | 새 버전으로 업데이트 |
+| 레지스트리 | 변경 없음 | 앱 정보 등록/업데이트 |
+| 싱글 인스턴스 | 경로 불일치로 오작동 가능 | 정상 동작 |
+| 시작 메뉴 | 변경 없음 | 바로가기 생성/업데이트 |
+
+#### 반드시 설치 후 테스트해야 하는 기능
+
+1. **싱글 인스턴스**: 파일 더블클릭 시 기존 앱에서 열기
+2. **파일 연결**: `.md` 파일과 앱 연결
+3. **시스템 통합**: 시작 메뉴, 프로그램 추가/제거
+
+#### 테스트 워크플로우
+
+```bash
+# 1. 빌드
+npm run tauri build
+
+# 2. 설치 (반드시!)
+# src-tauri/target/release/bundle/nsis/ 폴더의 설치 파일 실행
+
+# 3. 테스트
+# - 앱 실행
+# - MD 파일 더블클릭 (싱글 인스턴스 테스트)
+# - 파일 연결 테스트
+```
+
+#### 개발 모드 vs 릴리스 빌드
+
+| 테스트 유형 | 권장 환경 | 명령어 |
+|-------------|-----------|--------|
+| UI/기능 개발 | 개발 모드 | `npm run tauri dev` |
+| 성능 테스트 | 릴리스 빌드 | `npm run tauri build` |
+| 시스템 통합 | **설치 후** | NSIS 인스톨러 실행 |
+
+---
+
+## 10. 문제 해결
+
+### 10.1 Rust 관련 오류
 
 ```bash
 # "cargo not found" 오류
@@ -611,7 +658,7 @@ $env:Path = "$env:USERPROFILE\.cargo\bin;" + $env:Path
 # 또는 새 터미널 열기
 ```
 
-### 9.2 포트 충돌
+### 10.2 포트 충돌
 
 ```bash
 # "Port 5173 is already in use" 오류
@@ -619,14 +666,14 @@ $env:Path = "$env:USERPROFILE\.cargo\bin;" + $env:Path
 taskkill /F /IM "node.exe"
 ```
 
-### 9.3 WebView2 오류
+### 10.3 WebView2 오류
 
 ```bash
 # WebView2 런타임 설치
 winget install Microsoft.EdgeWebView2Runtime
 ```
 
-### 9.4 빌드 오류
+### 10.4 빌드 오류
 
 ```bash
 # 캐시 삭제 후 재빌드
@@ -636,9 +683,9 @@ npm run tauri build
 
 ---
 
-## 10. 성능 최적화
+## 11. 성능 최적화
 
-### 10.1 초기 로딩 최적화
+### 11.1 초기 로딩 최적화
 
 **Tauri API 병렬 로드:**
 ```javascript
@@ -671,7 +718,7 @@ async function init() {
 }
 ```
 
-### 10.2 성능 측정
+### 11.2 성능 측정
 
 `main.js`에 성능 측정 코드가 주석으로 포함되어 있습니다:
 ```javascript
@@ -682,7 +729,7 @@ async function init() {
 // console.log(`[PERF] UI 초기화: ${(performance.now() - initStart).toFixed(1)}ms`);
 ```
 
-### 10.3 개발자 도구 (F12)
+### 11.3 개발자 도구 (F12)
 
 프로덕션 빌드에서 F12 개발자 도구를 사용하려면:
 
@@ -692,7 +739,7 @@ async function init() {
 tauri = { version = "2", features = ["tray-icon", "devtools"] }
 ```
 
-### 10.4 성능 목표
+### 11.4 성능 목표
 
 | 항목 | 목표 | 현재 |
 |------|------|------|
@@ -702,7 +749,7 @@ tauri = { version = "2", features = ["tray-icon", "devtools"] }
 
 ---
 
-## 11. 배포 체크리스트
+## 12. 배포 체크리스트
 
 - [ ] 버전 번호 업데이트 (package.json, Cargo.toml, tauri.conf.json)
 - [ ] 아이콘 확인

@@ -6,6 +6,7 @@
 
 import { marked } from 'marked';
 import { i18n } from './i18n.js';
+import { generateToc, clearToc, toggleToc, updateTocTexts, getTocVisible, setTocVisible, hideToc } from './modules/toc/toc.js';
 
 // Tauri API (조건부 로드)
 let tauriApi = null;
@@ -429,7 +430,7 @@ function updateUITexts() {
   const shortcutTexts = [
     lang.scOpenFile, lang.scCloseTab, lang.scPrint, lang.scHome,
     lang.scToggleTheme, lang.scZoomIn, lang.scZoomOut, lang.scZoomReset,
-    lang.scSearch, lang.scPageNav, lang.scNextTab, lang.scPresentation
+    lang.scSearch, lang.scToc, lang.scPageNav, lang.scNextTab, lang.scPresentation
   ];
   shortcutItems.forEach((item, idx) => {
     if (shortcutTexts[idx]) item.textContent = shortcutTexts[idx];
@@ -515,6 +516,9 @@ function updateUITexts() {
   if (activeTabId !== HOME_TAB_ID && pages.length > 0) {
     renderPages();
   }
+
+  // Update TOC texts
+  updateTocTexts();
 }
 
 // ========== View Mode ==========
@@ -1609,7 +1613,8 @@ function createTab(name, filePath, content) {
     id: tabId,
     name: name,
     filePath: filePath,
-    content: content
+    content: content,
+    tocVisible: false  // 새 탭은 TOC 숨김 상태로 시작
   };
   tabs.push(tab);
   renderTabs();
@@ -1630,12 +1635,22 @@ function switchToTab(tabId) {
     hideSearchBar();
   }
 
+  // 현재 탭의 TOC 상태 저장 (홈이 아닌 경우)
+  if (activeTabId !== HOME_TAB_ID) {
+    const currentTab = tabs.find(t => t.id === activeTabId);
+    if (currentTab) {
+      currentTab.tocVisible = getTocVisible();
+    }
+  }
+
   if (tabId === HOME_TAB_ID) {
     activeTabId = HOME_TAB_ID;
     content.innerHTML = getWelcomeHTML();
     content.classList.remove('view-double'); // 홈은 항상 한 페이지
     renderHomeRecentFiles();
     renderTabs();
+    // 홈 탭은 항상 TOC 숨김
+    clearToc();
     return;
   }
 
@@ -1649,6 +1664,9 @@ function switchToTab(tabId) {
     content.classList.add('view-double');
   }
   renderTabs();
+
+  // 해당 탭의 TOC 상태 복원
+  setTocVisible(tab.tocVisible || false);
 }
 
 function closeTab(tabId, event) {
@@ -1865,6 +1883,7 @@ function hideRecentDropdown() {
 // ========== Home ==========
 function showHome() {
   switchToTab(HOME_TAB_ID);
+  clearToc();
 }
 
 // ========== GitHub-style Alerts (Callout Boxes) ==========
@@ -1915,7 +1934,7 @@ function processAlerts(text) {
     const label = alertType.label[currentLanguage] || alertType.label.en;
 
     // Return a placeholder that will be converted to HTML after marked parsing
-    return `<div class="alert-box ${alertType.class}">
+    return `\n<div class="alert-box ${alertType.class}">
 <div class="alert-header">
 <span class="alert-icon">${alertType.icon}</span>
 <span class="alert-title">${label}</span>
@@ -1925,9 +1944,7 @@ function processAlerts(text) {
 ${contentText}
 
 </div>
-</div>
-
-`;
+</div>\n`;
   });
 }
 
@@ -2044,6 +2061,9 @@ function renderPages() {
 
   // Attach click listeners to images for modal
   attachImageClickListeners();
+
+  // Generate TOC from headings
+  generateToc();
 }
 
 function goToPage(pageNum) {
@@ -2236,6 +2256,11 @@ function setupKeyboard() {
     if (e.ctrlKey && e.key === 'f') {
       e.preventDefault();
       toggleSearchBar();
+    }
+    // Ctrl+Shift+T: Toggle TOC sidebar
+    if (e.ctrlKey && e.shiftKey && e.key === 'T') {
+      e.preventDefault();
+      toggleToc();
     }
     // Ctrl+W: Close current tab
     if (e.ctrlKey && e.key === 'w') {

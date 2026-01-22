@@ -1,5 +1,88 @@
 # SP MD Viewer - 개발 이력
 
+## 2026-01-22 TOC 사이드바 기능 추가
+
+### 새 기능
+- **TOC (Table of Contents) 사이드바**: 마크다운 헤딩(h1~h6) 기반 목차 자동 생성
+  - 툴바 버튼 또는 `Ctrl+Shift+T` 단축키로 토글
+  - 클릭 시 해당 섹션으로 부드럽게 스크롤
+  - 스크롤 스파이: 현재 보고 있는 섹션 하이라이트
+  - 레벨별 들여쓰기로 계층 구조 표현
+  - 탭별 TOC 상태 독립 관리
+  - 다국어 지원 (한/영/일)
+
+### 버그 수정
+- **콜아웃 간격 문제**: 연속된 콜아웃(Alert Box) 사이 간격 추가 (`margin-top: 24px`)
+- **favicon 404 에러**: `public/favicon.ico` 추가 및 index.html에 링크 명시
+
+### 관련 파일
+- `src/modules/toc/toc.js`: TOC 모듈 (신규)
+- `src/style.css`: TOC 사이드바 스타일, 콜아웃 간격 수정
+- `src/main.js`: TOC 통합, 탭별 상태 관리
+- `src/i18n.js`: TOC 다국어 텍스트
+- `index.html`: TOC UI 요소, favicon 링크
+- `public/favicon.ico`: 파비콘 파일 (신규)
+
+---
+
+## 2026-01-22 싱글 인스턴스 버그 수정
+
+### 문제 현상
+- MD 파일 더블클릭 시 기존 앱에서 파일이 열리지 않고 "아무 반응 없음"
+
+### 원인 분석
+
+#### 빌드 후 직접 실행 vs 설치 후 실행의 차이
+
+| 구분 | 빌드 후 직접 실행 | NSIS 설치 후 실행 |
+|------|------------------|-------------------|
+| 파일 연결 | 이전 설치 버전 가리킴 | 새 버전으로 업데이트됨 |
+| 실행 경로 | `target/release/vexa-md.exe` | `C:/Users/.../AppData/.../vexa-md.exe` |
+| 싱글 인스턴스 | 다른 경로의 앱과 충돌 가능 | 정상 동작 |
+
+#### 핵심 원인: 창 Label 문제
+```rust
+// 이전 코드 (문제)
+app.get_webview_window("main")  // "main" label 창을 찾음 → None 반환
+
+// 수정 코드 (해결)
+app.webview_windows().iter().next()  // 사용 가능한 첫 번째 창 사용
+```
+
+**Tauri 2.0에서 `tauri.conf.json`에 `label` 필드가 명시되지 않으면 기본 창 label이 "main"이 아닐 수 있음.**
+`get_webview_window("main")`이 `None`을 반환하면:
+- 창 포커스 실패
+- 이벤트는 emit되지만 창이 활성화되지 않음
+- 사용자 입장에서 "아무 반응 없음"
+
+### 수정 내용
+
+#### lib.rs 변경
+```rust
+// 모든 webview 창 가져오기
+let windows = app.webview_windows();
+
+// 첫 번째 창 사용 (label에 의존하지 않음)
+if let Some((label, window)) = windows.iter().next() {
+    if window.is_minimized().unwrap_or(false) {
+        let _ = window.unminimize();
+    }
+    let _ = window.show();
+    let _ = window.set_focus();
+}
+```
+
+### 교훈
+
+1. **테스트는 반드시 설치 후 진행**: 빌드 후 exe 직접 실행은 파일 연결, 레지스트리 등이 반영되지 않음
+2. **하드코딩 피하기**: `"main"` 같은 고정 값 대신 동적으로 창을 찾는 방식 사용
+3. **Tauri 2.0 마이그레이션 주의**: API 변경으로 인한 기본값 차이 확인 필요
+
+### 관련 파일
+- `src-tauri/src/lib.rs`: 싱글 인스턴스 콜백 수정
+
+---
+
 ## 2026-01-13 일본어 지원 추가
 
 ### 주요 기능

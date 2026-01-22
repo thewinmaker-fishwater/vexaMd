@@ -108,6 +108,11 @@ export const i18n = {
     prevSlide: '이전 슬라이드 (←)',
     nextSlide: '다음 슬라이드 (→)',
     exitPresentation: '종료 (Esc)',
+
+    // TOC (Table of Contents)
+    toc: '목차 (Ctrl+Shift+T)',
+    tocTitle: '목차',
+    tocEmpty: '목차가 없습니다',
     noDocForPresentation: '프레젠테이션할 문서가 없습니다.',
 
     // Help Menu
@@ -136,6 +141,7 @@ export const i18n = {
     scZoomOut: '축소',
     scZoomReset: '원래 크기',
     scSearch: '검색',
+    scToc: '목차',
     scPageNav: '페이지 이동',
     scNextTab: '다음 탭',
     scPresentation: '프레젠테이션',
@@ -291,6 +297,11 @@ export const i18n = {
     prevSlide: 'Previous Slide (←)',
     nextSlide: 'Next Slide (→)',
     exitPresentation: 'Exit (Esc)',
+
+    // TOC (Table of Contents)
+    toc: 'Table of Contents (Ctrl+Shift+T)',
+    tocTitle: 'Contents',
+    tocEmpty: 'No headings found',
     noDocForPresentation: 'No document for presentation.',
 
     // Help Menu
@@ -319,6 +330,7 @@ export const i18n = {
     scZoomOut: 'Zoom Out',
     scZoomReset: 'Reset Zoom',
     scSearch: 'Search',
+    scToc: 'Table of Contents',
     scPageNav: 'Page Navigation',
     scNextTab: 'Next Tab',
     scPresentation: 'Presentation',
@@ -474,6 +486,11 @@ export const i18n = {
     prevSlide: '前のスライド (←)',
     nextSlide: '次のスライド (→)',
     exitPresentation: '終了 (Esc)',
+
+    // TOC (Table of Contents)
+    toc: '目次 (Ctrl+Shift+T)',
+    tocTitle: '目次',
+    tocEmpty: '見出しがありません',
     noDocForPresentation: 'プレゼンテーション用のドキュメントがありません。',
 
     // Help Menu
@@ -502,6 +519,7 @@ export const i18n = {
     scZoomOut: '縮小',
     scZoomReset: '元のサイズ',
     scSearch: '検索',
+    scToc: '目次',
     scPageNav: 'ページ移動',
     scNextTab: '次のタブ',
     scPresentation: 'プレゼンテーション',

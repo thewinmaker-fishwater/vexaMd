@@ -17,11 +17,12 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon", "devtools"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = { version = "2", features = ["watch"] }
+tauri-plugin-single-instance = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 [target.'cfg(windows)'.dependencies]
-windows = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
+windows = { version = "0.61", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_Graphics_Gdi"] }
 
 [profile.release]
 panic = "abort"

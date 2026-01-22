@@ -169,17 +169,12 @@ $$('.tabs')      // querySelectorAll → Array
 ### 개요
 MD 파일을 더블클릭할 때 새 앱이 열리지 않고, 기존 앱의 새 탭으로 열리도록 구현.
 
-### 기술적 접근
+### 기술 스택
+- **tauri-plugin-single-instance**: Tauri 공식 싱글 인스턴스 플러그인
+- **Mutex 기반**: 앱 identifier로 시스템 mutex 생성
+- **IPC**: Tauri 이벤트 시스템으로 파일 경로 전달
 
-#### 시도했던 방법들 (실패)
-1. **tauri-plugin-single-instance**: Windows에서 작동 안 함
-2. **TCP 소켓 IPC**: 포트 바인딩 실패
-3. **Windows Named Mutex (CreateMutexA)**: API 호환성 문제
-4. **fslock crate**: 파일 락 실패
-5. **sysinfo crate**: 앱 크래시 발생
-
-#### 최종 구현 (성공)
-**Windows tasklist 명령어 + 임시 파일 IPC**
+### 아키텍처
 
 ```
 ┌─────────────────┐     ┌─────────────────┐
@@ -188,25 +183,26 @@ MD 파일을 더블클릭할 때 새 앱이 열리지 않고, 기존 앱의 새 
 └────────┬────────┘     └────────┬────────┘
          │                       │
          │              ┌────────▼────────┐
-         │              │ is_already_     │
-         │              │ running()       │
-         │              │ (tasklist)      │
+         │              │ single-instance │
+         │              │ plugin init     │
+         │              │ (mutex check)   │
          │              └────────┬────────┘
-         │                       │ true
+         │                       │ mutex exists
          │              ┌────────▼────────┐
-         │              │ Save file path  │
-         │              │ to temp file    │
+         │              │ Send args to    │
+         │              │ 1st instance    │
+         │              │ via IPC         │
          │              └────────┬────────┘
          │                       │
          │              ┌────────▼────────┐
-         │              │ Activate window │
-         │              │ & Exit          │
+         │              │ Exit 2nd        │
+         │              │ instance        │
          │              └─────────────────┘
          │
 ┌────────▼────────┐
-│ Background      │
-│ thread (500ms)  │
-│ polls temp file │
+│ single-instance │
+│ callback        │
+│ triggered       │
 └────────┬────────┘
          │
 ┌────────▼────────┐
@@ -216,59 +212,91 @@ MD 파일을 더블클릭할 때 새 앱이 열리지 않고, 기존 앱의 새 
 └────────┬────────┘
          │
 ┌────────▼────────┐
+│ Focus window    │
+│ (unminimize,    │
+│  show, focus)   │
+└────────┬────────┘
+         │
+┌────────▼────────┐
 │ Frontend:       │
-│ loadFile()      │
-│ → New Tab       │
+│ listen() →      │
+│ loadFile() →    │
+│ New Tab         │
 └─────────────────┘
 ```
 
 ### 핵심 코드
 
-#### 1. 프로세스 중복 체크 (lib.rs)
+#### 1. Rust 백엔드 (lib.rs)
 ```rust
-fn is_already_running() -> bool {
-    use std::os::windows::process::CommandExt;
-    const CREATE_NO_WINDOW: u32 = 0x08000000;
+use tauri::{Emitter, Manager};
 
-    let output = Command::new("tasklist")
-        .args(["/FI", "IMAGENAME eq vexa-md.exe", "/FO", "CSV", "/NH"])
-        .creation_flags(CREATE_NO_WINDOW)  // 콘솔 창 숨김
-        .output();
+pub fn run() {
+    tauri::Builder::default()
+        // single-instance 플러그인 - 가장 먼저 등록
+        .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
+            // 마크다운 파일 경로 필터링
+            let file_paths = filter_md_files(&argv);
 
-    // 현재 PID가 아닌 다른 vexa-md.exe가 있으면 true
+            if !file_paths.is_empty() {
+                // 프론트엔드에 이벤트 전송
+                let _ = app.emit("open-files-from-instance", file_paths);
+            }
+
+            // 창 활성화 - 동적으로 첫 번째 창 찾기
+            let windows = app.webview_windows();
+            if let Some((_, window)) = windows.iter().next() {
+                if window.is_minimized().unwrap_or(false) {
+                    let _ = window.unminimize();
+                }
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
+        // ... 나머지 설정
 }
 ```
 
-#### 2. 임시 파일 IPC (lib.rs)
-```rust
-// 저장: %TEMP%/vexa_md_open_files.txt
-fn save_file_paths_to_temp(paths: &[String])
-
-// 읽기 (500ms 폴링)
-fn read_file_paths_from_temp() -> Vec<String>
-```
-
-#### 3. 이벤트 emit (lib.rs)
-```rust
-app.emit("open-files-from-instance", paths);
-window.set_focus();
-window.unminimize();
-```
-
-#### 4. 프론트엔드 수신 (main.js)
+#### 2. 프론트엔드 (main.js)
 ```javascript
+// Tauri 이벤트 리스너
+const { listen } = await import('@tauri-apps/api/event');
+
 await listen('open-files-from-instance', async (event) => {
-    for (const filePath of event.payload) {
+    const filePaths = event.payload;
+    for (const filePath of filePaths) {
         await loadFile(filePath);  // 새 탭으로 열기
     }
 });
 ```
 
-### 주요 특징
-- **콘솔 창 없음**: `CREATE_NO_WINDOW` 플래그 사용
-- **크로스 플랫폼 준비**: `#[cfg(windows)]` 조건부 컴파일
-- **안정성**: tasklist는 Windows 기본 명령어로 항상 사용 가능
-- **응답성**: 500ms 폴링으로 빠른 파일 전달
+### 주의사항
+
+#### 창 찾기 방식
+```rust
+// ❌ 잘못된 방식 - label이 "main"이 아닐 수 있음
+app.get_webview_window("main")
+
+// ✅ 올바른 방식 - 동적으로 첫 번째 창 찾기
+app.webview_windows().iter().next()
+```
+
+Tauri 2.0에서 `tauri.conf.json`에 `label` 필드가 없으면 기본 창 label이 "main"이 아닐 수 있음.
+
+#### 빌드 vs 설치 테스트
+| 테스트 방법 | 파일 연결 | 권장 |
+|-------------|-----------|------|
+| `target/release/vexa-md.exe` 직접 실행 | 이전 버전 유지 | ❌ |
+| NSIS 인스톨러로 설치 후 테스트 | 새 버전 등록 | ✅ |
+
+**항상 NSIS 인스톨러로 설치 후 테스트해야 정확한 동작 확인 가능.**
+
+### 의존성
+```toml
+# Cargo.toml
+[dependencies]
+tauri-plugin-single-instance = "2"
+```
 
 ---
 
