@@ -104,6 +104,12 @@ const themeCancel = document.getElementById('theme-cancel');
 const themeApply = document.getElementById('theme-apply');
 const btnCustomize = document.getElementById('btn-customize');
 
+// Saved themes elements
+const themeNameInput = document.getElementById('theme-name-input');
+const saveCurrentThemeBtn = document.getElementById('save-current-theme');
+const savedThemesList = document.getElementById('saved-themes-list');
+const savedThemesEmpty = document.getElementById('saved-themes-empty');
+
 // Presentation elements
 const btnPresentation = document.getElementById('btn-presentation');
 const presentationOverlay = document.getElementById('presentation-overlay');
@@ -183,6 +189,7 @@ let presentationPage = 0;
 // Custom theme state
 let customStyles = JSON.parse(localStorage.getItem('customStyles') || 'null');
 let customStyleElement = null;
+let customThemes = JSON.parse(localStorage.getItem('customThemes') || '[]');
 
 // Custom theme option element
 const customThemeOption = document.getElementById('custom-theme-option');
@@ -235,7 +242,16 @@ function applyTheme(theme) {
 }
 
 function applyColorTheme(color) {
-  // 커스텀이 아닌 모든 테마는 커스텀 스타일 비활성화
+  // 저장된 테마인 경우 (theme- 접두사)
+  if (color.startsWith('theme-')) {
+    if (applySavedTheme(color)) {
+      return;
+    }
+    // 저장된 테마를 찾지 못하면 기본으로 폴백
+    color = 'default';
+  }
+
+  // 커스텀이나 저장된 테마가 아닌 경우 커스텀 스타일 비활성화
   if (color !== 'custom') {
     if (customStyleElement) {
       customStyleElement.remove();
@@ -358,15 +374,15 @@ function updateUITexts() {
   document.querySelector('.drop-message').textContent = lang.dropMessage;
 
   // Color theme select
-  const colorThemeSelect = document.getElementById('color-theme');
-  colorThemeSelect.title = lang.colorTheme;
-  colorThemeSelect.querySelector('[value="default"]').textContent = lang.themeDefault;
-  colorThemeSelect.querySelector('[value="purple"]').textContent = lang.themePurple;
-  colorThemeSelect.querySelector('[value="ocean"]').textContent = lang.themeOcean;
-  colorThemeSelect.querySelector('[value="sunset"]').textContent = lang.themeSunset;
-  colorThemeSelect.querySelector('[value="forest"]').textContent = lang.themeForest;
-  colorThemeSelect.querySelector('[value="rose"]').textContent = lang.themeRose;
-  colorThemeSelect.querySelector('[value="custom"]').textContent = lang.themeCustom;
+  const colorTheme = document.getElementById('color-theme');
+  colorTheme.title = lang.colorTheme;
+  colorTheme.querySelector('[value="default"]').textContent = lang.themeDefault;
+  colorTheme.querySelector('[value="purple"]').textContent = lang.themePurple;
+  colorTheme.querySelector('[value="ocean"]').textContent = lang.themeOcean;
+  colorTheme.querySelector('[value="sunset"]').textContent = lang.themeSunset;
+  colorTheme.querySelector('[value="forest"]').textContent = lang.themeForest;
+  colorTheme.querySelector('[value="rose"]').textContent = lang.themeRose;
+  colorTheme.querySelector('[value="custom"]').textContent = lang.themeCustom;
 
   // Font family select
   const fontFamilySelect = document.getElementById('font-family');
@@ -943,6 +959,7 @@ function openThemeEditor() {
 
   themeEditorModal.classList.remove('hidden');
   loadCurrentStylesToEditor();
+  refreshSavedThemesList();
 }
 
 function closeThemeEditor() {
@@ -974,13 +991,27 @@ function cancelThemeEditor() {
   closeThemeEditor();
 }
 
+let currentEditorTab = 'ui';
+
 function switchEditorTab(tabName) {
+  currentEditorTab = tabName;
   editorTabs.forEach(tab => {
     tab.classList.toggle('active', tab.dataset.tab === tabName);
   });
   tabPanels.forEach(panel => {
     panel.classList.toggle('active', panel.id === `tab-${tabName}`);
   });
+
+  // 저장된 테마 탭에서는 미리보기/적용 버튼 숨기기
+  const previewBtn = document.getElementById('theme-preview');
+  const applyBtn = document.getElementById('theme-apply');
+  if (tabName === 'saved') {
+    previewBtn.style.display = 'none';
+    applyBtn.style.display = 'none';
+  } else {
+    previewBtn.style.display = '';
+    applyBtn.style.display = '';
+  }
 }
 
 function getDefaultStyles() {
@@ -1015,6 +1046,150 @@ function getDefaultStyles() {
     tabbarBg: '#ffffff',
     customCss: ''
   };
+}
+
+function getDefaultCssTemplate() {
+  return `/* ========================================
+   Vexa MD - Custom Theme CSS Template
+   UI 에디터와 동일한 수준의 커스터마이징 가능
+
+   중요: !important를 사용해야 스타일이 적용됩니다!
+   ======================================== */
+
+/* ========== 1. 기본 색상 변수 (Basic Colors) ==========
+   이 변수들을 수정하면 전체 UI에 적용됩니다.
+*/
+:root {
+  --bg: #ffffff !important;                /* 배경색 */
+  --text: #1f2328 !important;              /* 기본 텍스트 */
+  --accent: #656d76 !important;            /* 강조색 (링크, 버튼 등) */
+  --border: #d0d7de !important;            /* 테두리 색상 */
+  --code-bg: #f6f8fa !important;           /* 코드 블록 배경 */
+  --code-text: #1f2328 !important;         /* 코드 텍스트 */
+  --blockquote-bg: #f6f8fa !important;     /* 인용문 배경 */
+  --blockquote-border: #d0d7de !important; /* 인용문 테두리 */
+  --table-header-bg: #f6f8fa !important;   /* 테이블 헤더 배경 */
+  --table-header-text: #1f2328 !important; /* 테이블 헤더 텍스트 */
+}
+
+/* ========== 2. 글꼴 설정 (Typography) ========== */
+body {
+  /* 본문 글꼴: system-ui, 'Noto Sans KR', 'Malgun Gothic' 등 */
+  font-family: system-ui, -apple-system, sans-serif !important;
+}
+
+.markdown-body {
+  /* 줄 간격: 1.2 ~ 2.2 권장 */
+  line-height: 1.7 !important;
+}
+
+/* 코드 글꼴 */
+.markdown-body code,
+.markdown-body pre code {
+  /* 'Fira Code', 'JetBrains Mono', 'D2Coding', Consolas 등 */
+  font-family: 'SFMono-Regular', Consolas, monospace !important;
+}
+
+/* ========== 3. 제목 스타일 (Headings) ========== */
+/* H1 - 그라데이션 적용 */
+.markdown-body h1 {
+  background: linear-gradient(135deg, #24292f, #656d76) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+/* H1 - 단색 사용시 (위 그라데이션 주석처리 후 사용) */
+/*
+.markdown-body h1 {
+  color: #24292f !important;
+  -webkit-text-fill-color: #24292f !important;
+}
+*/
+
+/* H2, H3 색상 */
+.markdown-body h2,
+.markdown-body h3 {
+  color: #656d76 !important;
+}
+
+/* ========== 4. 코드 블록 (Code Blocks) ========== */
+.markdown-body pre {
+  background: var(--code-bg) !important;
+  /* border-radius: 8px !important; */
+  /* border: 1px solid var(--border) !important; */
+}
+
+/* ========== 5. 인용문 (Blockquote) ========== */
+.markdown-body blockquote {
+  background: var(--blockquote-bg) !important;
+  border-left-color: var(--blockquote-border) !important;
+  /* 테두리 두께: 2px ~ 8px */
+  border-left-width: 4px !important;
+  /* border-radius: 0 8px 8px 0 !important; */
+}
+
+/* ========== 6. 테이블 (Table) ========== */
+.markdown-body table {
+  /* 테두리 반경: 0 ~ 16px */
+  border-radius: 8px !important;
+}
+
+.markdown-body table th {
+  background: var(--table-header-bg) !important;
+  color: var(--table-header-text) !important;
+}
+
+/* ========== 7. 텍스트 스타일 (Text Marks) ========== */
+/* 링크 */
+.markdown-body a {
+  color: #656d76 !important;
+}
+.markdown-body a:hover {
+  border-bottom-color: #656d76 !important;
+}
+
+/* 굵은 글씨 */
+.markdown-body strong {
+  color: #656d76 !important;
+}
+
+/* 기울임 */
+.markdown-body em {
+  color: #57606a !important;
+}
+
+/* 하이라이트 (mark) */
+.markdown-body mark {
+  background: #fff8c5 !important;
+  color: #656d76 !important;
+}
+
+/* 목록 마커 */
+.markdown-body li::marker {
+  color: #656d76 !important;
+}
+
+/* 구분선 */
+.markdown-body hr {
+  background: linear-gradient(90deg, transparent, #656d76, transparent) !important;
+}
+
+/* ========== 8. 툴바 & 탭바 (Toolbar & Tab bar) ========== */
+#toolbar {
+  /* 그라데이션 배경 */
+  background: linear-gradient(135deg, #f6f8fa 0%, #f6f8fa 100%) !important;
+}
+
+#tab-bar {
+  background: #ffffff !important;
+}
+
+/* ========== 9. 추가 커스텀 스타일 (Additional Styles) ========== */
+/* 여기에 원하는 스타일을 자유롭게 추가하세요 */
+/* !important를 꼭 붙여주세요! */
+
+`;
 }
 
 function rgbToHex(rgb) {
@@ -1106,8 +1281,8 @@ function loadCurrentStylesToEditor() {
   document.getElementById('custom-toolbar-bg2').value = useCustom ? customStyles.toolbarBg2 : currentThemeColors.bg || '#f6f8fa';
   document.getElementById('custom-tabbar-bg').value = useCustom ? customStyles.tabbarBg : currentThemeColors.bg || '#ffffff';
 
-  // CSS
-  customCssTextarea.value = styles.customCss || '';
+  // CSS - 저장된 CSS가 없으면 템플릿 표시
+  customCssTextarea.value = styles.customCss || getDefaultCssTemplate();
 
   // Range 값 표시 업데이트
   updateRangeDisplays();
@@ -1249,9 +1424,13 @@ body {
 }
 `;
 
-  // 사용자 커스텀 CSS 추가
+  // customCss 적용 (저장된 테마나 이전에 저장된 스타일용)
   if (styles.customCss && styles.customCss.trim()) {
-    css += `\n/* User Custom CSS */\n${styles.customCss}`;
+    // 기본 템플릿이 아닌 경우에만 적용
+    const isDefaultTemplate = styles.customCss.includes('Vexa MD - Custom Theme CSS Template');
+    if (!isDefaultTemplate) {
+      css += `\n/* User Custom CSS */\n${styles.customCss}`;
+    }
   }
 
   return css;
@@ -1271,19 +1450,48 @@ function applyCustomStyles(styles) {
 }
 
 function previewTheme() {
-  const styles = getStylesFromEditor();
-  applyCustomStyles(styles);
-  showNotification('미리보기 적용됨');
+  if (currentEditorTab === 'css') {
+    // CSS 편집 탭: CSS만 직접 적용
+    applyCssOnly(customCssTextarea.value);
+    showNotification('CSS 미리보기 적용됨');
+  } else {
+    // UI 에디터 탭: UI 에디터 값 적용
+    const styles = getStylesFromEditor();
+    applyCustomStyles(styles);
+    showNotification('미리보기 적용됨');
+  }
+}
+
+function applyCssOnly(cssContent) {
+  if (customStyleElement) {
+    customStyleElement.remove();
+  }
+  customStyleElement = document.createElement('style');
+  customStyleElement.id = 'custom-theme-styles';
+  customStyleElement.textContent = cssContent;
+  document.head.appendChild(customStyleElement);
 }
 
 function applyAndSaveTheme() {
-  const styles = getStylesFromEditor();
-  customStyles = styles;
-  localStorage.setItem('customStyles', JSON.stringify(styles));
-  applyCustomStyles(styles);
-  selectCustomTheme();
-  closeThemeEditor();
-  showNotification('테마가 적용되었습니다!');
+  if (currentEditorTab === 'css') {
+    // CSS 편집 탭: CSS만 저장 및 적용
+    const cssContent = customCssTextarea.value;
+    customStyles = { ...getDefaultStyles(), customCss: cssContent };
+    localStorage.setItem('customStyles', JSON.stringify(customStyles));
+    applyCssOnly(cssContent);
+    selectCustomTheme();
+    closeThemeEditor();
+    showNotification('CSS 테마가 적용되었습니다!');
+  } else {
+    // UI 에디터 탭: UI 에디터 값 저장 및 적용
+    const styles = getStylesFromEditor();
+    customStyles = styles;
+    localStorage.setItem('customStyles', JSON.stringify(styles));
+    applyCustomStyles(styles);
+    selectCustomTheme();
+    closeThemeEditor();
+    showNotification('테마가 적용되었습니다!');
+  }
 }
 
 function resetTheme() {
@@ -1382,6 +1590,201 @@ function handleThemeImport() {
     }
   };
   input.click();
+}
+
+// ========== Saved Themes ==========
+function getSavedThemes() {
+  return customThemes;
+}
+
+function saveCurrentTheme() {
+  const name = themeNameInput?.value?.trim();
+  if (!name) {
+    showNotification('테마 이름을 입력하세요');
+    return;
+  }
+
+  const styles = getStylesFromEditor();
+  const newTheme = {
+    id: 'theme-' + Date.now(),
+    name: name,
+    styles: JSON.parse(JSON.stringify(styles)),
+    createdAt: new Date().toISOString()
+  };
+
+  customThemes.push(newTheme);
+  localStorage.setItem('customThemes', JSON.stringify(customThemes));
+  updateColorThemeSelect();
+  refreshSavedThemesList();
+
+  themeNameInput.value = '';
+  showNotification(`"${name}" 테마가 저장되었습니다!`);
+}
+
+function deleteSavedTheme(themeId) {
+  const theme = customThemes.find(t => t.id === themeId);
+  if (!theme) return;
+
+  // 삭제 실행
+  customThemes = customThemes.filter(t => t.id !== themeId);
+  localStorage.setItem('customThemes', JSON.stringify(customThemes));
+
+  // 현재 적용된 테마가 삭제된 경우 기본으로 변경
+  if (currentColor === themeId) {
+    applyColorTheme('default');
+  }
+
+  updateColorThemeSelect();
+  refreshSavedThemesList();
+  showNotification(`"${theme.name}" 테마가 삭제되었습니다`);
+}
+
+function loadSavedTheme(themeId) {
+  const theme = customThemes.find(t => t.id === themeId);
+  if (!theme) return;
+
+  // 에디터에 스타일 로드
+  const styles = theme.styles;
+
+  document.getElementById('custom-bg').value = styles.bg || '#ffffff';
+  document.getElementById('custom-text').value = styles.text || '#1f2328';
+  document.getElementById('custom-accent').value = styles.accent || '#656d76';
+  document.getElementById('custom-border').value = styles.border || '#d0d7de';
+  document.getElementById('custom-font-family').value = styles.fontFamily || 'system-ui';
+  document.getElementById('custom-font-size').value = styles.fontSize || 16;
+  document.getElementById('custom-line-height').value = styles.lineHeight || 1.7;
+  document.getElementById('custom-code-bg').value = styles.codeBg || '#f6f8fa';
+  document.getElementById('custom-code-text').value = styles.codeText || '#1f2328';
+  document.getElementById('custom-code-font').value = styles.codeFont || "'SFMono-Regular', Consolas, monospace";
+  document.getElementById('custom-blockquote-bg').value = styles.blockquoteBg || '#f6f8fa';
+  document.getElementById('custom-blockquote-border').value = styles.blockquoteBorder || '#d0d7de';
+  document.getElementById('custom-blockquote-border-width').value = styles.blockquoteBorderWidth || 4;
+  document.getElementById('custom-table-header-bg').value = styles.tableHeaderBg || '#f6f8fa';
+  document.getElementById('custom-table-header-text').value = styles.tableHeaderText || '#1f2328';
+  document.getElementById('custom-table-radius').value = styles.tableRadius || 8;
+  document.getElementById('custom-h1-color').value = styles.h1Color || '#24292f';
+  document.getElementById('custom-h2-color').value = styles.h2Color || '#656d76';
+  document.getElementById('custom-h1-gradient').checked = styles.h1Gradient !== false;
+  document.getElementById('custom-link-color').value = styles.linkColor || '#656d76';
+  document.getElementById('custom-bold-color').value = styles.boldColor || '#656d76';
+  document.getElementById('custom-italic-color').value = styles.italicColor || '#57606a';
+  document.getElementById('custom-mark-bg').value = styles.markBg || '#fff8c5';
+  document.getElementById('custom-mark-text').value = styles.markText || '#656d76';
+  document.getElementById('custom-list-marker').value = styles.listMarker || '#656d76';
+  document.getElementById('custom-toolbar-bg').value = styles.toolbarBg || '#f6f8fa';
+  document.getElementById('custom-toolbar-bg2').value = styles.toolbarBg2 || '#f6f8fa';
+  document.getElementById('custom-tabbar-bg').value = styles.tabbarBg || '#ffffff';
+  // 저장된 customCss가 없으면 기본 템플릿 유지
+  customCssTextarea.value = styles.customCss || getDefaultCssTemplate();
+
+  updateRangeDisplays();
+
+  // 바로 적용
+  applyCustomStyles(styles);
+  customStyles = styles;
+  localStorage.setItem('customStyles', JSON.stringify(styles));
+  selectCustomTheme();
+
+  // UI 탭으로 전환
+  switchEditorTab('ui');
+  showNotification(`"${theme.name}" 테마가 로드되었습니다!`);
+}
+
+function applySavedTheme(themeId) {
+  const theme = customThemes.find(t => t.id === themeId);
+  if (theme) {
+    customStyles = theme.styles;
+    localStorage.setItem('customStyles', JSON.stringify(customStyles));
+    applyCustomStyles(customStyles);
+    currentColor = themeId;
+    localStorage.setItem('colorTheme', themeId);
+    colorTheme.value = themeId;
+    return true;
+  }
+  return false;
+}
+
+function refreshSavedThemesList() {
+  if (!savedThemesList) return;
+
+  const themes = getSavedThemes();
+
+  if (themes.length === 0) {
+    savedThemesList.innerHTML = '<div class="saved-themes-empty">저장된 테마가 없습니다</div>';
+    return;
+  }
+
+  savedThemesList.innerHTML = themes.map(theme => {
+    const date = new Date(theme.createdAt).toLocaleDateString();
+    return `
+      <div class="saved-theme-item" data-theme-id="${theme.id}">
+        <div class="saved-theme-info">
+          <span class="saved-theme-name">${escapeHtml(theme.name)}</span>
+          <span class="saved-theme-date">${date}</span>
+        </div>
+        <div class="saved-theme-actions">
+          <button class="btn-icon load-theme-btn" title="불러오기" data-theme-id="${theme.id}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+            </svg>
+          </button>
+          <button class="btn-icon delete-theme-btn" title="삭제" data-theme-id="${theme.id}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 이벤트 리스너 추가
+  savedThemesList.querySelectorAll('.load-theme-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      loadSavedTheme(btn.dataset.themeId);
+    });
+  });
+
+  savedThemesList.querySelectorAll('.delete-theme-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteSavedTheme(btn.dataset.themeId);
+    });
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function updateColorThemeSelect() {
+  if (!colorTheme) return;
+
+  // 기존 저장된 테마 옵션 제거
+  const existingCustomOptions = colorTheme.querySelectorAll('option[data-custom-theme]');
+  existingCustomOptions.forEach(opt => opt.remove());
+
+  // 저장된 테마 옵션 추가
+  customThemes.forEach(theme => {
+    const option = document.createElement('option');
+    option.value = theme.id;
+    option.textContent = `★ ${theme.name}`;
+    option.setAttribute('data-custom-theme', 'true');
+    // custom 옵션 앞에 삽입
+    if (customThemeOption) {
+      colorTheme.insertBefore(option, customThemeOption);
+    } else {
+      colorTheme.appendChild(option);
+    }
+  });
+
+  // 현재 선택된 테마 복원
+  if (currentColor) {
+    colorTheme.value = currentColor;
+  }
 }
 
 function showNotification(message) {
@@ -2405,6 +2808,11 @@ async function init() {
   if (customStyles && customThemeOption) {
     customThemeOption.hidden = false;
   }
+
+  // 저장된 테마 초기화
+  updateColorThemeSelect();
+  refreshSavedThemesList();
+
   applyColorTheme(currentColor);
 
   activeTabId = HOME_TAB_ID;
@@ -2435,6 +2843,18 @@ async function init() {
   btnRecent.addEventListener('click', toggleRecentDropdown);
   btnTheme.addEventListener('click', toggleTheme);
   btnCustomize.addEventListener('click', openThemeEditor);
+
+  // Saved themes event listeners
+  if (saveCurrentThemeBtn) {
+    saveCurrentThemeBtn.addEventListener('click', saveCurrentTheme);
+  }
+  if (themeNameInput) {
+    themeNameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        saveCurrentTheme();
+      }
+    });
+  }
 
   if (btnPrint) {
     btnPrint.addEventListener('click', printDocument);

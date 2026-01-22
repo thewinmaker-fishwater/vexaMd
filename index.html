@@ -301,6 +301,7 @@
       <div class="editor-tabs">
         <button class="editor-tab active" data-tab="ui">UI 에디터</button>
         <button class="editor-tab" data-tab="css">CSS 편집</button>
+        <button class="editor-tab" data-tab="saved">저장된 테마</button>
       </div>
 
       <div class="editor-content">
@@ -485,18 +486,78 @@
         <!-- CSS Editor Tab -->
         <div class="tab-panel" id="tab-css">
           <div class="css-editor-info">
-            <p>CSS 변수와 스타일을 직접 편집할 수 있습니다.</p>
+            <p>CSS 변수와 스타일을 직접 편집할 수 있습니다. 아래 템플릿을 참고하세요.</p>
           </div>
-          <textarea id="custom-css" placeholder="/* 커스텀 CSS 입력 */
+          <textarea id="custom-css">/* ========================================
+   SP MD Viewer - Custom Theme Template
+   ======================================== */
+
+/* === 기본 색상 변수 (Basic Color Variables) ===
+   이 변수들은 전체 UI에 적용됩니다.
+   --bg: 배경색
+   --text: 기본 텍스트 색상
+   --accent: 강조 색상 (링크, 버튼 등)
+   --border: 테두리 색상
+*/
 :root {
   --bg: #ffffff;
   --text: #1f2328;
   --accent: #656d76;
+  --border: #d0d7de;
 }
 
+/* === 코드 블록 스타일 (Code Block) === */
+.markdown-body pre,
+.markdown-body code {
+  /* background: var(--code-bg); */
+  /* color: var(--code-text); */
+}
+
+/* === 제목 스타일 (Headings) === */
 .markdown-body h1 {
-  /* 스타일 추가 */
-}"></textarea>
+  /* 그라데이션 적용 예시:
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  */
+}
+
+.markdown-body h2,
+.markdown-body h3 {
+  /* color: var(--accent); */
+}
+
+/* === 인용문 스타일 (Blockquote) === */
+.markdown-body blockquote {
+  /* border-left: 4px solid var(--accent); */
+  /* background: var(--blockquote-bg); */
+}
+
+/* === 테이블 스타일 (Table) === */
+.markdown-body table th {
+  /* background: var(--table-header-bg); */
+}
+
+/* === 링크 스타일 (Links) === */
+.markdown-body a {
+  /* color: var(--accent); */
+}
+
+/* === 커스텀 스타일 추가 (Add your custom styles below) === */
+</textarea>
+        </div>
+
+        <!-- Saved Themes Tab -->
+        <div class="tab-panel" id="tab-saved">
+          <div class="saved-themes-header">
+            <div class="save-theme-form">
+              <input type="text" id="theme-name-input" class="theme-name-input" placeholder="테마 이름 입력">
+              <button id="save-current-theme" class="btn-primary">저장</button>
+            </div>
+          </div>
+          <div class="saved-themes-list" id="saved-themes-list">
+            <div class="saved-themes-empty" id="saved-themes-empty">저장된 테마가 없습니다</div>
+          </div>
         </div>
       </div>
 

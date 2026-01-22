@@ -6,7 +6,7 @@
 const PERSIST_KEYS = [
   'theme', 'colorTheme', 'language', 'fontSize',
   'fontFamily', 'viewMode', 'contentWidth', 'zoom',
-  'recentFiles', 'customStyles'
+  'recentFiles', 'customStyles', 'customThemes'
 ];
 
 class Store {
@@ -159,6 +159,7 @@ export const DEFAULT_STATE = {
   zoom: 100,
   recentFiles: [],
   customStyles: null,
+  customThemes: [],  // { id, name, styles, createdAt }
   activeTabId: 'home',
   tabs: [],
   currentPage: 0,

@@ -59,6 +59,7 @@ class ThemeEditor {
           <div class="editor-tabs">
             <button class="editor-tab active" data-tab="ui">${this.lang.tabUIEditor}</button>
             <button class="editor-tab" data-tab="css">${this.lang.tabCSSEditor}</button>
+            <button class="editor-tab" data-tab="saved">${this.lang.tabSavedThemes || '저장된 테마'}</button>
           </div>
 
           <div class="editor-panels">
@@ -73,6 +74,19 @@ class ThemeEditor {
             <div class="tab-panel" id="tab-css">
               <div class="css-editor-info">${this.lang.cssEditorInfo}</div>
               <textarea id="custom-css" class="css-textarea" placeholder="${this.lang.cssPlaceholder}"></textarea>
+            </div>
+
+            <!-- Saved Themes Tab -->
+            <div class="tab-panel" id="tab-saved">
+              <div class="saved-themes-header">
+                <div class="save-theme-form">
+                  <input type="text" id="theme-name-input" class="theme-name-input" placeholder="${this.lang.themeNamePlaceholder || '테마 이름 입력'}" maxlength="30">
+                  <button id="save-theme-btn" class="btn btn-primary">${this.lang.saveTheme || '테마 저장'}</button>
+                </div>
+              </div>
+              <div class="saved-themes-list" id="saved-themes-list">
+                ${this.getSavedThemesHTML()}
+              </div>
             </div>
           </div>
 
@@ -252,6 +266,211 @@ class ThemeEditor {
   }
 
   /**
+   * Get saved themes list HTML
+   */
+  getSavedThemesHTML() {
+    const themes = themeManager.getSavedThemes();
+
+    if (themes.length === 0) {
+      return `<div class="saved-themes-empty">${this.lang.noSavedThemes || '저장된 테마가 없습니다'}</div>`;
+    }
+
+    return themes.map(theme => `
+      <div class="saved-theme-item" data-theme-id="${theme.id}">
+        <div class="saved-theme-info">
+          <span class="saved-theme-name">${theme.name}</span>
+          <span class="saved-theme-date">${new Date(theme.createdAt).toLocaleDateString()}</span>
+        </div>
+        <div class="saved-theme-actions">
+          <button class="btn-icon load-theme-btn" title="${this.lang.loadTheme || '불러오기'}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 3v12M5 10l7 7 7-7"/>
+            </svg>
+          </button>
+          <button class="btn-icon delete-theme-btn" title="${this.lang.deleteTheme || '삭제'}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /**
+   * Refresh saved themes list
+   */
+  refreshSavedThemesList() {
+    const list = $id('saved-themes-list');
+    if (list) {
+      list.innerHTML = this.getSavedThemesHTML();
+      this.setupSavedThemesListeners();
+    }
+  }
+
+  /**
+   * Setup saved themes list event listeners
+   */
+  setupSavedThemesListeners() {
+    // Load theme buttons
+    $$('.load-theme-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const themeId = e.target.closest('.saved-theme-item').dataset.themeId;
+        this.loadSavedTheme(themeId);
+      });
+    });
+
+    // Delete theme buttons
+    $$('.delete-theme-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const themeId = e.target.closest('.saved-theme-item').dataset.themeId;
+        this.deleteSavedTheme(themeId);
+      });
+    });
+  }
+
+  /**
+   * Load saved theme into editor
+   */
+  loadSavedTheme(themeId) {
+    const themes = themeManager.getSavedThemes();
+    const theme = themes.find(t => t.id === themeId);
+    if (theme) {
+      this.applyStylesToEditor(theme.styles);
+      this.switchTab('ui');
+      this.showNotification(this.lang.themeLoaded || '테마를 불러왔습니다');
+    }
+  }
+
+  /**
+   * Delete saved theme
+   */
+  deleteSavedTheme(themeId) {
+    if (confirm(this.lang.confirmDeleteTheme || '이 테마를 삭제하시겠습니까?')) {
+      themeManager.deleteTheme(themeId);
+      this.refreshSavedThemesList();
+      this.showNotification(this.lang.themeDeleted || '테마가 삭제되었습니다');
+    }
+  }
+
+  /**
+   * Get default CSS template with comments
+   */
+  getDefaultCssTemplate() {
+    return `/* ========================================
+   사용자 정의 CSS
+   위의 UI 에디터 설정 외에 추가 스타일을 작성하세요.
+   ======================================== */
+
+/* === 마크다운 본문 === */
+.markdown-body {
+  /* font-size: 16px; */
+  /* letter-spacing: 0; */
+}
+
+/* === 제목 스타일 === */
+.markdown-body h1 {
+  /* border-bottom: 2px solid var(--accent); */
+  /* padding-bottom: 8px; */
+}
+
+.markdown-body h2 {
+  /* border-bottom: 1px solid var(--border); */
+}
+
+/* === 코드 블록 === */
+.markdown-body pre {
+  /* border: 1px solid var(--border); */
+  /* border-radius: 8px; */
+}
+
+.markdown-body code {
+  /* padding: 2px 6px; */
+  /* border-radius: 4px; */
+}
+
+/* === 인용문 === */
+.markdown-body blockquote {
+  /* font-style: italic; */
+  /* border-radius: 0 8px 8px 0; */
+}
+
+/* === 테이블 === */
+.markdown-body table {
+  /* border-collapse: separate; */
+  /* border-spacing: 0; */
+}
+
+.markdown-body th,
+.markdown-body td {
+  /* padding: 12px 16px; */
+}
+
+/* === 링크 === */
+.markdown-body a {
+  /* text-decoration: none; */
+  /* border-bottom: 1px dashed currentColor; */
+}
+
+.markdown-body a:hover {
+  /* border-bottom-style: solid; */
+}
+
+/* === 리스트 === */
+.markdown-body ul,
+.markdown-body ol {
+  /* padding-left: 2em; */
+}
+
+/* === 이미지 === */
+.markdown-body img {
+  /* border-radius: 8px; */
+  /* box-shadow: 0 2px 8px var(--shadow); */
+}
+
+/* === 수평선 === */
+.markdown-body hr {
+  /* height: 2px; */
+  /* border: none; */
+}
+
+/* === 툴바 커스텀 === */
+#toolbar {
+  /* box-shadow: 0 2px 8px var(--shadow); */
+}
+
+/* === 탭바 커스텀 === */
+#tab-bar {
+  /* border-bottom: 2px solid var(--accent); */
+}
+
+.tab.active {
+  /* font-weight: 600; */
+}
+`;
+  }
+
+  /**
+   * Save current theme with name
+   */
+  saveCurrentTheme() {
+    const nameInput = $id('theme-name-input');
+    const name = nameInput?.value.trim();
+
+    if (!name) {
+      this.showNotification(this.lang.enterThemeName || '테마 이름을 입력하세요');
+      nameInput?.focus();
+      return;
+    }
+
+    const styles = this.getStylesFromEditor();
+    themeManager.saveTheme(name, styles);
+    nameInput.value = '';
+    this.refreshSavedThemesList();
+    this.showNotification(this.lang.themeSavedAs || `'${name}' 테마가 저장되었습니다`);
+  }
+
+  /**
    * Update texts when language changes
    */
   updateTexts() {
@@ -340,7 +559,9 @@ class ThemeEditor {
       importBtn: $id('theme-import'),
       exportBtn: $id('theme-export'),
       cancelBtn: $id('theme-cancel'),
-      applyBtn: $id('theme-apply')
+      applyBtn: $id('theme-apply'),
+      themeNameInput: $id('theme-name-input'),
+      saveThemeBtn: $id('save-theme-btn')
     };
   }
 
@@ -368,6 +589,13 @@ class ThemeEditor {
     this.elements.exportBtn?.addEventListener('click', () => this.export());
     this.elements.cancelBtn?.addEventListener('click', () => this.cancel());
     this.elements.applyBtn?.addEventListener('click', () => this.applyAndSave());
+
+    // 저장된 테마 관련
+    this.elements.saveThemeBtn?.addEventListener('click', () => this.saveCurrentTheme());
+    this.elements.themeNameInput?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') this.saveCurrentTheme();
+    });
+    this.setupSavedThemesListeners();
   }
 
   open() {
@@ -379,6 +607,7 @@ class ThemeEditor {
 
     this.modal?.classList.remove('hidden');
     this.loadCurrentStyles();
+    this.refreshSavedThemesList();
     eventBus.emit(EVENTS.MODAL_OPENED, 'theme-editor');
   }
 
@@ -487,9 +716,9 @@ class ThemeEditor {
     this.setInputValue('custom-toolbar-bg2', useCustom ? customStyles.toolbarBg2 : currentThemeColors.bg || '#f6f8fa');
     this.setInputValue('custom-tabbar-bg', useCustom ? customStyles.tabbarBg : currentThemeColors.bg || '#ffffff');
 
-    // CSS
+    // CSS - 커스텀 CSS가 없으면 기본 템플릿 제공
     if (this.elements.cssTextarea) {
-      this.elements.cssTextarea.value = styles.customCss || '';
+      this.elements.cssTextarea.value = styles.customCss || this.getDefaultCssTemplate();
     }
 
     this.updateRangeDisplays();

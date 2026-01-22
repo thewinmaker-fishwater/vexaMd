@@ -44,6 +44,9 @@ class ThemeManager {
 
     this.applyTheme(theme);
 
+    // 저장된 테마 옵션 업데이트
+    this.updateColorThemeSelect();
+
     if (customStyles && this.elements.customThemeOption) {
       this.elements.customThemeOption.hidden = false;
     }
@@ -69,6 +72,12 @@ class ThemeManager {
   }
 
   applyColorTheme(color) {
+    // 저장된 테마인 경우 (theme- 접두사)
+    if (color.startsWith('theme-')) {
+      return this.applySavedTheme(color);
+    }
+
+    // 커스텀이나 저장된 테마가 아닌 경우 커스텀 스타일 제거
     if (color !== 'custom') {
       if (this.customStyleElement) {
         this.customStyleElement.remove();
@@ -233,6 +242,119 @@ body {
     }
 
     return css;
+  }
+
+  // ========== 저장된 테마 관리 ==========
+
+  /**
+   * 저장된 테마 목록 가져오기
+   */
+  getSavedThemes() {
+    return store.get('customThemes') || [];
+  }
+
+  /**
+   * 새 테마 저장
+   */
+  saveTheme(name, styles) {
+    const themes = this.getSavedThemes();
+    const newTheme = {
+      id: 'theme-' + Date.now(),
+      name: name.trim(),
+      styles: JSON.parse(JSON.stringify(styles)),
+      createdAt: new Date().toISOString()
+    };
+    themes.push(newTheme);
+    store.set('customThemes', themes);
+    this.updateColorThemeSelect();
+    return newTheme;
+  }
+
+  /**
+   * 테마 삭제
+   */
+  deleteTheme(themeId) {
+    const themes = this.getSavedThemes();
+    const filtered = themes.filter(t => t.id !== themeId);
+    store.set('customThemes', filtered);
+
+    // 현재 적용된 테마가 삭제된 경우 기본으로 변경
+    if (store.get('colorTheme') === themeId) {
+      this.applyColorTheme('default');
+    }
+
+    this.updateColorThemeSelect();
+    return filtered;
+  }
+
+  /**
+   * 테마 이름 변경
+   */
+  renameTheme(themeId, newName) {
+    const themes = this.getSavedThemes();
+    const theme = themes.find(t => t.id === themeId);
+    if (theme) {
+      theme.name = newName.trim();
+      store.set('customThemes', themes);
+      this.updateColorThemeSelect();
+    }
+    return themes;
+  }
+
+  /**
+   * 저장된 테마 적용
+   */
+  applySavedTheme(themeId) {
+    const themes = this.getSavedThemes();
+    const theme = themes.find(t => t.id === themeId);
+    if (theme) {
+      store.set('customStyles', theme.styles);
+      this.applyCustomStyles(theme.styles);
+      store.set('colorTheme', themeId);
+
+      if (this.elements.colorTheme) {
+        this.elements.colorTheme.value = themeId;
+      }
+
+      eventBus.emit(EVENTS.COLOR_THEME_CHANGED, themeId);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * 컬러 테마 select 업데이트 (저장된 테마 옵션 추가)
+   */
+  updateColorThemeSelect() {
+    const select = this.elements.colorTheme;
+    if (!select) return;
+
+    // 기존 저장된 테마 옵션 제거
+    const existingCustomOptions = select.querySelectorAll('option[data-custom-theme]');
+    existingCustomOptions.forEach(opt => opt.remove());
+
+    // 저장된 테마 옵션 추가
+    const themes = this.getSavedThemes();
+    const customOption = this.elements.customThemeOption;
+
+    themes.forEach(theme => {
+      const option = document.createElement('option');
+      option.value = theme.id;
+      option.textContent = `★ ${theme.name}`;
+      option.setAttribute('data-custom-theme', 'true');
+      // custom 옵션 앞에 삽입
+      if (customOption) {
+        select.insertBefore(option, customOption);
+      } else {
+        select.appendChild(option);
+      }
+    });
+
+    // 현재 선택된 테마 복원
+    const currentTheme = store.get('colorTheme');
+    if (currentTheme) {
+      select.value = currentTheme;
+    }
   }
 
   getDefaultStyles() {

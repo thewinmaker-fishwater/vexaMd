@@ -150,6 +150,19 @@ export const i18n = {
     themeEditorTitle: '테마 커스터마이저',
     tabUIEditor: 'UI 에디터',
     tabCSSEditor: 'CSS 편집',
+    tabSavedThemes: '저장된 테마',
+
+    // Saved Themes
+    themeNamePlaceholder: '테마 이름 입력',
+    saveTheme: '테마 저장',
+    noSavedThemes: '저장된 테마가 없습니다',
+    loadTheme: '불러오기',
+    deleteTheme: '삭제',
+    confirmDeleteTheme: '이 테마를 삭제하시겠습니까?',
+    themeLoaded: '테마를 불러왔습니다',
+    themeDeleted: '테마가 삭제되었습니다',
+    enterThemeName: '테마 이름을 입력하세요',
+    themeSavedAs: '테마가 저장되었습니다',
 
     // Theme Editor Sections
     sectionColors: '🎨 기본 색상',
@@ -189,7 +202,7 @@ export const i18n = {
     labelTabbarBg: '탭바 배경',
 
     // CSS Editor
-    cssEditorInfo: 'CSS 변수와 스타일을 직접 편집할 수 있습니다.',
+    cssEditorInfo: '아래 템플릿을 참고하여 추가 CSS 스타일을 작성하세요. 주석(/*)을 제거하면 적용됩니다.',
     cssPlaceholder: '/* 커스텀 CSS 입력 */'
   },
 
@@ -339,6 +352,19 @@ export const i18n = {
     themeEditorTitle: 'Theme Customizer',
     tabUIEditor: 'UI Editor',
     tabCSSEditor: 'CSS Editor',
+    tabSavedThemes: 'Saved Themes',
+
+    // Saved Themes
+    themeNamePlaceholder: 'Enter theme name',
+    saveTheme: 'Save Theme',
+    noSavedThemes: 'No saved themes',
+    loadTheme: 'Load',
+    deleteTheme: 'Delete',
+    confirmDeleteTheme: 'Delete this theme?',
+    themeLoaded: 'Theme loaded',
+    themeDeleted: 'Theme deleted',
+    enterThemeName: 'Please enter theme name',
+    themeSavedAs: 'Theme saved',
 
     // Theme Editor Sections
     sectionColors: '🎨 Colors',
@@ -378,7 +404,7 @@ export const i18n = {
     labelTabbarBg: 'Tab Bar Background',
 
     // CSS Editor
-    cssEditorInfo: 'Edit CSS variables and styles directly.',
+    cssEditorInfo: 'Use the template below to add custom CSS. Remove comments (/*) to apply.',
     cssPlaceholder: '/* Custom CSS */'
   },
 
@@ -528,6 +554,19 @@ export const i18n = {
     themeEditorTitle: 'テーマカスタマイザー',
     tabUIEditor: 'UIエディター',
     tabCSSEditor: 'CSSエディター',
+    tabSavedThemes: '保存済みテーマ',
+
+    // Saved Themes
+    themeNamePlaceholder: 'テーマ名を入力',
+    saveTheme: 'テーマを保存',
+    noSavedThemes: '保存済みテーマがありません',
+    loadTheme: '読み込む',
+    deleteTheme: '削除',
+    confirmDeleteTheme: 'このテーマを削除しますか？',
+    themeLoaded: 'テーマを読み込みました',
+    themeDeleted: 'テーマが削除されました',
+    enterThemeName: 'テーマ名を入力してください',
+    themeSavedAs: 'テーマが保存されました',
 
     // Theme Editor Sections
     sectionColors: '🎨 基本色',
@@ -567,7 +606,7 @@ export const i18n = {
     labelTabbarBg: 'タブバー背景',
 
     // CSS Editor
-    cssEditorInfo: 'CSS変数とスタイルを直接編集できます。',
+    cssEditorInfo: '以下のテンプレートを参考にCSSを追加してください。コメント(/*)を削除すると適用されます。',
     cssPlaceholder: '/* カスタムCSS */'
   }
 };
