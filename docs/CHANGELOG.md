@@ -1,5 +1,37 @@
 # SP MD Viewer - 개발 이력
 
+## 2026-01-24 모듈별 CSS 분리
+
+### 버그 수정
+- **여러 페이지 인쇄 지원**: 긴 문서 인쇄 시 한 페이지만 출력되던 문제 수정
+  - `#main-container` 인쇄 시 `position: static`, `overflow: visible` 적용
+  - 콘텐츠가 자동으로 여러 페이지로 분할되어 인쇄됨
+
+### 리팩토링
+- **CSS 모듈화**: style.css를 기능별 모듈로 분리
+  - `styles/index.css`: CSS 진입점 (모든 모듈 import)
+  - `styles/base.css`: 전역 리셋, 콘텐츠 컨테이너, Welcome 화면
+  - `modules/theme/theme.css`: 테마 변수, 컬러, 폰트
+  - `modules/ui/ui.css`: 툴바, 모달, 드롭다운, 스크롤바, 이미지 모달
+  - `modules/tabs/tabs.css`: 탭 바
+  - `modules/files/files.css`: 드래그앤드롭, 최근 파일
+  - `modules/search/search.css`: 검색 바
+  - `modules/viewer/viewer.css`: 마크다운, Alert Box, 인쇄, Pan 모드
+  - `modules/toc/toc.css`: TOC 사이드바 (신규 생성)
+
+### 구조 개선
+- CSS 로드 순서 최적화: theme → base → ui → tabs → files → search → viewer → toc
+- 각 모듈이 독립적으로 관리 가능
+- Vite 빌드 시 자동 번들링
+
+### 관련 파일
+- `src/styles/index.css`: CSS 진입점 (신규)
+- `src/styles/base.css`: 기본 스타일 (신규)
+- `src/modules/toc/toc.css`: TOC 스타일 (신규)
+- `index.html`: CSS 경로 변경
+
+---
+
 ## 2026-01-23 여러 커스텀 테마 저장 기능
 
 ### 새 기능
