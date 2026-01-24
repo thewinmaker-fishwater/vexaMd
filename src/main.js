@@ -5,6 +5,7 @@
  */
 
 import { marked } from 'marked';
+import hljs from 'highlight.js';
 import { i18n } from './i18n.js';
 import { generateToc, clearToc, toggleToc, updateTocTexts, getTocVisible, setTocVisible, hideToc } from './modules/toc/toc.js';
 
@@ -47,6 +48,31 @@ marked.setOptions({
   mangle: false,
 });
 
+// ========== Highlight.js 설정 ==========
+// marked용 커스텀 렌더러 설정
+const renderer = new marked.Renderer();
+const originalCodeRenderer = renderer.code.bind(renderer);
+
+renderer.code = function(code, language) {
+  // code가 객체인 경우 처리 (marked 버전에 따라 다름)
+  if (typeof code === 'object') {
+    language = code.lang;
+    code = code.text;
+  }
+
+  const validLanguage = language && hljs.getLanguage(language) ? language : 'plaintext';
+
+  try {
+    const highlighted = hljs.highlight(code, { language: validLanguage }).value;
+    return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
+  } catch (e) {
+    console.warn('Highlight error:', e);
+    return `<pre><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>`;
+  }
+};
+
+marked.use({ renderer });
+
 // ========== DOM Elements ==========
 const content = document.getElementById('content');
 const btnHome = document.getElementById('btn-home');
@@ -54,6 +80,7 @@ const btnOpen = document.getElementById('btn-open');
 const btnRecent = document.getElementById('btn-recent');
 const btnTheme = document.getElementById('btn-theme');
 const btnPrint = document.getElementById('btn-print');
+const btnPdf = document.getElementById('btn-pdf');
 const colorTheme = document.getElementById('color-theme');
 const fontFamily = document.getElementById('font-family');
 const fontSize = document.getElementById('font-size');
@@ -346,6 +373,7 @@ function updateUITexts() {
   btnTheme.title = lang.toggleTheme;
   btnCustomize.title = lang.themeCustomizer;
   if (btnPrint) btnPrint.title = lang.print;
+  if (btnPdf) btnPdf.title = lang.exportPdf;
   btnSearch.title = lang.search;
   btnViewSingle.title = lang.viewSingle;
   btnViewDouble.title = lang.viewDouble;
@@ -1819,6 +1847,63 @@ function printDocument() {
   window.print();
 }
 
+// ========== PDF Export ==========
+async function exportPdf() {
+  if (tabs.length === 0 || activeTabId === HOME_TAB_ID) {
+    showNotification(t('noPdfDoc'));
+    return;
+  }
+
+  const activeTab = tabs.find(tab => tab.id === activeTabId);
+  if (!activeTab) {
+    showNotification(t('noPdfDoc'));
+    return;
+  }
+
+  showNotification(t('exportingPdf'));
+
+  try {
+    // html2pdf.js 동적 로드
+    const html2pdf = (await import('html2pdf.js')).default;
+
+    // 현재 콘텐츠 가져오기
+    const contentElement = document.querySelector('.markdown-body');
+    if (!contentElement) {
+      showNotification(t('pdfExportFailed'));
+      return;
+    }
+
+    // 파일명 생성 (확장자 제외)
+    const fileName = activeTab.name.replace(/\.md$/i, '') + '.pdf';
+
+    // PDF 옵션 설정
+    const opt = {
+      margin: 10,
+      filename: fileName,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        letterRendering: true
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'portrait'
+      },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    };
+
+    // PDF 생성 및 저장
+    await html2pdf().set(opt).from(contentElement).save();
+
+    showNotification(t('pdfExportSuccess'));
+  } catch (error) {
+    console.error('PDF export error:', error);
+    showNotification(t('pdfExportFailed'));
+  }
+}
+
 // ========== Presentation Mode ==========
 function startPresentation() {
   if (pages.length === 0 || activeTabId === HOME_TAB_ID) {
@@ -2858,6 +2943,10 @@ async function init() {
 
   if (btnPrint) {
     btnPrint.addEventListener('click', printDocument);
+  }
+
+  if (btnPdf) {
+    btnPdf.addEventListener('click', exportPdf);
   }
 
   // View mode buttons

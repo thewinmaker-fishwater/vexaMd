@@ -43,6 +43,13 @@ export const ICONS = {
     <rect x="6" y="14" width="12" height="8" rx="1"/>
   </svg>`,
 
+  pdf: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+    <path d="M14 2v6h6"/>
+    <path d="M10 12v6"/>
+    <path d="M8 15h4"/>
+  </svg>`,
+
   search: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="11" cy="11" r="8"/>
     <path d="M21 21l-4.35-4.35"/>

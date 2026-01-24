@@ -1,0 +1,263 @@
+/* ========================================
+   SP MD Viewer - Syntax Highlighting Styles
+   Based on highlight.js themes
+   ======================================== */
+
+/* ========== Base Code Block ========== */
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 1em;
+  background: var(--code-bg);
+  color: var(--code-text);
+}
+
+/* ========== Light Theme Syntax Colors ========== */
+:root {
+  /* Comments */
+  --hljs-comment: #6a737d;
+  /* Keywords */
+  --hljs-keyword: #d73a49;
+  /* Strings */
+  --hljs-string: #032f62;
+  /* Numbers */
+  --hljs-number: #005cc5;
+  /* Functions */
+  --hljs-function: #6f42c1;
+  /* Variables */
+  --hljs-variable: #e36209;
+  /* Types */
+  --hljs-type: #22863a;
+  /* Built-in */
+  --hljs-builtin: #005cc5;
+  /* Operators */
+  --hljs-operator: #d73a49;
+  /* Punctuation */
+  --hljs-punctuation: #24292e;
+  /* Attributes */
+  --hljs-attribute: #005cc5;
+  /* Tags */
+  --hljs-tag: #22863a;
+  /* Selectors */
+  --hljs-selector: #6f42c1;
+  /* Regex */
+  --hljs-regexp: #032f62;
+  /* Meta */
+  --hljs-meta: #6a737d;
+  /* Deletion */
+  --hljs-deletion: #ffeef0;
+  --hljs-deletion-text: #b31d28;
+  /* Addition */
+  --hljs-addition: #e6ffed;
+  --hljs-addition-text: #22863a;
+}
+
+/* ========== Dark Theme Syntax Colors ========== */
+[data-theme="dark"] {
+  --hljs-comment: #8b949e;
+  --hljs-keyword: #ff7b72;
+  --hljs-string: #a5d6ff;
+  --hljs-number: #79c0ff;
+  --hljs-function: #d2a8ff;
+  --hljs-variable: #ffa657;
+  --hljs-type: #7ee787;
+  --hljs-builtin: #79c0ff;
+  --hljs-operator: #ff7b72;
+  --hljs-punctuation: #c9d1d9;
+  --hljs-attribute: #79c0ff;
+  --hljs-tag: #7ee787;
+  --hljs-selector: #d2a8ff;
+  --hljs-regexp: #a5d6ff;
+  --hljs-meta: #8b949e;
+  --hljs-deletion: #490202;
+  --hljs-deletion-text: #ffa198;
+  --hljs-addition: #04260f;
+  --hljs-addition-text: #7ee787;
+}
+
+/* ========== Syntax Token Styles ========== */
+
+/* Comments */
+.hljs-comment,
+.hljs-quote {
+  color: var(--hljs-comment);
+  font-style: italic;
+}
+
+/* Keywords */
+.hljs-keyword,
+.hljs-selector-tag {
+  color: var(--hljs-keyword);
+  font-weight: 600;
+}
+
+/* Strings */
+.hljs-string,
+.hljs-doctag,
+.hljs-template-variable,
+.hljs-template-tag {
+  color: var(--hljs-string);
+}
+
+/* Numbers */
+.hljs-number,
+.hljs-literal {
+  color: var(--hljs-number);
+}
+
+/* Functions */
+.hljs-title,
+.hljs-title.function_,
+.hljs-section {
+  color: var(--hljs-function);
+  font-weight: 600;
+}
+
+/* Variables */
+.hljs-variable,
+.hljs-params {
+  color: var(--hljs-variable);
+}
+
+/* Types */
+.hljs-type,
+.hljs-class .hljs-title,
+.hljs-title.class_,
+.hljs-title.class_.inherited__ {
+  color: var(--hljs-type);
+}
+
+/* Built-in */
+.hljs-built_in,
+.hljs-builtin-name {
+  color: var(--hljs-builtin);
+}
+
+/* Operators */
+.hljs-operator {
+  color: var(--hljs-operator);
+}
+
+/* Punctuation */
+.hljs-punctuation {
+  color: var(--hljs-punctuation);
+}
+
+/* Attributes */
+.hljs-attr,
+.hljs-attribute {
+  color: var(--hljs-attribute);
+}
+
+/* Tags (HTML/XML) */
+.hljs-tag,
+.hljs-name {
+  color: var(--hljs-tag);
+}
+
+/* Selectors (CSS) */
+.hljs-selector-class,
+.hljs-selector-id,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: var(--hljs-selector);
+}
+
+/* Regex */
+.hljs-regexp {
+  color: var(--hljs-regexp);
+}
+
+/* Meta */
+.hljs-meta,
+.hljs-meta .hljs-keyword,
+.hljs-meta .hljs-string {
+  color: var(--hljs-meta);
+}
+
+/* Symbols & Constants */
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link {
+  color: var(--hljs-variable);
+}
+
+/* Emphasis */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+/* Strong */
+.hljs-strong {
+  font-weight: 700;
+}
+
+/* Deletion (Diff) */
+.hljs-deletion {
+  background-color: var(--hljs-deletion);
+  color: var(--hljs-deletion-text);
+}
+
+/* Addition (Diff) */
+.hljs-addition {
+  background-color: var(--hljs-addition);
+  color: var(--hljs-addition-text);
+}
+
+/* ========== Language-specific adjustments ========== */
+
+/* JSON */
+.language-json .hljs-attr {
+  color: var(--hljs-attribute);
+}
+
+.language-json .hljs-string {
+  color: var(--hljs-string);
+}
+
+/* Markdown */
+.language-markdown .hljs-section {
+  color: var(--hljs-function);
+}
+
+.language-markdown .hljs-bullet {
+  color: var(--hljs-keyword);
+}
+
+/* Shell/Bash */
+.language-bash .hljs-built_in,
+.language-shell .hljs-built_in {
+  color: var(--hljs-builtin);
+}
+
+/* CSS */
+.language-css .hljs-selector-class,
+.language-css .hljs-selector-id {
+  color: var(--hljs-selector);
+}
+
+.language-css .hljs-attribute {
+  color: var(--hljs-attribute);
+}
+
+/* ========== Line Numbers (optional future feature) ========== */
+.hljs-ln {
+  border-collapse: collapse;
+}
+
+.hljs-ln td {
+  padding: 0;
+}
+
+.hljs-ln-numbers {
+  user-select: none;
+  text-align: right;
+  color: var(--hljs-comment);
+  border-right: 1px solid var(--border);
+  padding-right: 10px !important;
+  margin-right: 10px;
+}
+
+.hljs-ln-code {
+  padding-left: 10px !important;
+}

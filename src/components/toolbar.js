@@ -102,8 +102,9 @@ class Toolbar {
 
       <div class="toolbar-divider"></div>
 
-      <!-- Print & Search -->
+      <!-- Print, PDF & Search -->
       <button id="btn-print" title="${this.lang.print}">${ICONS.print}</button>
+      <button id="btn-pdf" title="${this.lang.exportPdf}">${ICONS.pdf}</button>
       <button id="btn-search" title="${this.lang.search}">${ICONS.search}</button>
 
       <div class="toolbar-divider"></div>

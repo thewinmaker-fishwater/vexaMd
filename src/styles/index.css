@@ -24,5 +24,8 @@
 /* 7. Viewer (마크다운 뷰어, 프레젠테이션) */
 @import '../modules/viewer/viewer.css';
 
-/* 8. TOC (목차 사이드바) */
+/* 8. Syntax Highlighting (코드 블록 문법 하이라이트) */
+@import '../modules/viewer/syntax.css';
+
+/* 9. TOC (목차 사이드바) */
 @import '../modules/toc/toc.css';

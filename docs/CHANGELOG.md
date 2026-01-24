@@ -1,5 +1,41 @@
 # SP MD Viewer - 개발 이력
 
+## 2026-01-24 코드 문법 하이라이트 기능
+
+### 새 기능
+- **코드 블록 문법 하이라이트**: highlight.js 라이브러리 통합
+  - 자동 언어 감지 지원
+  - 180+ 프로그래밍 언어 지원
+  - 라이트/다크 테마별 최적화된 색상
+  - GitHub 스타일 문법 색상 적용
+
+### 관련 파일
+- `src/main.js`: highlight.js 통합, marked 커스텀 렌더러
+- `src/modules/viewer/markdown.js`: highlight.js 통합
+- `src/modules/viewer/syntax.css`: 문법 하이라이트 스타일 (신규)
+- `src/styles/index.css`: syntax.css 임포트 추가
+- `package.json`: highlight.js 의존성 추가
+
+---
+
+## 2026-01-24 PDF 내보내기 기능
+
+### 새 기능
+- **PDF 내보내기**: 현재 마크다운 문서를 PDF로 저장
+  - 툴바에 PDF 내보내기 버튼 추가
+  - html2pdf.js 라이브러리 사용
+  - A4 용지, 자동 페이지 분할 지원
+  - 다국어 지원 (한/영/일)
+
+### 관련 파일
+- `src/main.js`: exportPdf 함수 추가
+- `src/components/toolbar.js`: PDF 버튼 추가
+- `src/components/icons.js`: PDF 아이콘 추가
+- `src/i18n.js`: PDF 관련 번역 추가
+- `package.json`: html2pdf.js 의존성 추가
+
+---
+
 ## 2026-01-24 모듈별 CSS 분리
 
 ### 버그 수정

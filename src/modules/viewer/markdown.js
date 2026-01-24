@@ -3,6 +3,7 @@
  */
 
 import { marked } from 'marked';
+import hljs from 'highlight.js';
 import { store } from '../../core/store.js';
 import { eventBus, EVENTS } from '../../core/events.js';
 import { $id } from '../../core/dom.js';
@@ -16,6 +17,23 @@ marked.setOptions({
   headerIds: true,
   mangle: false,
 });
+
+// Highlight.js 렌더러 설정
+const renderer = new marked.Renderer();
+renderer.code = function(code, language) {
+  if (typeof code === 'object') {
+    language = code.lang;
+    code = code.text;
+  }
+  const validLanguage = language && hljs.getLanguage(language) ? language : 'plaintext';
+  try {
+    const highlighted = hljs.highlight(code, { language: validLanguage }).value;
+    return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
+  } catch (e) {
+    return `<pre><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>`;
+  }
+};
+marked.use({ renderer });
 
 class MarkdownViewer {
   constructor() {

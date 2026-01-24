@@ -52,6 +52,11 @@ export const i18n = {
 
     // Actions
     print: '인쇄 (Ctrl+P)',
+    exportPdf: 'PDF 내보내기',
+    exportingPdf: 'PDF 내보내기 중...',
+    pdfExportSuccess: 'PDF 내보내기 완료',
+    pdfExportFailed: 'PDF 내보내기 실패',
+    noPdfDoc: '내보낼 문서가 없습니다.',
     search: '검색 (Ctrl+F)',
     viewSingle: '한 페이지 보기',
     viewDouble: '두 페이지 보기',
@@ -254,6 +259,11 @@ export const i18n = {
 
     // Actions
     print: 'Print (Ctrl+P)',
+    exportPdf: 'Export PDF',
+    exportingPdf: 'Exporting PDF...',
+    pdfExportSuccess: 'PDF exported successfully',
+    pdfExportFailed: 'PDF export failed',
+    noPdfDoc: 'No document to export.',
     search: 'Search (Ctrl+F)',
     viewSingle: 'Single Page View',
     viewDouble: 'Two Page View',
@@ -456,6 +466,11 @@ export const i18n = {
 
     // Actions
     print: '印刷 (Ctrl+P)',
+    exportPdf: 'PDFエクスポート',
+    exportingPdf: 'PDFエクスポート中...',
+    pdfExportSuccess: 'PDFエクスポート完了',
+    pdfExportFailed: 'PDFエクスポート失敗',
+    noPdfDoc: 'エクスポートするドキュメントがありません。',
     search: '検索 (Ctrl+F)',
     viewSingle: 'シングルページ表示',
     viewDouble: '2ページ表示',
