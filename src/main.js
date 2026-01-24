@@ -2159,6 +2159,8 @@ function switchToTab(tabId) {
     renderTabs();
     // 홈 탭은 항상 TOC 숨김
     clearToc();
+    // 홈 탭은 항상 view 모드 (에디터 숨김)
+    setEditorMode('view');
     return;
   }
 
