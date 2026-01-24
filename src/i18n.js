@@ -210,7 +210,17 @@ export const i18n = {
 
     // CSS Editor
     cssEditorInfo: '아래 템플릿을 참고하여 추가 CSS 스타일을 작성하세요. 주석(/*)을 제거하면 적용됩니다.',
-    cssPlaceholder: '/* 커스텀 CSS 입력 */'
+    cssPlaceholder: '/* 커스텀 CSS 입력 */',
+
+    // Editor
+    modeView: '보기 모드',
+    modeEdit: '편집 모드',
+    modeSplit: '분할 모드',
+    save: '저장 (Ctrl+S)',
+    saved: '저장되었습니다',
+    unsavedChanges: '저장하지 않은 변경사항이 있습니다.',
+    confirmClose: '저장하지 않은 변경사항이 있습니다. 정말 닫으시겠습니까?',
+    editorPlaceholder: '마크다운을 입력하세요...'
   },
 
   en: {
@@ -419,7 +429,17 @@ export const i18n = {
 
     // CSS Editor
     cssEditorInfo: 'Use the template below to add custom CSS. Remove comments (/*) to apply.',
-    cssPlaceholder: '/* Custom CSS */'
+    cssPlaceholder: '/* Custom CSS */',
+
+    // Editor
+    modeView: 'View Mode',
+    modeEdit: 'Edit Mode',
+    modeSplit: 'Split Mode',
+    save: 'Save (Ctrl+S)',
+    saved: 'Saved',
+    unsavedChanges: 'You have unsaved changes.',
+    confirmClose: 'You have unsaved changes. Are you sure you want to close?',
+    editorPlaceholder: 'Enter markdown here...'
   },
 
   ja: {
@@ -628,7 +648,17 @@ export const i18n = {
 
     // CSS Editor
     cssEditorInfo: '以下のテンプレートを参考にCSSを追加してください。コメント(/*)を削除すると適用されます。',
-    cssPlaceholder: '/* カスタムCSS */'
+    cssPlaceholder: '/* カスタムCSS */',
+
+    // Editor
+    modeView: '表示モード',
+    modeEdit: '編集モード',
+    modeSplit: '分割モード',
+    save: '保存 (Ctrl+S)',
+    saved: '保存しました',
+    unsavedChanges: '保存されていない変更があります。',
+    confirmClose: '保存されていない変更があります。本当に閉じますか？',
+    editorPlaceholder: 'マークダウンを入力...'
   }
 };
 

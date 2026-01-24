@@ -41,7 +41,10 @@ class TabsManager {
       id: tabId,
       name: name,
       filePath: filePath,
-      content: content
+      content: content,
+      originalContent: content,
+      isDirty: false,
+      editMode: 'view'
     };
 
     this.tabs.push(tab);
@@ -72,7 +75,7 @@ class TabsManager {
     this.render();
   }
 
-  close(tabId, event) {
+  close(tabId, event, force = false) {
     if (event) {
       event.stopPropagation();
     }
@@ -83,6 +86,13 @@ class TabsManager {
     if (tabIndex === -1) return;
 
     const closedTab = this.tabs[tabIndex];
+
+    // 미저장 변경사항 확인
+    if (closedTab.isDirty && !force) {
+      const confirmed = window.confirm('저장하지 않은 변경사항이 있습니다. 정말 닫으시겠습니까?');
+      if (!confirmed) return;
+    }
+
     this.tabs.splice(tabIndex, 1);
 
     if (this.activeTabId === tabId) {
@@ -145,10 +155,11 @@ class TabsManager {
 
     // 파일 탭들
     this.tabs.forEach(tab => {
+      const dirtyIndicator = tab.isDirty ? ' •' : '';
       const tabEl = createElement('div', {
-        className: `tab ${tab.id === this.activeTabId ? 'active' : ''}`,
+        className: `tab ${tab.id === this.activeTabId ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`,
         html: `
-          <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}</span>
+          <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}${dirtyIndicator}</span>
           <button class="tab-close" title="닫기">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -186,6 +197,44 @@ class TabsManager {
     const currentIndex = allTabIds.indexOf(this.activeTabId);
     const prevIndex = (currentIndex - 1 + allTabIds.length) % allTabIds.length;
     this.switchTo(allTabIds[prevIndex]);
+  }
+
+  updateContent(tabId, content) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    tab.content = content;
+    const wasDirty = tab.isDirty;
+    tab.isDirty = tab.content !== tab.originalContent;
+
+    if (wasDirty !== tab.isDirty) {
+      this.render();
+      eventBus.emit(EVENTS.FILE_DIRTY_CHANGED, { tabId, isDirty: tab.isDirty });
+    }
+  }
+
+  setEditMode(tabId, mode) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    tab.editMode = mode;
+    eventBus.emit(EVENTS.EDITOR_MODE_CHANGED, { tabId, mode, tab });
+  }
+
+  markAsSaved(tabId) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (!tab) return;
+
+    tab.originalContent = tab.content;
+    tab.isDirty = false;
+    this.render();
+    eventBus.emit(EVENTS.FILE_DIRTY_CHANGED, { tabId, isDirty: false });
+    eventBus.emit(EVENTS.FILE_SAVED, { tabId, tab });
+  }
+
+  getEditMode(tabId) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    return tab ? tab.editMode : 'view';
   }
 }
 

@@ -8,6 +8,7 @@ import { marked } from 'marked';
 import hljs from 'highlight.js';
 import { i18n } from './i18n.js';
 import { generateToc, clearToc, toggleToc, updateTocTexts, getTocVisible, setTocVisible, hideToc } from './modules/toc/toc.js';
+import { markdownEditor } from './modules/editor/editor.js';
 
 // Tauri API (조건부 로드)
 let tauriApi = null;
@@ -2118,7 +2119,10 @@ function createTab(name, filePath, content) {
     name: name,
     filePath: filePath,
     content: content,
-    tocVisible: false  // 새 탭은 TOC 숨김 상태로 시작
+    originalContent: content,  // 원본 콘텐츠 (dirty 비교용)
+    isDirty: false,            // 변경 여부
+    editMode: 'view',          // 편집 모드: 'view' | 'edit' | 'split'
+    tocVisible: false          // 새 탭은 TOC 숨김 상태로 시작
   };
   tabs.push(tab);
   renderTabs();
@@ -2171,6 +2175,10 @@ function switchToTab(tabId) {
 
   // 해당 탭의 TOC 상태 복원
   setTocVisible(tab.tocVisible || false);
+
+  // 에디터에 콘텐츠 로드 및 모드 설정
+  loadEditorContent(tab.content);
+  setEditorMode(tab.editMode || 'view');
 }
 
 function closeTab(tabId, event) {
@@ -2184,8 +2192,15 @@ function closeTab(tabId, event) {
   const tabIndex = tabs.findIndex(t => t.id === tabId);
   if (tabIndex === -1) return;
 
-  // Stop watching this file
+  // 미저장 변경사항 확인
   const tab = tabs[tabIndex];
+  if (tab.isDirty) {
+    const t = i18n[currentLanguage];
+    const confirmed = window.confirm(t.confirmClose || '저장하지 않은 변경사항이 있습니다. 정말 닫으시겠습니까?');
+    if (!confirmed) return;
+  }
+
+  // Stop watching this file
   if (tab.filePath && tab.filePath !== tab.name) {
     stopWatching(tab.filePath, tabId);
   }
@@ -2225,10 +2240,11 @@ function renderTabs() {
 
   // File tabs
   tabs.forEach(tab => {
+    const dirtyIndicator = tab.isDirty ? ' •' : '';
     const tabEl = document.createElement('div');
-    tabEl.className = `tab ${tab.id === activeTabId ? 'active' : ''}`;
+    tabEl.className = `tab ${tab.id === activeTabId ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
     tabEl.innerHTML = `
-      <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}</span>
+      <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}${dirtyIndicator}</span>
       <button class="tab-close" title="닫기">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -2248,6 +2264,132 @@ function updateTabBarVisibility() {
   // Tab bar is always visible (home tab is always there)
   tabBar.classList.remove('hidden');
   content.classList.remove('no-tabs');
+}
+
+// ========== Editor Functions ==========
+const editorPane = document.getElementById('editor-pane');
+const editorTextarea = document.getElementById('markdown-editor');
+const mainContainer = document.getElementById('main-container');
+const btnModeView = document.getElementById('btn-mode-view');
+const btnModeEdit = document.getElementById('btn-mode-edit');
+const btnModeSplit = document.getElementById('btn-mode-split');
+const btnSave = document.getElementById('btn-save');
+
+let editorDebounceTimer = null;
+const EDITOR_DEBOUNCE_DELAY = 300;
+
+function loadEditorContent(content) {
+  if (editorTextarea) {
+    editorTextarea.value = content || '';
+  }
+}
+
+function setEditorMode(mode) {
+  if (!mainContainer) return;
+
+  // 홈 탭이면 항상 view 모드
+  if (activeTabId === HOME_TAB_ID) {
+    mode = 'view';
+  }
+
+  // 현재 탭의 editMode 업데이트
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  if (activeTab) {
+    activeTab.editMode = mode;
+  }
+
+  // UI 업데이트
+  updateEditorModeButtons(mode);
+
+  // 메인 컨테이너 모드 클래스 설정
+  mainContainer.classList.remove('mode-view', 'mode-edit', 'mode-split');
+  mainContainer.classList.add(`mode-${mode}`);
+
+  // 에디터 패널 hidden 클래스 관리
+  if (editorPane) {
+    if (mode === 'view') {
+      editorPane.classList.add('hidden');
+    } else {
+      editorPane.classList.remove('hidden');
+    }
+  }
+
+  // 분할 모드에서 미리보기 업데이트
+  if (mode === 'split') {
+    updateEditorPreview();
+  }
+}
+
+function updateEditorModeButtons(mode) {
+  if (btnModeView) btnModeView.classList.toggle('active', mode === 'view');
+  if (btnModeEdit) btnModeEdit.classList.toggle('active', mode === 'edit');
+  if (btnModeSplit) btnModeSplit.classList.toggle('active', mode === 'split');
+}
+
+function onEditorInput() {
+  const editorContent = editorTextarea?.value || '';
+  const activeTab = tabs.find(t => t.id === activeTabId);
+
+  if (activeTab && activeTabId !== HOME_TAB_ID) {
+    // 탭 콘텐츠 업데이트
+    activeTab.content = editorContent;
+
+    // dirty 상태 계산
+    const wasDirty = activeTab.isDirty;
+    activeTab.isDirty = activeTab.content !== activeTab.originalContent;
+
+    if (wasDirty !== activeTab.isDirty) {
+      renderTabs();
+    }
+
+    // 분할 모드에서 디바운스된 미리보기 업데이트
+    const currentMode = mainContainer?.classList.contains('mode-split') ? 'split' :
+                        mainContainer?.classList.contains('mode-edit') ? 'edit' : 'view';
+    if (currentMode === 'split') {
+      debouncedUpdatePreview();
+    }
+  }
+}
+
+function debouncedUpdatePreview() {
+  if (editorDebounceTimer) {
+    clearTimeout(editorDebounceTimer);
+  }
+  editorDebounceTimer = setTimeout(() => {
+    updateEditorPreview();
+  }, EDITOR_DEBOUNCE_DELAY);
+}
+
+function updateEditorPreview() {
+  const editorContent = editorTextarea?.value || '';
+  if (content) {
+    renderMarkdown(editorContent, false);
+  }
+}
+
+async function saveCurrentFile() {
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  if (!activeTab || activeTabId === HOME_TAB_ID) return;
+
+  const editorContent = editorTextarea?.value || activeTab.content;
+
+  if (activeTab.filePath && fsWriteTextFile) {
+    try {
+      await fsWriteTextFile(activeTab.filePath, editorContent);
+      // 저장 성공 - dirty 상태 초기화
+      activeTab.content = editorContent;
+      activeTab.originalContent = editorContent;
+      activeTab.isDirty = false;
+      renderTabs();
+
+      const t = i18n[currentLanguage];
+      showNotification(t.saved || '저장되었습니다');
+    } catch (error) {
+      showError('저장 실패', error.toString());
+    }
+  } else {
+    console.log('Cannot save: no file path or fs API');
+  }
 }
 
 // ========== Recent Files ==========
@@ -2741,6 +2883,11 @@ function setupKeyboard() {
       e.preventDefault();
       printDocument();
     }
+    // Ctrl+S: Save file
+    if (e.ctrlKey && e.key === 's') {
+      e.preventDefault();
+      saveCurrentFile();
+    }
     // Ctrl++: Zoom in
     if (e.ctrlKey && (e.key === '+' || e.key === '=')) {
       e.preventDefault();
@@ -2929,6 +3076,9 @@ async function init() {
 
   setupDragDrop();
   setupKeyboard();
+
+  // 에디터 초기화
+  markdownEditor.init();
   // console.log(`[PERF] UI 초기화: ${(performance.now() - initStart).toFixed(1)}ms`);
 
   // 2. Tauri 초기화 (백그라운드)
@@ -3089,6 +3239,13 @@ async function init() {
   presPrev.addEventListener('click', presentationPrev);
   presNext.addEventListener('click', presentationNext);
   presExit.addEventListener('click', exitPresentation);
+
+  // Editor mode event listeners
+  if (btnModeView) btnModeView.addEventListener('click', () => setEditorMode('view'));
+  if (btnModeEdit) btnModeEdit.addEventListener('click', () => setEditorMode('edit'));
+  if (btnModeSplit) btnModeSplit.addEventListener('click', () => setEditorMode('split'));
+  if (btnSave) btnSave.addEventListener('click', saveCurrentFile);
+  if (editorTextarea) editorTextarea.addEventListener('input', onEditorInput);
 
   // Handle fullscreen change
   document.addEventListener('fullscreenchange', () => {

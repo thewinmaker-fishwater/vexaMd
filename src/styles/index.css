@@ -29,3 +29,6 @@
 
 /* 9. TOC (목차 사이드바) */
 @import '../modules/toc/toc.css';
+
+/* 10. Editor (마크다운 에디터) */
+@import '../modules/editor/editor.css';

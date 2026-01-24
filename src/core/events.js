@@ -94,6 +94,11 @@ export const EVENTS = {
   SEARCH_PERFORMED: 'search:performed',
   SEARCH_MATCH_CHANGED: 'search:match-changed',
 
+  EDITOR_MODE_CHANGED: 'editor:mode-changed',
+  EDITOR_CONTENT_CHANGED: 'editor:content-changed',
+  FILE_SAVED: 'file:saved',
+  FILE_DIRTY_CHANGED: 'file:dirty-changed',
+
   PRESENTATION_STARTED: 'presentation:started',
   PRESENTATION_ENDED: 'presentation:ended',
   PRESENTATION_SLIDE_CHANGED: 'presentation:slide-changed',
