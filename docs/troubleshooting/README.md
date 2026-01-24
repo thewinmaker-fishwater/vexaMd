@@ -7,6 +7,9 @@
 | 문서 | 설명 | 상태 |
 |------|------|------|
 | [mermaid-split-mode.md](./mermaid-split-mode.md) | Mermaid 다이어그램 크기 및 분할 화면 레이아웃 문제 | 해결됨 |
+| [mermaid-duplicate-rendering.md](./mermaid-duplicate-rendering.md) | Mermaid 다이어그램 중복 렌더링 | 해결됨 |
+| [zoom-scrollbar-shrink.md](./zoom-scrollbar-shrink.md) | Zoom 시 스크롤바 축소 문제 | 해결됨 |
+| [zoom-global-instead-of-per-tab.md](./zoom-global-instead-of-per-tab.md) | Zoom이 전역으로 적용되는 문제 | 해결됨 |
 
 ## 문서 작성 템플릿
 
@@ -44,9 +47,13 @@ YYYY-MM-DD
 
 ### CSS/레이아웃 관련
 - [mermaid-split-mode.md](./mermaid-split-mode.md)
+- [zoom-scrollbar-shrink.md](./zoom-scrollbar-shrink.md)
 
 ### 플러그인 관련
-- (추가 예정)
+- [mermaid-duplicate-rendering.md](./mermaid-duplicate-rendering.md)
+
+### Zoom/뷰어 관련
+- [zoom-global-instead-of-per-tab.md](./zoom-global-instead-of-per-tab.md)
 
 ### Tauri/백엔드 관련
 - (추가 예정)
