@@ -3,3 +3,5 @@
 /src-tauri/target/
 /src-tauri/gen/
 /nul
+/docs/images/test/
+test-results/
