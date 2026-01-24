@@ -32,6 +32,7 @@ export default class MermaidPlugin extends Plugin {
     super(api);
     this.mermaid = null;
     this.diagramCounter = 0;
+    this.processingBlocks = new Set(); // 중복 렌더링 방지
   }
 
   async init() {
@@ -147,10 +148,17 @@ export default class MermaidPlugin extends Plugin {
     for (const codeElement of codeBlocks) {
       const wrapper = codeElement.closest('.code-block-wrapper') || codeElement.parentElement;
 
-      // Skip if already rendered
+      // Skip if already rendered or currently being processed
       if (wrapper.classList.contains('mermaid-wrapper')) {
         continue;
       }
+
+      // 중복 처리 방지: wrapper를 키로 사용
+      const blockKey = codeElement.textContent.trim().substring(0, 50);
+      if (this.processingBlocks.has(blockKey)) {
+        continue;
+      }
+      this.processingBlocks.add(blockKey);
 
       const code = codeElement.textContent;
 
@@ -214,7 +222,11 @@ export default class MermaidPlugin extends Plugin {
         // Hide code block but keep it for source view
         const pre = codeElement.parentElement;
         if (pre) pre.classList.add('mermaid-source');
+
+        // 처리 완료 후 Set에서 제거
+        this.processingBlocks.delete(blockKey);
       } catch (error) {
+        this.processingBlocks.delete(blockKey);
         console.warn('[Mermaid Plugin] Failed to render diagram:', error);
 
         // Show error message

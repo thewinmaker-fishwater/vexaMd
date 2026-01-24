@@ -44,7 +44,8 @@ class TabsManager {
       content: content,
       originalContent: content,
       isDirty: false,
-      editMode: 'view'
+      editMode: 'view',
+      zoom: 100  // 탭별 zoom 레벨
     };
 
     this.tabs.push(tab);
@@ -235,6 +236,22 @@ class TabsManager {
   getEditMode(tabId) {
     const tab = this.tabs.find(t => t.id === tabId);
     return tab ? tab.editMode : 'view';
+  }
+
+  setZoom(tabId, zoom) {
+    const tab = this.tabs.find(t => t.id === tabId);
+    if (!tab) return;
+    tab.zoom = zoom;
+  }
+
+  getZoom(tabId) {
+    if (tabId === HOME_TAB_ID) return 100; // 홈은 항상 100%
+    const tab = this.tabs.find(t => t.id === tabId);
+    return tab ? tab.zoom : 100;
+  }
+
+  getActiveZoom() {
+    return this.getZoom(this.activeTabId);
   }
 }
 

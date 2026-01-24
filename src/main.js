@@ -624,6 +624,11 @@ function setViewMode(mode) {
 
 // ========== Zoom ==========
 function setZoom(level) {
+  // 홈 탭에서는 zoom 변경 불가
+  if (activeTabId === HOME_TAB_ID) {
+    return;
+  }
+
   // Clamp zoom level
   level = Math.max(ZOOM_LEVELS[0], Math.min(ZOOM_LEVELS[ZOOM_LEVELS.length - 1], level));
 
@@ -633,11 +638,31 @@ function setZoom(level) {
   );
 
   currentZoom = nearest;
-  localStorage.setItem('zoom', nearest.toString());
+
+  // 현재 탭에 zoom 저장
+  const currentTab = tabs.find(t => t.id === activeTabId);
+  if (currentTab) {
+    currentTab.zoom = nearest;
+  }
+
   content.setAttribute('data-zoom', nearest.toString());
   zoomLevelDisplay.textContent = `${nearest}%`;
 
   // Enable/disable pan mode based on zoom level
+  updatePanMode();
+}
+
+function applyTabZoom(tabId) {
+  let zoom = 100;
+  if (tabId !== HOME_TAB_ID) {
+    const tab = tabs.find(t => t.id === tabId);
+    if (tab) {
+      zoom = tab.zoom || 100;
+    }
+  }
+  currentZoom = zoom;
+  content.setAttribute('data-zoom', zoom.toString());
+  zoomLevelDisplay.textContent = `${zoom}%`;
   updatePanMode();
 }
 
@@ -798,6 +823,7 @@ function handleFileChange(filePath, event) {
 }
 
 function zoomIn() {
+  if (activeTabId === HOME_TAB_ID) return;
   const currentIndex = ZOOM_LEVELS.indexOf(currentZoom);
   if (currentIndex < ZOOM_LEVELS.length - 1) {
     setZoom(ZOOM_LEVELS[currentIndex + 1]);
@@ -805,6 +831,7 @@ function zoomIn() {
 }
 
 function zoomOut() {
+  if (activeTabId === HOME_TAB_ID) return;
   const currentIndex = ZOOM_LEVELS.indexOf(currentZoom);
   if (currentIndex > 0) {
     setZoom(ZOOM_LEVELS[currentIndex - 1]);
@@ -812,6 +839,7 @@ function zoomOut() {
 }
 
 function zoomReset() {
+  if (activeTabId === HOME_TAB_ID) return;
   setZoom(100);
 }
 
@@ -2135,7 +2163,8 @@ function createTab(name, filePath, content) {
     originalContent: content,  // 원본 콘텐츠 (dirty 비교용)
     isDirty: false,            // 변경 여부
     editMode: 'view',          // 편집 모드: 'view' | 'edit' | 'split'
-    tocVisible: false          // 새 탭은 TOC 숨김 상태로 시작
+    tocVisible: false,         // 새 탭은 TOC 숨김 상태로 시작
+    zoom: 100                  // 탭별 줌 레벨
   };
   tabs.push(tab);
   renderTabs();
@@ -2174,6 +2203,8 @@ function switchToTab(tabId) {
     clearToc();
     // 홈 탭은 항상 view 모드 (에디터 숨김)
     setEditorMode('view');
+    // 홈 탭은 항상 100% zoom
+    applyTabZoom(HOME_TAB_ID);
     return;
   }
 
@@ -2194,6 +2225,9 @@ function switchToTab(tabId) {
   // 에디터에 콘텐츠 로드 및 모드 설정
   loadEditorContent(tab.content);
   setEditorMode(tab.editMode || 'view');
+
+  // 해당 탭의 zoom 복원
+  applyTabZoom(tabId);
 }
 
 function closeTab(tabId, event) {
@@ -3107,7 +3141,7 @@ async function init() {
   renderHomeRecentFiles();
 
   setViewMode(currentViewMode);
-  setZoom(currentZoom);
+  applyTabZoom(activeTabId);  // 탭별 zoom 적용
   applyContentWidth(currentContentWidth);
   languageSelect.value = currentLanguage;
   updateUITexts();

@@ -101,6 +101,41 @@ feat: add plugin system with Mermaid diagram support
 
 ---
 
+## 세션 2026-01-25 (2차)
+
+### 작업 내용
+
+1. **Mermaid 다이어그램 중복 렌더링 버그 수정**
+   - 동일 다이어그램이 2번 렌더링되는 문제
+   - 원인: `onAfterRender` 훅과 `CONTENT_RENDERED` 이벤트가 동시 실행
+   - 해결: `processingBlocks` Set으로 중복 처리 방지
+
+2. **Zoom 스크롤바 축소 버그 수정**
+   - 축소 시 스크롤바까지 같이 축소되는 문제
+   - 원인: `viewer.css`에서 `#content` 전체에 transform 적용
+   - 해결: 내부 콘텐츠(`.markdown-content-wrapper`)에만 transform 적용
+
+3. **탭별 Zoom 기능 구현**
+   - 각 탭마다 개별 zoom 레벨 저장/복원
+   - 홈 탭은 항상 100% (zoom 변경 불가)
+   - 탭 전환 시 해당 탭의 zoom 자동 적용
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/plugins/mermaid/index.js` | `processingBlocks` Set 추가로 중복 렌더링 방지 |
+| `src/modules/viewer/viewer.css` | zoom transform을 내부 콘텐츠에만 적용 |
+| `src/modules/tabs/tabs.js` | 탭에 `zoom` 속성 및 관련 메서드 추가 |
+| `src/modules/ui/zoom.js` | 탭별 zoom 관리로 변경 |
+| `src/main.js` | 탭별 zoom 로직 (`setZoom`, `applyTabZoom`) |
+
+### 커밋 정보
+
+- 커밋 대기 중
+
+---
+
 ## 세션 로그 작성 가이드
 
 ### 세션 시작 시

@@ -521,20 +521,39 @@
 }
 
 /* ========== Zoom Styles ========== */
-#content {
-  transform-origin: top center;
+/* Zoom은 마크다운 콘텐츠에만 적용 (홈화면 제외, 스크롤바 유지) */
+#content > .markdown-content-wrapper,
+#content > .double-scroll-view {
+  transform-origin: top left;
   transition: transform 0.2s ease;
 }
 
-#content[data-zoom="50"] { transform: scale(0.5); }
-#content[data-zoom="75"] { transform: scale(0.75); }
-#content[data-zoom="90"] { transform: scale(0.9); }
-#content[data-zoom="100"] { transform: scale(1); }
-#content[data-zoom="110"] { transform: scale(1.1); }
-#content[data-zoom="125"] { transform: scale(1.25); }
-#content[data-zoom="150"] { transform: scale(1.5); }
-#content[data-zoom="175"] { transform: scale(1.75); }
-#content[data-zoom="200"] { transform: scale(2); }
+#content[data-zoom="50"] > .markdown-content-wrapper,
+#content[data-zoom="50"] > .double-scroll-view { transform: scale(0.5); }
+
+#content[data-zoom="75"] > .markdown-content-wrapper,
+#content[data-zoom="75"] > .double-scroll-view { transform: scale(0.75); }
+
+#content[data-zoom="90"] > .markdown-content-wrapper,
+#content[data-zoom="90"] > .double-scroll-view { transform: scale(0.9); }
+
+#content[data-zoom="100"] > .markdown-content-wrapper,
+#content[data-zoom="100"] > .double-scroll-view { transform: scale(1); }
+
+#content[data-zoom="110"] > .markdown-content-wrapper,
+#content[data-zoom="110"] > .double-scroll-view { transform: scale(1.1); }
+
+#content[data-zoom="125"] > .markdown-content-wrapper,
+#content[data-zoom="125"] > .double-scroll-view { transform: scale(1.25); }
+
+#content[data-zoom="150"] > .markdown-content-wrapper,
+#content[data-zoom="150"] > .double-scroll-view { transform: scale(1.5); }
+
+#content[data-zoom="175"] > .markdown-content-wrapper,
+#content[data-zoom="175"] > .double-scroll-view { transform: scale(1.75); }
+
+#content[data-zoom="200"] > .markdown-content-wrapper,
+#content[data-zoom="200"] > .double-scroll-view { transform: scale(2); }
 
 /* ========== Pan Mode Styles ========== */
 /* Enable horizontal scrolling when zoomed in */
