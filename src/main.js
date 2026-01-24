@@ -9,6 +9,10 @@ import hljs from 'highlight.js';
 import { i18n } from './i18n.js';
 import { generateToc, clearToc, toggleToc, updateTocTexts, getTocVisible, setTocVisible, hideToc } from './modules/toc/toc.js';
 import { markdownEditor } from './modules/editor/editor.js';
+import { pluginManager } from './core/plugin-manager.js';
+import { getMarkdownHooks } from './core/plugin-api.js';
+import { eventBus, EVENTS } from './core/events.js';
+import { pluginUI } from './modules/plugins/plugin-ui.js';
 
 // Tauri API (조건부 로드)
 let tauriApi = null;
@@ -61,9 +65,12 @@ renderer.code = function(code, language) {
     code = code.text;
   }
 
+  // 원본 언어 보존 (플러그인에서 사용)
+  const originalLanguage = language || '';
   const validLanguage = language && hljs.getLanguage(language) ? language : 'plaintext';
   const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const langLabel = validLanguage !== 'plaintext' ? validLanguage : '';
+  // 라벨에는 원본 언어 표시 (mermaid 등 플러그인 언어도 표시)
+  const langLabel = originalLanguage || '';
 
   const copyBtn = `<button class="code-copy-btn" title="복사">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -74,16 +81,19 @@ renderer.code = function(code, language) {
 
   try {
     const highlighted = hljs.highlight(code, { language: validLanguage }).value;
-    return `<div class="code-block-wrapper">
+    // 원본 언어 클래스도 추가하여 플러그인이 감지할 수 있도록 함
+    const languageClass = originalLanguage ? `language-${originalLanguage}` : '';
+    return `<div class="code-block-wrapper" data-language="${originalLanguage}">
       ${langLabel ? `<span class="code-lang-label">${langLabel}</span>` : ''}
       ${copyBtn}
-      <pre data-code="${escapedCode}"><code class="hljs language-${validLanguage}">${highlighted}</code></pre>
+      <pre data-code="${escapedCode}"><code class="hljs ${languageClass}">${highlighted}</code></pre>
     </div>`;
   } catch (e) {
     console.warn('Highlight error:', e);
-    return `<div class="code-block-wrapper">
+    const languageClass = originalLanguage ? `language-${originalLanguage}` : '';
+    return `<div class="code-block-wrapper" data-language="${originalLanguage}">
       ${copyBtn}
-      <pre data-code="${escapedCode}"><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>
+      <pre data-code="${escapedCode}"><code class="hljs ${languageClass}">${hljs.highlightAuto(code).value}</code></pre>
     </div>`;
   }
 };
@@ -162,6 +172,9 @@ const presIndicator = document.getElementById('pres-indicator');
 const presPrev = document.getElementById('pres-prev');
 const presNext = document.getElementById('pres-next');
 const presExit = document.getElementById('pres-exit');
+
+// Plugin elements
+const btnPlugins = document.getElementById('btn-plugins');
 
 // Help menu elements
 const btnHelp = document.getElementById('btn-help');
@@ -2602,7 +2615,17 @@ function renderMarkdown(text, isNewFile = true) {
 
   try {
     // Normalize line endings to \n
-    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    let normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+    // Apply plugin beforeRender hooks
+    const markdownHooks = getMarkdownHooks();
+    for (const hook of markdownHooks.beforeRender) {
+      try {
+        normalizedText = hook.callback(normalizedText) || normalizedText;
+      } catch (err) {
+        console.error(`[Plugin] beforeRender hook error (${hook.pluginId}):`, err);
+      }
+    }
 
     // Process GitHub-style alerts before markdown parsing
     const processedText = processAlerts(normalizedText);
@@ -2712,6 +2735,19 @@ function renderPages() {
 
   // Generate TOC from headings
   generateToc();
+
+  // Apply plugin afterRender hooks
+  const markdownHooks = getMarkdownHooks();
+  for (const hook of markdownHooks.afterRender) {
+    try {
+      hook.callback(content.innerHTML, content);
+    } catch (err) {
+      console.error(`[Plugin] afterRender hook error (${hook.pluginId}):`, err);
+    }
+  }
+
+  // Emit content rendered event for plugins
+  eventBus.emit(EVENTS.CONTENT_RENDERED, { container: content });
 }
 
 function goToPage(pageNum) {
@@ -3083,6 +3119,14 @@ async function init() {
   markdownEditor.init();
   // console.log(`[PERF] UI 초기화: ${(performance.now() - initStart).toFixed(1)}ms`);
 
+  // 플러그인 시스템 초기화
+  pluginManager.init().then(() => {
+    console.log('[Plugins] Plugin system initialized');
+    eventBus.emit(EVENTS.PLUGINS_LOADED, { plugins: pluginManager.getPluginList() });
+  }).catch(err => {
+    console.error('[Plugins] Failed to initialize plugin system:', err);
+  });
+
   // 2. Tauri 초기화 (백그라운드)
   initTauri().then(() => {
     // console.log(`[PERF] Tauri 완료: ${(performance.now() - initStart).toFixed(1)}ms`);
@@ -3241,6 +3285,12 @@ async function init() {
   presPrev.addEventListener('click', presentationPrev);
   presNext.addEventListener('click', presentationNext);
   presExit.addEventListener('click', exitPresentation);
+
+  // Plugin UI event listener
+  if (btnPlugins) {
+    pluginUI.init();
+    btnPlugins.addEventListener('click', () => pluginUI.open());
+  }
 
   // Editor mode event listeners
   if (btnModeView) btnModeView.addEventListener('click', () => setEditorMode('view'));

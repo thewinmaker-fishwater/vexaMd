@@ -32,3 +32,6 @@
 
 /* 10. Editor (마크다운 에디터) */
 @import '../modules/editor/editor.css';
+
+/* 11. Plugins (플러그인 시스템) */
+@import '../modules/plugins/plugin-ui.css';

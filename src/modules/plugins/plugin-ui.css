@@ -1,0 +1,771 @@
+/**
+ * Plugin UI Styles
+ */
+
+/* Plugin Settings Modal */
+.plugin-settings-modal .modal-content {
+  max-width: 600px;
+  width: 90%;
+}
+
+.plugin-list-container {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.plugin-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--accent);
+  font-style: italic;
+}
+
+/* Plugin Card */
+.plugin-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.plugin-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.plugin-card.disabled {
+  opacity: 0.7;
+}
+
+.plugin-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.plugin-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.plugin-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text);
+}
+
+.plugin-version {
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: var(--border);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.plugin-badge {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.plugin-badge.built-in {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.plugin-description {
+  font-size: 0.875rem;
+  color: var(--accent);
+  margin: 0.5rem 0;
+  line-height: 1.4;
+}
+
+.plugin-author {
+  font-size: 0.75rem;
+  color: var(--accent);
+  margin: 0.25rem 0;
+}
+
+.plugin-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.plugin-settings-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.plugin-settings-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Toggle Switch */
+.plugin-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.plugin-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border);
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: var(--bg);
+  transition: 0.3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+input:checked + .toggle-slider {
+  background-color: var(--accent);
+}
+
+input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+input:focus + .toggle-slider {
+  box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.3);
+}
+
+/* Plugin Settings Detail Modal */
+.plugin-settings-detail-modal .modal-content {
+  max-width: 500px;
+  width: 90%;
+}
+
+.plugin-settings-form {
+  padding: 1rem;
+}
+
+.settings-field {
+  margin-bottom: 1rem;
+}
+
+.settings-field label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text);
+  margin-bottom: 0.375rem;
+}
+
+.settings-field input[type="text"],
+.settings-field input[type="number"],
+.settings-field select {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
+.settings-field input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+}
+
+.no-settings {
+  text-align: center;
+  color: var(--accent);
+  font-style: italic;
+  padding: 1rem;
+}
+
+/* Plugin Toolbar Buttons */
+.plugin-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.plugin-toolbar-btn {
+  background: transparent;
+  border: none;
+  padding: 0.375rem;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background-color 0.15s;
+}
+
+.plugin-toolbar-btn:hover {
+  background-color: var(--border);
+}
+
+.plugin-btn-group {
+  display: flex;
+  align-items: center;
+  background: var(--border);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.plugin-btn-group .plugin-toolbar-btn {
+  border-radius: 2px;
+}
+
+/* Mermaid Diagram Styles */
+.mermaid-wrapper {
+  position: relative;
+  margin: 1.5rem 0;
+  max-width: 100%;
+}
+
+/* Hide the original code block label when mermaid is rendered */
+.mermaid-wrapper > .code-lang-label,
+.mermaid-wrapper > .code-copy-btn {
+  display: none;
+}
+
+.mermaid-diagram {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* SVG 스케일링 - 원본 크기 유지, 컨테이너보다 클 때만 축소 */
+/* max-width/max-height는 JavaScript에서 원본 크기 기준으로 설정됨 */
+.mermaid-diagram svg {
+  display: block;
+  margin: 0 auto;
+  /* width: 100%와 max-width(JS 설정)로 반응형 동작 */
+  /* 원본 크기보다 확대되지 않고, 컨테이너가 작으면 축소됨 */
+}
+
+.mermaid-toggle-source {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+
+.mermaid-diagram:hover .mermaid-toggle-source {
+  opacity: 1;
+}
+
+.mermaid-source {
+  display: none;
+}
+
+.mermaid-wrapper.show-source .mermaid-source {
+  display: block;
+}
+
+.mermaid-wrapper.show-source .mermaid-diagram {
+  display: none;
+}
+
+.mermaid-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.mermaid-error-icon {
+  color: #ef4444;
+  font-size: 1.25rem;
+}
+
+.mermaid-error-text {
+  font-size: 0.875rem;
+  color: #ef4444;
+  font-weight: 500;
+}
+
+/* ===== DARK THEME - Glassmorphism Style ===== */
+[data-theme="dark"] .mermaid-diagram {
+  background: rgba(15, 15, 25, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(139, 92, 246, 0.1) inset,
+    0 0 60px rgba(139, 92, 246, 0.05) inset;
+}
+
+[data-theme="dark"] .mermaid-toggle-source {
+  background: rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  color: #c4b5fd;
+}
+
+[data-theme="dark"] .mermaid-toggle-source:hover {
+  background: rgba(139, 92, 246, 0.35);
+  color: #ffffff;
+}
+
+/* Dark theme - SVG overrides for flowchart nodes */
+[data-theme="dark"] .mermaid-diagram .node rect,
+[data-theme="dark"] .mermaid-diagram .node polygon,
+[data-theme="dark"] .mermaid-diagram .node circle,
+[data-theme="dark"] .mermaid-diagram .node ellipse,
+[data-theme="dark"] .mermaid-diagram .node path {
+  fill: rgba(30, 27, 75, 0.95) !important;
+  stroke: #8b5cf6 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .node .label,
+[data-theme="dark"] .mermaid-diagram .nodeLabel,
+[data-theme="dark"] .mermaid-diagram .node foreignObject div {
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .node foreignObject div {
+  background: transparent !important;
+}
+
+/* Dark theme - Edge/Arrow styles */
+[data-theme="dark"] .mermaid-diagram .edgePath path.path,
+[data-theme="dark"] .mermaid-diagram path.flowchart-link {
+  stroke: #a78bfa !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .edgePath marker path,
+[data-theme="dark"] .mermaid-diagram marker path {
+  fill: #a78bfa !important;
+  stroke: #a78bfa !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .edgeLabel,
+[data-theme="dark"] .mermaid-diagram .edgeLabel rect,
+[data-theme="dark"] .mermaid-diagram .edgeLabel span {
+  background: transparent !important;
+  background-color: transparent !important;
+  fill: transparent !important;
+  color: #c4b5fd !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .edgeLabel .label {
+  background: rgba(15, 15, 25, 0.9) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+/* Dark theme - Cluster/Subgraph styles */
+[data-theme="dark"] .mermaid-diagram .cluster rect {
+  fill: rgba(49, 46, 129, 0.4) !important;
+  stroke: #6366f1 !important;
+  stroke-width: 1.5px !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .cluster .nodeLabel {
+  color: #c7d2fe !important;
+}
+
+/* Dark theme - Sequence diagram */
+[data-theme="dark"] .mermaid-diagram .actor {
+  fill: rgba(30, 27, 75, 0.95) !important;
+  stroke: #8b5cf6 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .actor-line {
+  stroke: #6366f1 !important;
+  stroke-dasharray: 4, 4 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram text.actor,
+[data-theme="dark"] .mermaid-diagram .actor-box text {
+  fill: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .messageLine0,
+[data-theme="dark"] .mermaid-diagram .messageLine1,
+[data-theme="dark"] .mermaid-diagram line[class*="messageLine"] {
+  stroke: #a78bfa !important;
+  stroke-width: 1.5px !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .messageText,
+[data-theme="dark"] .mermaid-diagram text.messageText,
+[data-theme="dark"] .mermaid-diagram .sequenceMessage text,
+[data-theme="dark"] .mermaid-diagram tspan.messageText {
+  fill: #e2e8f0 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Sequence diagram - loop/alt/opt labels */
+[data-theme="dark"] .mermaid-diagram .loopText,
+[data-theme="dark"] .mermaid-diagram .loopText tspan,
+[data-theme="dark"] .mermaid-diagram .labelText,
+[data-theme="dark"] .mermaid-diagram .labelText tspan {
+  fill: #c4b5fd !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .loopLine {
+  stroke: #6366f1 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .activation0,
+[data-theme="dark"] .mermaid-diagram .activation1,
+[data-theme="dark"] .mermaid-diagram .activation2 {
+  fill: rgba(99, 102, 241, 0.3) !important;
+  stroke: #8b5cf6 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .note {
+  fill: rgba(124, 58, 237, 0.2) !important;
+  stroke: #8b5cf6 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .noteText,
+[data-theme="dark"] .mermaid-diagram .noteText tspan {
+  fill: #e2e8f0 !important;
+}
+
+/* Sequence diagram arrows */
+[data-theme="dark"] .mermaid-diagram #arrowhead path,
+[data-theme="dark"] .mermaid-diagram marker[id*="arrowhead"] path,
+[data-theme="dark"] .mermaid-diagram marker path {
+  fill: #a78bfa !important;
+  stroke: #a78bfa !important;
+}
+
+/* Dark theme - Class diagram */
+[data-theme="dark"] .mermaid-diagram .classGroup rect {
+  fill: rgba(30, 27, 75, 0.95) !important;
+  stroke: #8b5cf6 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .classGroup text,
+[data-theme="dark"] .mermaid-diagram .classLabel .label {
+  fill: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .classGroup line {
+  stroke: #6366f1 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .relation {
+  stroke: #a78bfa !important;
+  stroke-width: 1.5px !important;
+}
+
+/* Dark theme - State diagram */
+[data-theme="dark"] .mermaid-diagram .stateGroup rect,
+[data-theme="dark"] .mermaid-diagram .state-note rect {
+  fill: rgba(30, 27, 75, 0.95) !important;
+  stroke: #8b5cf6 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .stateGroup .composit {
+  fill: rgba(49, 46, 129, 0.3) !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .stateGroup text {
+  fill: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .transition {
+  stroke: #a78bfa !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .start-state,
+[data-theme="dark"] .mermaid-diagram circle.start-state {
+  fill: #8b5cf6 !important;
+  stroke: #8b5cf6 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .end-state-outer {
+  fill: transparent !important;
+  stroke: #8b5cf6 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .end-state-inner {
+  fill: #8b5cf6 !important;
+}
+
+/* Dark theme - General text */
+[data-theme="dark"] .mermaid-diagram text,
+[data-theme="dark"] .mermaid-diagram text tspan,
+[data-theme="dark"] .mermaid-diagram tspan {
+  fill: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .mermaid-diagram .label text,
+[data-theme="dark"] .mermaid-diagram span.nodeLabel {
+  color: #e2e8f0 !important;
+  fill: #e2e8f0 !important;
+}
+
+/* Ensure all SVG text is properly colored */
+[data-theme="dark"] .mermaid-diagram svg text {
+  fill: #e2e8f0 !important;
+}
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] .mermaid-diagram {
+  background: linear-gradient(135deg, #fafaff 0%, #f0f0ff 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  box-shadow:
+    0 4px 16px rgba(99, 102, 241, 0.1),
+    0 0 0 1px rgba(99, 102, 241, 0.08) inset;
+}
+
+[data-theme="light"] .mermaid-toggle-source {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #6366f1;
+}
+
+[data-theme="light"] .mermaid-toggle-source:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+/* Light theme - Flowchart nodes */
+[data-theme="light"] .mermaid-diagram .node rect,
+[data-theme="light"] .mermaid-diagram .node polygon,
+[data-theme="light"] .mermaid-diagram .node circle,
+[data-theme="light"] .mermaid-diagram .node ellipse,
+[data-theme="light"] .mermaid-diagram .node path {
+  fill: #ffffff !important;
+  stroke: #6366f1 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="light"] .mermaid-diagram .node .label,
+[data-theme="light"] .mermaid-diagram .nodeLabel,
+[data-theme="light"] .mermaid-diagram .node foreignObject div {
+  color: #1e1b4b !important;
+  fill: #1e1b4b !important;
+}
+
+/* Light theme - Edges/Arrows */
+[data-theme="light"] .mermaid-diagram .edgePath path.path,
+[data-theme="light"] .mermaid-diagram path.flowchart-link {
+  stroke: #6366f1 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="light"] .mermaid-diagram .edgePath marker path,
+[data-theme="light"] .mermaid-diagram marker path,
+[data-theme="light"] .mermaid-diagram #arrowhead path,
+[data-theme="light"] .mermaid-diagram marker[id*="arrowhead"] path {
+  fill: #6366f1 !important;
+  stroke: #6366f1 !important;
+}
+
+[data-theme="light"] .mermaid-diagram .edgeLabel,
+[data-theme="light"] .mermaid-diagram .edgeLabel rect {
+  background: transparent !important;
+  background-color: transparent !important;
+  fill: transparent !important;
+}
+
+[data-theme="light"] .mermaid-diagram .edgeLabel span {
+  color: #4f46e5 !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+/* Light theme - Sequence diagram */
+[data-theme="light"] .mermaid-diagram .actor {
+  fill: #ffffff !important;
+  stroke: #6366f1 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="light"] .mermaid-diagram .actor-line {
+  stroke: #6366f1 !important;
+  stroke-dasharray: 4, 4 !important;
+}
+
+[data-theme="light"] .mermaid-diagram text.actor,
+[data-theme="light"] .mermaid-diagram .actor-box text {
+  fill: #1e1b4b !important;
+}
+
+[data-theme="light"] .mermaid-diagram .messageLine0,
+[data-theme="light"] .mermaid-diagram .messageLine1,
+[data-theme="light"] .mermaid-diagram line[class*="messageLine"] {
+  stroke: #6366f1 !important;
+  stroke-width: 1.5px !important;
+}
+
+[data-theme="light"] .mermaid-diagram .messageText,
+[data-theme="light"] .mermaid-diagram text.messageText,
+[data-theme="light"] .mermaid-diagram .sequenceMessage text,
+[data-theme="light"] .mermaid-diagram tspan.messageText {
+  fill: #1e1b4b !important;
+}
+
+[data-theme="light"] .mermaid-diagram .loopText,
+[data-theme="light"] .mermaid-diagram .loopText tspan,
+[data-theme="light"] .mermaid-diagram .labelText,
+[data-theme="light"] .mermaid-diagram .labelText tspan {
+  fill: #4f46e5 !important;
+}
+
+[data-theme="light"] .mermaid-diagram .loopLine {
+  stroke: #6366f1 !important;
+}
+
+[data-theme="light"] .mermaid-diagram .activation0,
+[data-theme="light"] .mermaid-diagram .activation1,
+[data-theme="light"] .mermaid-diagram .activation2 {
+  fill: rgba(99, 102, 241, 0.15) !important;
+  stroke: #6366f1 !important;
+}
+
+[data-theme="light"] .mermaid-diagram .note {
+  fill: #ede9fe !important;
+  stroke: #8b5cf6 !important;
+}
+
+[data-theme="light"] .mermaid-diagram .noteText,
+[data-theme="light"] .mermaid-diagram .noteText tspan {
+  fill: #1e1b4b !important;
+}
+
+/* Light theme - Class diagram */
+[data-theme="light"] .mermaid-diagram .classGroup rect {
+  fill: #ffffff !important;
+  stroke: #6366f1 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="light"] .mermaid-diagram .classGroup text,
+[data-theme="light"] .mermaid-diagram .classLabel .label {
+  fill: #1e1b4b !important;
+}
+
+[data-theme="light"] .mermaid-diagram .classGroup line {
+  stroke: #a5b4fc !important;
+}
+
+[data-theme="light"] .mermaid-diagram .relation {
+  stroke: #6366f1 !important;
+}
+
+/* Light theme - State diagram */
+[data-theme="light"] .mermaid-diagram .stateGroup rect,
+[data-theme="light"] .mermaid-diagram .state-note rect {
+  fill: #ffffff !important;
+  stroke: #6366f1 !important;
+  stroke-width: 2px !important;
+}
+
+[data-theme="light"] .mermaid-diagram .stateGroup .composit {
+  fill: rgba(99, 102, 241, 0.08) !important;
+}
+
+[data-theme="light"] .mermaid-diagram .stateGroup text {
+  fill: #1e1b4b !important;
+}
+
+[data-theme="light"] .mermaid-diagram .transition {
+  stroke: #6366f1 !important;
+}
+
+[data-theme="light"] .mermaid-diagram .start-state,
+[data-theme="light"] .mermaid-diagram circle.start-state {
+  fill: #6366f1 !important;
+  stroke: #6366f1 !important;
+}
+
+[data-theme="light"] .mermaid-diagram .end-state-outer {
+  fill: transparent !important;
+  stroke: #6366f1 !important;
+}
+
+[data-theme="light"] .mermaid-diagram .end-state-inner {
+  fill: #6366f1 !important;
+}
+
+/* Light theme - Cluster */
+[data-theme="light"] .mermaid-diagram .cluster rect {
+  fill: rgba(99, 102, 241, 0.06) !important;
+  stroke: #a5b4fc !important;
+  stroke-width: 1.5px !important;
+}
+
+/* Light theme - General text */
+[data-theme="light"] .mermaid-diagram text,
+[data-theme="light"] .mermaid-diagram text tspan,
+[data-theme="light"] .mermaid-diagram tspan {
+  fill: #1e1b4b !important;
+}
+
+[data-theme="light"] .mermaid-diagram svg text {
+  fill: #1e1b4b !important;
+}
+
+[data-theme="dark"] .toggle-slider {
+  background-color: #3a3a4a;
+}
+
+[data-theme="dark"] .plugin-card {
+  border-color: #3a3a4a;
+}
+
+[data-theme="dark"] .plugin-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}

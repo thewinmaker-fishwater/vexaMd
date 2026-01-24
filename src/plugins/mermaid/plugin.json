@@ -1,0 +1,18 @@
+{
+  "id": "mermaid",
+  "name": "Mermaid Diagrams",
+  "version": "1.0.0",
+  "description": "Render Mermaid diagrams in markdown code blocks",
+  "author": "Vexa MD Team",
+  "homepage": "https://mermaid.js.org",
+  "capabilities": {
+    "markdown": true,
+    "ui": false,
+    "toolbar": false,
+    "settings": true
+  },
+  "defaultSettings": {
+    "theme": "auto",
+    "securityLevel": "loose"
+  }
+}

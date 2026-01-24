@@ -95,9 +95,13 @@
 }
 
 #main-container.mode-split #content {
+  position: absolute;
+  top: 0;
   left: 50%;
   right: 0;
+  bottom: 0;
   padding: 24px 32px;
+  flex: none; /* flex 레이아웃 비활성화 */
 }
 
 #main-container.mode-split #content > .markdown-content-wrapper {
@@ -116,7 +120,9 @@
 }
 
 #main-container.mode-split.toc-open #content {
+  position: absolute;
   left: calc(50% + 140px);
+  flex: none;
 }
 
 /* ========== Edit Mode Buttons ========== */
@@ -214,9 +220,13 @@
   }
 
   #main-container.mode-split #content {
+    position: absolute;
     left: 0;
-    top: calc(116px + 50%);
-    height: 50%;
+    right: 0;
+    top: 50%;
+    bottom: 0;
+    height: auto;
+    flex: none;
   }
 }
 

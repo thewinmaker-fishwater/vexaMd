@@ -7,10 +7,12 @@ import { ICONS } from './icons.js';
 import { i18n } from '../i18n.js';
 import { store } from '../core/store.js';
 import { eventBus, EVENTS } from '../core/events.js';
+import { getUIExtensions } from '../core/plugin-api.js';
 
 class Toolbar {
   constructor() {
     this.container = null;
+    this.pluginButtonsContainer = null;
   }
 
   /**
@@ -25,6 +27,9 @@ class Toolbar {
 
     // Subscribe to language changes
     store.subscribe('language', () => this.updateTexts());
+
+    // Setup plugin listeners
+    this.setupPluginListeners();
   }
 
   /**
@@ -219,6 +224,95 @@ class Toolbar {
   showCustomThemeOption() {
     const option = document.getElementById('custom-theme-option');
     if (option) option.hidden = false;
+  }
+
+  /**
+   * Render plugin buttons in the toolbar
+   */
+  renderPluginButtons() {
+    // Find or create plugin buttons container
+    if (!this.pluginButtonsContainer) {
+      this.pluginButtonsContainer = document.getElementById('plugin-buttons');
+      if (!this.pluginButtonsContainer) {
+        // Create container before help menu
+        const helpWrapper = this.container?.querySelector('.help-menu-wrapper');
+        if (helpWrapper) {
+          this.pluginButtonsContainer = document.createElement('div');
+          this.pluginButtonsContainer.id = 'plugin-buttons';
+          this.pluginButtonsContainer.className = 'plugin-buttons';
+
+          const divider = document.createElement('div');
+          divider.className = 'toolbar-divider plugin-divider';
+
+          this.container.insertBefore(this.pluginButtonsContainer, helpWrapper);
+          this.container.insertBefore(divider, this.pluginButtonsContainer);
+        }
+      }
+    }
+
+    if (!this.pluginButtonsContainer) return;
+
+    // Clear existing plugin buttons
+    this.pluginButtonsContainer.innerHTML = '';
+
+    // Get UI extensions
+    const uiExtensions = getUIExtensions();
+
+    // Render plugin buttons
+    for (const button of uiExtensions.toolbarButtons) {
+      const btn = document.createElement('button');
+      btn.id = button.id;
+      btn.className = 'plugin-toolbar-btn';
+      btn.title = button.title || '';
+      btn.innerHTML = button.icon || '';
+      if (button.onClick) {
+        btn.addEventListener('click', button.onClick);
+      }
+      this.pluginButtonsContainer.appendChild(btn);
+    }
+
+    // Render plugin button groups
+    for (const group of uiExtensions.toolbarGroups) {
+      const groupDiv = document.createElement('div');
+      groupDiv.id = group.id;
+      groupDiv.className = 'plugin-btn-group';
+
+      for (const button of group.buttons) {
+        const btn = document.createElement('button');
+        btn.id = button.id;
+        btn.className = 'plugin-toolbar-btn';
+        btn.title = button.title || '';
+        btn.innerHTML = button.icon || '';
+        if (button.onClick) {
+          btn.addEventListener('click', button.onClick);
+        }
+        groupDiv.appendChild(btn);
+      }
+
+      this.pluginButtonsContainer.appendChild(groupDiv);
+    }
+
+    // Hide divider if no plugin buttons
+    const divider = this.container?.querySelector('.plugin-divider');
+    if (divider) {
+      const hasButtons = uiExtensions.toolbarButtons.length > 0 || uiExtensions.toolbarGroups.length > 0;
+      divider.style.display = hasButtons ? '' : 'none';
+    }
+  }
+
+  /**
+   * Listen for plugin UI changes
+   */
+  setupPluginListeners() {
+    eventBus.on(EVENTS.PLUGIN_UI_CHANGED, ({ type }) => {
+      if (type === 'toolbar') {
+        this.renderPluginButtons();
+      }
+    });
+
+    eventBus.on(EVENTS.PLUGINS_LOADED, () => {
+      this.renderPluginButtons();
+    });
   }
 }
 

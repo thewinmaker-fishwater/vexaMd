@@ -112,5 +112,19 @@ export const EVENTS = {
   LANGUAGE_CHANGED: 'i18n:language-changed',
 
   APP_INITIALIZED: 'app:initialized',
-  APP_READY: 'app:ready'
+  APP_READY: 'app:ready',
+
+  // Plugin events
+  PLUGINS_LOADED: 'plugin:all-loaded',
+  PLUGIN_REGISTERED: 'plugin:registered',
+  PLUGIN_ENABLED: 'plugin:enabled',
+  PLUGIN_DISABLED: 'plugin:disabled',
+  PLUGIN_UNINSTALLED: 'plugin:uninstalled',
+  PLUGIN_ERROR: 'plugin:error',
+  PLUGIN_SETTINGS_CHANGED: 'plugin:settings-changed',
+  PLUGIN_MARKDOWN_CHANGED: 'plugin:markdown-changed',
+  PLUGIN_UI_CHANGED: 'plugin:ui-changed',
+
+  // Toolbar events
+  TOOLBAR_UPDATED: 'toolbar:updated'
 };

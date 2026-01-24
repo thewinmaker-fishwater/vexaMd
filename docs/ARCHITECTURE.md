@@ -433,6 +433,75 @@ button.title = lang.openFile;
 
 ---
 
+## 플러그인 시스템
+
+### 핵심 구조
+
+```
+src/
+├── core/
+│   ├── plugin.js           # Plugin 기본 클래스
+│   ├── plugin-manager.js   # 플러그인 로딩/관리
+│   └── plugin-api.js       # 플러그인에 노출되는 API
+├── plugins/                # 내장 플러그인
+│   └── mermaid/
+│       └── index.js        # Mermaid 다이어그램 플러그인
+└── modules/
+    └── plugins/
+        ├── plugin-ui.js    # 플러그인 관리 UI
+        └── plugin-ui.css   # 플러그인 스타일
+```
+
+### Plugin API
+
+```javascript
+const api = {
+  events,     // 이벤트 시스템
+  store,      // 상태 관리
+  markdown,   // 마크다운 확장 (addExtension, onAfterRender)
+  ui,         // UI 확장 (addToolbarButton, showNotification)
+  dom         // DOM 유틸리티
+};
+```
+
+### 플러그인 개발
+
+자세한 내용은 [plugin-development.md](./plugin-development.md) 참조.
+
+---
+
+## CSS 모듈 로딩 순서
+
+`src/styles/index.css`에서 CSS 모듈을 로딩하는 순서:
+
+| 순서 | 모듈 | 파일 | 설명 |
+|------|------|------|------|
+| 1 | theme | theme.css | CSS 변수 정의 |
+| 2 | base | base.css | 전역 리셋, 기본 레이아웃 |
+| 3 | ui | ui.css | UI 컴포넌트 |
+| 4 | tabs | tabs.css | 탭 바 |
+| 5 | files | files.css | 파일 관리 |
+| 6 | search | search.css | 검색 바 |
+| 7 | viewer | viewer.css | 마크다운 뷰어 |
+| 8 | syntax | syntax.css | 코드 하이라이트 |
+| 9 | toc | toc.css | 목차 사이드바 |
+| 10 | editor | editor.css | 에디터 |
+| 11 | plugins | plugin-ui.css | 플러그인 UI |
+
+**⚠️ CSS 특이성 주의**: 나중에 로드된 CSS가 같은 특이성에서 우선. 하지만 **선택자 특이성이 다르면 순서와 무관**. 예: `#main-container #content` vs `#main-container.mode-split #content`.
+
+---
+
+## 트러블슈팅
+
+개발 중 발생한 문제와 해결책은 [docs/troubleshooting/](./troubleshooting/) 참조.
+
+### 주요 이슈 문서
+
+- [Mermaid 다이어그램 크기 및 분할 화면 레이아웃](./troubleshooting/mermaid-split-mode.md)
+
+---
+
 ## 빌드 및 실행
 
 ### 개발 모드
@@ -464,10 +533,13 @@ src-tauri/target/release/
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-01-25 | 플러그인 시스템 아키텍처 추가 |
+| 2026-01-25 | CSS 모듈 로딩 순서 문서화 |
+| 2026-01-25 | 트러블슈팅 섹션 추가 |
 | 2026-01-24 | editor 모듈 추가 (마크다운 편집 기능) |
 | 2026-01-24 | highlight.js, html2pdf.js 기술 스택 추가 |
 | 2026-01-24 | CSS 모듈 구조 업데이트 |
 | 2026-01-22 | TOC 모듈 구조 추가 |
 | 2025-12-29 | 모듈화 아키텍처 문서화 |
 
-*마지막 업데이트: 2026-01-24*
+*마지막 업데이트: 2026-01-25*

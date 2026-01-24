@@ -220,7 +220,18 @@ export const i18n = {
     saved: '저장되었습니다',
     unsavedChanges: '저장하지 않은 변경사항이 있습니다.',
     confirmClose: '저장하지 않은 변경사항이 있습니다. 정말 닫으시겠습니까?',
-    editorPlaceholder: '마크다운을 입력하세요...'
+    editorPlaceholder: '마크다운을 입력하세요...',
+
+    // Plugins
+    plugins: '플러그인',
+    pluginSettings: '플러그인 설정',
+    noPlugins: '사용 가능한 플러그인이 없습니다',
+    builtIn: '내장',
+    author: '개발자',
+    settings: '설정',
+    noSettings: '설정 항목이 없습니다',
+    pluginEnabled: '플러그인이 활성화되었습니다',
+    pluginDisabled: '플러그인이 비활성화되었습니다'
   },
 
   en: {
@@ -439,7 +450,18 @@ export const i18n = {
     saved: 'Saved',
     unsavedChanges: 'You have unsaved changes.',
     confirmClose: 'You have unsaved changes. Are you sure you want to close?',
-    editorPlaceholder: 'Enter markdown here...'
+    editorPlaceholder: 'Enter markdown here...',
+
+    // Plugins
+    plugins: 'Plugins',
+    pluginSettings: 'Plugin Settings',
+    noPlugins: 'No plugins available',
+    builtIn: 'Built-in',
+    author: 'Author',
+    settings: 'Settings',
+    noSettings: 'No settings available',
+    pluginEnabled: 'Plugin enabled',
+    pluginDisabled: 'Plugin disabled'
   },
 
   ja: {
@@ -658,7 +680,18 @@ export const i18n = {
     saved: '保存しました',
     unsavedChanges: '保存されていない変更があります。',
     confirmClose: '保存されていない変更があります。本当に閉じますか？',
-    editorPlaceholder: 'マークダウンを入力...'
+    editorPlaceholder: 'マークダウンを入力...',
+
+    // Plugins
+    plugins: 'プラグイン',
+    pluginSettings: 'プラグイン設定',
+    noPlugins: '利用可能なプラグインがありません',
+    builtIn: '内蔵',
+    author: '開発者',
+    settings: '設定',
+    noSettings: '設定項目がありません',
+    pluginEnabled: 'プラグインが有効化されました',
+    pluginDisabled: 'プラグインが無効化されました'
   }
 };
 

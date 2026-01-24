@@ -192,7 +192,33 @@ print("Hello, World!")
 - 열린 파일이 외부에서 수정되면 자동으로 새로고침
 - 실시간 파일 감시 (Tauri watchImmediate API)
 
-### 12. 마크다운 편집기
+### 12. 플러그인 시스템
+
+확장 가능한 플러그인 시스템으로 기능을 추가할 수 있습니다.
+
+#### 내장 플러그인: Mermaid 다이어그램
+
+마크다운 코드 블록에서 Mermaid 다이어그램을 렌더링합니다:
+
+````markdown
+```mermaid
+flowchart TD
+    A[시작] --> B{조건}
+    B -->|Yes| C[처리 1]
+    B -->|No| D[처리 2]
+```
+````
+
+지원 다이어그램:
+- Flowchart (흐름도)
+- Sequence Diagram (시퀀스 다이어그램)
+- Class Diagram (클래스 다이어그램)
+- State Diagram (상태 다이어그램)
+- 그 외 Mermaid.js 지원 다이어그램
+
+플러그인 개발 가이드: [plugin-development.md](./plugin-development.md)
+
+### 13. 마크다운 편집기
 앱 내에서 직접 마크다운 파일을 편집할 수 있습니다.
 
 #### 편집 모드
@@ -281,6 +307,22 @@ npm run tauri build
 
 ---
 
+## 문서 구조
+
+| 문서 | 설명 |
+|------|------|
+| [README.md](./README.md) | 이 문서 - 프로젝트 개요 |
+| [FEATURES.md](./FEATURES.md) | 기능 상세 목록 |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | 기술 아키텍처 |
+| [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) | 개발 가이드 |
+| [CHANGELOG.md](./CHANGELOG.md) | 변경 이력 |
+| [ROADMAP.md](./ROADMAP.md) | 로드맵 |
+| [plugin-development.md](./plugin-development.md) | 플러그인 개발 가이드 |
+| [troubleshooting/](./troubleshooting/) | 트러블슈팅 문서 |
+| [SESSION-LOG.md](./SESSION-LOG.md) | 개발 세션 로그 |
+
+---
+
 ## 라이선스
 
 Apache 2.0 License
@@ -297,10 +339,12 @@ Apache 2.0 License
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-01-25 | 플러그인 시스템 섹션 추가 (Mermaid 다이어그램) |
+| 2026-01-25 | 문서 구조 섹션 추가 |
 | 2026-01-24 | 마크다운 편집기 섹션 추가 (View/Edit/Split 모드) |
 | 2026-01-24 | PDF 내보내기, 코드 하이라이트, 복사 버튼 추가 |
 | 2026-01-22 | TOC 사이드바 섹션 추가 |
 | 2026-01-09 | 파일 자동 리로드 섹션 추가 |
 | 2025-12-26 | 초기 문서 작성 |
 
-*마지막 업데이트: 2026-01-24*
+*마지막 업데이트: 2026-01-25*
