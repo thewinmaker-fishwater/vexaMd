@@ -53,9 +53,13 @@ mdView/
 │   │   │   ├── viewer.css    # 뷰어 스타일
 │   │   │   └── syntax.css    # 코드 문법 하이라이트 스타일
 │   │   │
-│   │   ├── toc/              # TOC 사이드바 (신규)
+│   │   ├── toc/              # TOC 사이드바
 │   │   │   ├── toc.js        # 목차 생성/스크롤 스파이
 │   │   │   └── toc.css       # 목차 스타일
+│   │   │
+│   │   ├── editor/           # 마크다운 편집기 (신규)
+│   │   │   ├── editor.js     # 편집기 모듈
+│   │   │   └── editor.css    # 편집기 스타일
 │   │   │
 │   │   ├── files/            # 파일 처리
 │   │   │   ├── file-handler.js   # 파일 열기/저장
@@ -154,6 +158,8 @@ $$('.tabs')      // querySelectorAll → Array
 | search | search.js | 텍스트 검색, 하이라이트 |
 | viewer | markdown.js | 마크다운 렌더링, 페이징 |
 | viewer | presentation.js | 프레젠테이션 모드 |
+| toc | toc.js | 목차 생성, 스크롤 스파이 |
+| editor | editor.js | 마크다운 편집기 (View/Edit/Split 모드) |
 | files | file-handler.js | 파일 열기/저장, Tauri 연동 |
 | files | drag-drop.js | 드래그앤드롭 처리 |
 | files | recent-files.js | 최근 파일 목록 관리 |
@@ -451,3 +457,17 @@ src-tauri/target/release/
 - Node.js 18+
 - Rust (rustup)
 - Windows 10/11
+
+---
+
+## 문서 히스토리
+
+| 날짜 | 변경 내용 |
+|------|----------|
+| 2026-01-24 | editor 모듈 추가 (마크다운 편집 기능) |
+| 2026-01-24 | highlight.js, html2pdf.js 기술 스택 추가 |
+| 2026-01-24 | CSS 모듈 구조 업데이트 |
+| 2026-01-22 | TOC 모듈 구조 추가 |
+| 2025-12-29 | 모듈화 아키텍처 문서화 |
+
+*마지막 업데이트: 2026-01-24*
