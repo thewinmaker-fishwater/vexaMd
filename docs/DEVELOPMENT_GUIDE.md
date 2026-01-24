@@ -125,6 +125,8 @@ npm create tauri-app@latest
   },
   "dependencies": {
     "marked": "^12.0.0",
+    "highlight.js": "^11.x",
+    "html2pdf.js": "^0.10.x",
     "@tauri-apps/api": "^2.0.0",
     "@tauri-apps/plugin-dialog": "^2.0.0",
     "@tauri-apps/plugin-fs": "^2.0.0"
@@ -459,10 +461,44 @@ async function init() {
 init();
 ```
 
-### 5.3 CSS 테마 시스템 (src/style.css)
+### 5.3 CSS 모듈화 구조 (src/styles/)
 
+CSS는 모듈별로 분리되어 관리됩니다:
+
+```
+src/styles/
+├── index.css          # 메인 진입점 (@import)
+├── variables.css      # CSS 변수 정의
+├── base.css           # 기본 스타일
+├── toolbar.css        # 툴바 스타일
+├── tabs.css           # 탭 시스템
+├── content.css        # 마크다운 콘텐츠
+├── modal.css          # 모달 다이얼로그
+├── dropdown.css       # 드롭다운 메뉴
+├── theme-editor.css   # 테마 에디터
+├── search.css         # 검색 기능
+├── print.css          # 인쇄 스타일
+└── toc.css            # 목차 사이드바
+```
+
+**메인 진입점 (index.css):**
 ```css
-/* CSS 변수를 활용한 테마 시스템 */
+/* 모듈별 CSS 임포트 */
+@import './variables.css';
+@import './base.css';
+@import './toolbar.css';
+@import './tabs.css';
+@import './content.css';
+@import './modal.css';
+@import './dropdown.css';
+@import './theme-editor.css';
+@import './search.css';
+@import './print.css';
+@import './toc.css';
+```
+
+**CSS 변수 시스템 (variables.css):**
+```css
 :root {
   --bg: #ffffff;
   --text: #1f2328;
@@ -474,21 +510,28 @@ init();
   --text: #e6edf3;
   --accent: #8b949e;
 }
+```
 
-body {
-  background: var(--bg);
-  color: var(--text);
+**코드 문법 하이라이트 (modules/viewer/syntax.css):**
+```css
+/* GitHub 스타일 코드 블록 */
+.code-block-wrapper {
+  position: relative;
+  margin: 1em 0;
 }
 
-/* 마크다운 스타일 */
-.markdown-body {
-  max-width: 900px;
-  margin: 0 auto;
-  line-height: 1.7;
+.code-lang-label {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  /* ... */
 }
 
-.markdown-body h1 {
-  border-bottom: 2px solid var(--accent);
+.code-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  /* ... */
 }
 ```
 
@@ -764,24 +807,55 @@ tauri = { version = "2", features = ["tray-icon", "devtools"] }
 
 ```
 mdView/
-├── docs\
+├── docs/
 │   ├── README.md              # 프로젝트 개요
 │   ├── DEVELOPMENT_GUIDE.md   # 이 문서
 │   ├── ARCHITECTURE.md        # 기술 아키텍처
+│   ├── FEATURES.md            # 기능 정리
 │   ├── CHANGELOG.md           # 개발 이력
+│   ├── ROADMAP.md             # 개발 로드맵
 │   └── RUST_TUTORIAL.md       # Rust 교육자료
-├── public\
+├── public/
 │   └── logo.jpg               # Seven Peaks 로고
-├── src\
-│   ├── main.js                # 프론트엔드 로직
-│   ├── style.css              # 스타일시트
-│   └── i18n.js                # 다국어 번역 (한국어/영어)
-├── src-tauri\
-│   ├── src\
+├── src/
+│   ├── main.js                # 프론트엔드 진입점
+│   ├── i18n.js                # 다국어 번역 (한/영/일)
+│   ├── styles/                # 모듈별 CSS
+│   │   ├── index.css          # CSS 진입점
+│   │   ├── variables.css      # CSS 변수
+│   │   ├── base.css           # 기본 스타일
+│   │   ├── toolbar.css        # 툴바
+│   │   ├── tabs.css           # 탭 시스템
+│   │   ├── content.css        # 마크다운 콘텐츠
+│   │   ├── modal.css          # 모달
+│   │   ├── dropdown.css       # 드롭다운
+│   │   ├── theme-editor.css   # 테마 에디터
+│   │   ├── search.css         # 검색
+│   │   ├── print.css          # 인쇄
+│   │   └── toc.css            # 목차 사이드바
+│   ├── modules/               # 기능 모듈
+│   │   ├── core/              # 핵심 기능
+│   │   │   ├── tabs.js        # 탭 관리
+│   │   │   ├── theme-manager.js  # 테마 관리
+│   │   │   └── theme-editor.js   # 테마 에디터
+│   │   └── viewer/            # 뷰어 기능
+│   │       ├── markdown.js    # 마크다운 렌더링
+│   │       ├── syntax.css     # 코드 하이라이트
+│   │       ├── zoom.js        # 줌 기능
+│   │       ├── search.js      # 검색 기능
+│   │       ├── view-mode.js   # 뷰 모드
+│   │       └── presentation.js # 프레젠테이션
+│   └── components/            # UI 컴포넌트
+│       ├── toolbar.js         # 툴바
+│       ├── icons.js           # SVG 아이콘
+│       └── toc/               # TOC 사이드바
+│           └── toc.js
+├── src-tauri/
+│   ├── src/
 │   │   ├── main.rs            # Rust 진입점
 │   │   └── lib.rs             # Rust 핵심 로직
-│   ├── icons\                 # 앱 아이콘
-│   ├── capabilities\
+│   ├── icons/                 # 앱 아이콘
+│   ├── capabilities/
 │   │   └── default.json       # 권한 설정
 │   ├── Cargo.toml             # Rust 설정
 │   └── tauri.conf.json        # Tauri 설정

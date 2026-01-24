@@ -61,13 +61,29 @@ renderer.code = function(code, language) {
   }
 
   const validLanguage = language && hljs.getLanguage(language) ? language : 'plaintext';
+  const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const langLabel = validLanguage !== 'plaintext' ? validLanguage : '';
+
+  const copyBtn = `<button class="code-copy-btn" title="복사">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+    </svg>
+  </button>`;
 
   try {
     const highlighted = hljs.highlight(code, { language: validLanguage }).value;
-    return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
+    return `<div class="code-block-wrapper">
+      ${langLabel ? `<span class="code-lang-label">${langLabel}</span>` : ''}
+      ${copyBtn}
+      <pre data-code="${escapedCode}"><code class="hljs language-${validLanguage}">${highlighted}</code></pre>
+    </div>`;
   } catch (e) {
     console.warn('Highlight error:', e);
-    return `<pre><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>`;
+    return `<div class="code-block-wrapper">
+      ${copyBtn}
+      <pre data-code="${escapedCode}"><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>
+    </div>`;
   }
 };
 
@@ -2964,6 +2980,31 @@ async function init() {
   content.addEventListener('mousemove', onPanMouseMove);
   content.addEventListener('mouseup', onPanMouseUp);
   content.addEventListener('mouseleave', onPanMouseLeave);
+
+  // Code copy button event listener (event delegation)
+  content.addEventListener('click', async (e) => {
+    const copyBtn = e.target.closest('.code-copy-btn');
+    if (!copyBtn) return;
+
+    const wrapper = copyBtn.closest('.code-block-wrapper');
+    const pre = wrapper?.querySelector('pre[data-code]');
+    if (!pre) return;
+
+    // HTML 엔티티 디코딩
+    const code = pre.dataset.code
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&');
+
+    try {
+      await navigator.clipboard.writeText(code);
+      copyBtn.classList.add('copied');
+      setTimeout(() => copyBtn.classList.remove('copied'), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  });
 
   // Search event listeners
   let searchTimeout;

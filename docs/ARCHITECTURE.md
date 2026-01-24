@@ -6,6 +6,8 @@
 - **Vite**: 빌드 도구
 - **Vanilla JavaScript (ES Modules)**: UI 및 로직
 - **marked.js**: 마크다운 파싱
+- **highlight.js**: 코드 문법 하이라이트
+- **html2pdf.js**: PDF 내보내기
 
 ### Backend
 - **Tauri 2.0**: 데스크톱 앱 프레임워크
@@ -18,9 +20,13 @@
 ```
 mdView/
 ├── src/                      # 프론트엔드 소스 (웹: JS, CSS)
-│   ├── main.js               # 진입점 (172줄) - 모듈 초기화만
-│   ├── style.css             # 전체 스타일시트
-│   ├── i18n.js               # 다국어 지원 (한국어/영어)
+│   ├── main.js               # 진입점 - 모듈 초기화
+│   ├── style.css             # 레거시 스타일시트 (참조용)
+│   ├── i18n.js               # 다국어 지원 (한국어/영어/일본어)
+│   │
+│   ├── styles/               # CSS 모듈 시스템 (신규)
+│   │   ├── index.css         # CSS 진입점 (모든 모듈 import)
+│   │   └── base.css          # 전역 리셋, 기본 레이아웃
 │   │
 │   ├── core/                 # 핵심 인프라
 │   │   ├── store.js          # 중앙 상태 관리 (Observer 패턴)
@@ -30,29 +36,44 @@ mdView/
 │   ├── modules/              # 기능별 모듈
 │   │   ├── theme/            # 테마 시스템
 │   │   │   ├── theme-manager.js   # 테마 전환 로직
-│   │   │   └── theme-editor.js    # 테마 편집기 모달
+│   │   │   ├── theme-editor.js    # 테마 편집기 모달
+│   │   │   └── theme.css          # 테마 CSS 변수
 │   │   │
 │   │   ├── tabs/             # 탭 관리
-│   │   │   └── tabs.js       # 탭 생성/전환/닫기
+│   │   │   ├── tabs.js       # 탭 생성/전환/닫기
+│   │   │   └── tabs.css      # 탭 바 스타일
 │   │   │
 │   │   ├── search/           # 검색 기능
-│   │   │   └── search.js     # 텍스트 검색 및 하이라이트
+│   │   │   ├── search.js     # 텍스트 검색 및 하이라이트
+│   │   │   └── search.css    # 검색 바 스타일
 │   │   │
 │   │   ├── viewer/           # 마크다운 뷰어
 │   │   │   ├── markdown.js   # 마크다운 렌더링
-│   │   │   └── presentation.js # 프레젠테이션 모드
+│   │   │   ├── presentation.js # 프레젠테이션 모드
+│   │   │   ├── viewer.css    # 뷰어 스타일
+│   │   │   └── syntax.css    # 코드 문법 하이라이트 스타일
+│   │   │
+│   │   ├── toc/              # TOC 사이드바 (신규)
+│   │   │   ├── toc.js        # 목차 생성/스크롤 스파이
+│   │   │   └── toc.css       # 목차 스타일
 │   │   │
 │   │   ├── files/            # 파일 처리
 │   │   │   ├── file-handler.js   # 파일 열기/저장
 │   │   │   ├── drag-drop.js      # 드래그앤드롭
-│   │   │   └── recent-files.js   # 최근 파일 관리
+│   │   │   ├── recent-files.js   # 최근 파일 관리
+│   │   │   └── files.css         # 파일 관련 스타일
 │   │   │
 │   │   └── ui/               # UI 컴포넌트
 │   │       ├── keyboard.js   # 키보드 단축키
 │   │       ├── view-mode.js  # 보기 모드 관리
 │   │       ├── zoom.js       # 줌 관리
 │   │       ├── help-menu.js  # 도움말 메뉴
-│   │       └── settings.js   # 설정 (폰트, 언어 등)
+│   │       ├── settings.js   # 설정 (폰트, 언어 등)
+│   │       └── ui.css        # UI 컴포넌트 스타일
+│   │
+│   ├── components/           # 재사용 컴포넌트 (신규)
+│   │   ├── icons.js          # SVG 아이콘 모음
+│   │   └── toolbar.js        # 툴바 컴포넌트
 │   │
 │   └── utils/                # 공통 유틸리티
 │       └── helpers.js        # 헬퍼 함수
@@ -341,6 +362,7 @@ localStorage.setItem('customStyles', JSON.stringify(styles));
 ### 지원 언어
 - 한국어 (ko) - 기본
 - English (en)
+- 日本語 (ja)
 
 ### 구조
 ```javascript
@@ -355,6 +377,11 @@ export const i18n = {
     home: 'Home',
     openFile: 'Open File',
     // ... 모든 영어 텍스트
+  },
+  ja: {
+    home: 'ホーム',
+    openFile: 'ファイルを開く',
+    // ... 모든 일본어 텍스트
   }
 };
 ```

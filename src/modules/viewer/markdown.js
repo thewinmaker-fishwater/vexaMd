@@ -26,11 +26,28 @@ renderer.code = function(code, language) {
     code = code.text;
   }
   const validLanguage = language && hljs.getLanguage(language) ? language : 'plaintext';
+  const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const langLabel = validLanguage !== 'plaintext' ? validLanguage : '';
+
+  const copyBtn = `<button class="code-copy-btn" title="복사">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
+    </svg>
+  </button>`;
+
   try {
     const highlighted = hljs.highlight(code, { language: validLanguage }).value;
-    return `<pre><code class="hljs language-${validLanguage}">${highlighted}</code></pre>`;
+    return `<div class="code-block-wrapper">
+      ${langLabel ? `<span class="code-lang-label">${langLabel}</span>` : ''}
+      ${copyBtn}
+      <pre data-code="${escapedCode}"><code class="hljs language-${validLanguage}">${highlighted}</code></pre>
+    </div>`;
   } catch (e) {
-    return `<pre><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>`;
+    return `<div class="code-block-wrapper">
+      ${copyBtn}
+      <pre data-code="${escapedCode}"><code class="hljs">${hljs.highlightAuto(code).value}</code></pre>
+    </div>`;
   }
 };
 marked.use({ renderer });
