@@ -197,3 +197,70 @@ feat: add toolbar dropdown grouping for Format and Tools
 ### 커밋 시
 1. 커밋 메시지와 해시 기록
 2. 변경된 파일 목록 확인
+
+---
+
+## 과거 개발 이력
+
+> 이전 세션 로그 도입 전 개발 내역
+
+### 2026-01-24 마크다운 편집 기능
+- **마크다운 편집기**: View/Edit/Split 모드
+- 실시간 미리보기, Ctrl+S 저장, dirty indicator
+- 관련 파일: `editor/`, `main.js`, `index.html`, `i18n.js`
+
+### 2026-01-24 코드 블록 기능
+- **코드 블록 복사 버튼**: 클릭 시 클립보드 복사, 피드백 아이콘
+- **코드 문법 하이라이트**: highlight.js 통합, 180+ 언어 지원
+- 관련 파일: `main.js`, `markdown.js`, `syntax.css`
+
+### 2026-01-24 PDF 내보내기
+- html2pdf.js 사용, A4 용지 자동 분할
+- 관련 파일: `main.js`, `toolbar.js`, `icons.js`
+
+### 2026-01-24 모듈별 CSS 분리
+- style.css → 10개 모듈로 분리 (theme, base, ui, tabs, files, search, viewer, syntax, toc, editor)
+- 관련 파일: `styles/index.css`, `modules/*.css`
+
+### 2026-01-23 여러 커스텀 테마 저장
+- 테마 프리셋 기능, localStorage 저장
+- 관련 파일: `main.js`, `style.css`, `index.html`
+
+### 2026-01-22 TOC 사이드바
+- 마크다운 헤딩 기반 목차, 스크롤 스파이, Ctrl+Shift+T
+- 관련 파일: `toc/toc.js`, `main.js`, `style.css`
+
+### 2026-01-22 싱글 인스턴스 버그 수정
+- 창 Label 문제로 파일 더블클릭 시 기존 앱에서 안 열림
+- 해결: `get_webview_window("main")` → `webview_windows().iter().next()`
+- 관련 파일: `src-tauri/src/lib.rs`
+
+### 2026-01-09 파일 시스템 감시
+- 외부 수정 시 자동 리로드, 300ms 디바운스
+- 관련 파일: `main.js`, `Cargo.toml`, `capabilities`
+
+### 2026-01-08 UI/UX 개선
+- **Pan 기능**: 줌 100% 초과 시 드래그로 이동
+- **용지 자동 맞춤 인쇄**: A4, 자동 줄바꿈
+- **GitHub Alert Box**: NOTE, TIP, IMPORTANT, WARNING, CAUTION
+- 관련 파일: `main.js`, `style.css`
+
+### 2026-01-06 싱글 인스턴스
+- MD 파일 더블클릭 시 기존 앱 새 탭으로 열림
+- 임시 파일 기반 IPC 통신
+- 관련 파일: `lib.rs`, `main.rs`, `main.js`
+
+### 2025-12-29 모듈화 리팩토링
+- main.js 2,138줄 → 172줄 (92% 감소)
+- 19개 ES 모듈 분리, Store 패턴 상태 관리
+- 관련 파일: `core/`, `modules/`, `utils/`
+
+### 2025-12-26 v1.0.0
+- 다국어 지원 (한/영/일)
+- 프레젠테이션 모드 (F5)
+- 뷰 모드 개선 (한 페이지/여러 페이지)
+- 도움말 메뉴
+
+---
+
+*마지막 업데이트: 2026-01-26*

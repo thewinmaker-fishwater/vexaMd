@@ -63,7 +63,7 @@
 - `docs/README.md` - 프로젝트 개요
 - `docs/FEATURES.md` - 기능 목록
 - `docs/ARCHITECTURE.md` - 아키텍처 설명
-- `docs/CHANGELOG.md` - 변경 이력
+- `docs/SESSION-LOG.md` - 세션 로그 및 개발 이력
 - `docs/DEVELOPMENT_GUIDE.md` - 개발 가이드
 - `docs/ROADMAP.md` - 로드맵
 - `docs/plugin-development.md` - 플러그인 개발 가이드

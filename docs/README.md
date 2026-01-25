@@ -315,11 +315,10 @@ npm run tauri build
 | [FEATURES.md](./FEATURES.md) | 기능 상세 목록 |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | 기술 아키텍처 |
 | [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) | 개발 가이드 |
-| [CHANGELOG.md](./CHANGELOG.md) | 변경 이력 |
 | [ROADMAP.md](./ROADMAP.md) | 로드맵 |
 | [plugin-development.md](./plugin-development.md) | 플러그인 개발 가이드 |
 | [troubleshooting/](./troubleshooting/) | 트러블슈팅 문서 |
-| [SESSION-LOG.md](./SESSION-LOG.md) | 개발 세션 로그 |
+| [SESSION-LOG.md](./SESSION-LOG.md) | 세션 로그 및 개발 이력 |
 
 ---
 

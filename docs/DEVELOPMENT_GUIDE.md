@@ -812,7 +812,7 @@ mdView/
 │   ├── DEVELOPMENT_GUIDE.md   # 이 문서
 │   ├── ARCHITECTURE.md        # 기술 아키텍처
 │   ├── FEATURES.md            # 기능 정리
-│   ├── CHANGELOG.md           # 개발 이력
+│   ├── SESSION-LOG.md         # 세션 로그 및 개발 이력
 │   ├── ROADMAP.md             # 개발 로드맵
 │   └── RUST_TUTORIAL.md       # Rust 교육자료
 ├── public/
