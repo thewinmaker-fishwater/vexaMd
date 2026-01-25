@@ -176,6 +176,12 @@ const presExit = document.getElementById('pres-exit');
 // Plugin elements
 const btnPlugins = document.getElementById('btn-plugins');
 
+// Toolbar dropdown elements
+const btnFormat = document.getElementById('btn-format');
+const formatDropdown = document.getElementById('format-dropdown');
+const btnTools = document.getElementById('btn-tools');
+const toolsDropdown = document.getElementById('tools-dropdown');
+
 // Help menu elements
 const btnHelp = document.getElementById('btn-help');
 const helpDropdown = document.getElementById('help-dropdown');
@@ -2016,12 +2022,38 @@ function presentationNext() {
   }
 }
 
+// ========== Toolbar Dropdowns ==========
+function closeAllToolbarDropdowns() {
+  formatDropdown?.classList.add('hidden');
+  toolsDropdown?.classList.add('hidden');
+  helpDropdown?.classList.add('hidden');
+}
+
+function toggleFormatDropdown(e) {
+  e?.stopPropagation();
+  const isOpen = !formatDropdown.classList.contains('hidden');
+  closeAllToolbarDropdowns();
+  if (!isOpen) {
+    formatDropdown.classList.remove('hidden');
+  }
+}
+
+function toggleToolsDropdown(e) {
+  e?.stopPropagation();
+  const isOpen = !toolsDropdown.classList.contains('hidden');
+  closeAllToolbarDropdowns();
+  if (!isOpen) {
+    toolsDropdown.classList.remove('hidden');
+  }
+}
+
 // ========== Help Menu ==========
-function toggleHelpDropdown() {
-  if (helpDropdown.classList.contains('hidden')) {
-    showHelpDropdown();
-  } else {
-    hideHelpDropdown();
+function toggleHelpDropdown(e) {
+  e?.stopPropagation();
+  const isOpen = !helpDropdown.classList.contains('hidden');
+  closeAllToolbarDropdowns();
+  if (!isOpen) {
+    helpDropdown.classList.remove('hidden');
   }
 }
 
@@ -3337,6 +3369,17 @@ async function init() {
   document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement && isPresentationMode) {
       exitPresentation();
+    }
+  });
+
+  // Toolbar dropdown event listeners
+  btnFormat?.addEventListener('click', toggleFormatDropdown);
+  btnTools?.addEventListener('click', toggleToolsDropdown);
+
+  // Close dropdowns when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.toolbar-dropdown-wrapper') && !e.target.closest('.help-menu-wrapper')) {
+      closeAllToolbarDropdowns();
     }
   });
 

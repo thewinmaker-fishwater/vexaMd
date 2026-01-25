@@ -32,44 +32,7 @@
 
     <div class="toolbar-divider"></div>
 
-    <select id="color-theme" title="컬러 테마">
-      <option value="default">기본 (그레이)</option>
-      <option value="purple">퍼플</option>
-      <option value="ocean">오션</option>
-      <option value="sunset">선셋</option>
-      <option value="forest">포레스트</option>
-      <option value="rose">로즈</option>
-      <option value="custom" id="custom-theme-option" hidden>커스텀</option>
-    </select>
-
-    <select id="font-family" title="글꼴">
-      <option value="system">시스템 기본</option>
-      <option value="malgun">맑은 고딕</option>
-      <option value="nanum">나눔고딕</option>
-      <option value="pretendard">Pretendard</option>
-      <option value="noto">Noto Sans KR</option>
-    </select>
-
-    <select id="font-size" title="글씨 크기">
-      <option value="small">작게</option>
-      <option value="medium" selected>보통</option>
-      <option value="large">크게</option>
-      <option value="xlarge">아주 크게</option>
-    </select>
-
-    <select id="content-width" title="콘텐츠 너비">
-      <option value="narrow">좁게 (900px)</option>
-      <option value="medium">보통 (1200px)</option>
-      <option value="wide">넓게 (1600px)</option>
-      <option value="full">전체 너비</option>
-    </select>
-
-    <select id="language" title="언어/Language">
-      <option value="ko">한국어</option>
-      <option value="en">English</option>
-      <option value="ja">日本語</option>
-    </select>
-
+    <!-- Light/Dark Toggle (standalone) -->
     <button id="btn-theme" title="라이트/다크 전환 (Ctrl+D)">
       <svg id="icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
@@ -80,25 +43,76 @@
       </svg>
     </button>
 
+    <!-- Format Dropdown -->
+    <div class="toolbar-dropdown-wrapper">
+      <button id="btn-format" title="서식">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="21" x2="4" y2="14"/>
+          <line x1="4" y1="10" x2="4" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12" y2="3"/>
+          <line x1="20" y1="21" x2="20" y2="16"/>
+          <line x1="20" y1="12" x2="20" y2="3"/>
+          <line x1="1" y1="14" x2="7" y2="14"/>
+          <line x1="9" y1="8" x2="15" y2="8"/>
+          <line x1="17" y1="16" x2="23" y2="16"/>
+        </svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:2px;opacity:0.6">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <div id="format-dropdown" class="toolbar-dropdown-panel hidden">
+        <div class="dropdown-label">컬러 테마</div>
+        <select id="color-theme" title="컬러 테마">
+          <option value="default">기본 (그레이)</option>
+          <option value="purple">퍼플</option>
+          <option value="ocean">오션</option>
+          <option value="sunset">선셋</option>
+          <option value="forest">포레스트</option>
+          <option value="rose">로즈</option>
+          <option value="custom" id="custom-theme-option" hidden>커스텀</option>
+        </select>
+        <div class="dropdown-label">글꼴</div>
+        <select id="font-family" title="글꼴">
+          <option value="system">시스템 기본</option>
+          <option value="malgun">맑은 고딕</option>
+          <option value="nanum">나눔고딕</option>
+          <option value="pretendard">Pretendard</option>
+          <option value="noto">Noto Sans KR</option>
+        </select>
+        <div class="dropdown-label">글씨 크기</div>
+        <select id="font-size" title="글씨 크기">
+          <option value="small">작게</option>
+          <option value="medium" selected>보통</option>
+          <option value="large">크게</option>
+          <option value="xlarge">아주 크게</option>
+        </select>
+        <div class="dropdown-label">콘텐츠 너비</div>
+        <select id="content-width" title="콘텐츠 너비">
+          <option value="narrow">좁게 (900px)</option>
+          <option value="medium">보통 (1200px)</option>
+          <option value="wide">넓게 (1600px)</option>
+          <option value="full">전체 너비</option>
+        </select>
+        <div class="dropdown-label">언어</div>
+        <select id="language" title="언어/Language">
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+        <div class="dropdown-divider"></div>
+        <button id="btn-customize" title="테마 커스터마이저">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20a8 8 0 100-16 8 8 0 000 16z"/>
+            <path d="M12 14a2 2 0 100-4 2 2 0 000 4z"/>
+            <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
+          </svg>
+          <span>테마 커스터마이저</span>
+        </button>
+      </div>
+    </div>
+
     <div class="toolbar-divider"></div>
-
-    <button id="btn-customize" title="테마 커스터마이저">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 20a8 8 0 100-16 8 8 0 000 16z"/>
-        <path d="M12 14a2 2 0 100-4 2 2 0 000 4z"/>
-        <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
-      </svg>
-    </button>
-
-    <div class="toolbar-divider"></div>
-
-    <button id="btn-print" title="인쇄 (Ctrl+P)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M6 9V2h12v7"/>
-        <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
-        <rect x="6" y="14" width="12" height="8" rx="1"/>
-      </svg>
-    </button>
 
     <button id="btn-search" title="검색 (Ctrl+F)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -160,56 +174,80 @@
 
     <div class="toolbar-divider"></div>
 
-    <!-- TOC Toggle -->
-    <button id="btn-toc" title="목차 (Ctrl+Shift+T)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M4 6h16M4 12h10M4 18h14"/>
-      </svg>
-    </button>
-
-    <div class="toolbar-divider"></div>
-
-    <!-- Edit Mode -->
-    <div class="edit-mode-group">
-      <button id="btn-mode-view" class="edit-mode-btn active" title="보기 모드">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
+    <!-- Tools Dropdown -->
+    <div class="toolbar-dropdown-wrapper">
+      <button id="btn-tools" title="도구">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:2px;opacity:0.6">
+          <path d="M6 9l6 6 6-6"/>
         </svg>
       </button>
-      <button id="btn-mode-edit" class="edit-mode-btn" title="편집 모드">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
-      </button>
-      <button id="btn-mode-split" class="edit-mode-btn" title="분할 모드">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2"/>
-          <line x1="12" y1="3" x2="12" y2="21"/>
-        </svg>
-      </button>
+      <div id="tools-dropdown" class="toolbar-dropdown-panel hidden">
+        <!-- Print -->
+        <button id="btn-print" title="인쇄 (Ctrl+P)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9V2h12v7"/>
+            <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8" rx="1"/>
+          </svg>
+          <span>인쇄</span>
+        </button>
+        <!-- Presentation Mode -->
+        <button id="btn-presentation" title="프레젠테이션 (F5)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <path d="M9 10l3 2 3-2"/>
+          </svg>
+          <span>프레젠테이션</span>
+        </button>
+        <div class="dropdown-divider"></div>
+        <!-- TOC Toggle -->
+        <button id="btn-toc" title="목차 (Ctrl+Shift+T)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6h16M4 12h10M4 18h14"/>
+          </svg>
+          <span>목차</span>
+        </button>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-label">편집 모드</div>
+        <!-- Edit Mode -->
+        <div class="edit-mode-group">
+          <button id="btn-mode-view" class="edit-mode-btn active" title="보기 모드">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+          <button id="btn-mode-edit" class="edit-mode-btn" title="편집 모드">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button id="btn-mode-split" class="edit-mode-btn" title="분할 모드">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="12" y1="3" x2="12" y2="21"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Save Button -->
+        <button id="btn-save" title="저장 (Ctrl+S)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span>저장</span>
+        </button>
+      </div>
     </div>
-
-    <!-- Save Button -->
-    <button id="btn-save" title="저장 (Ctrl+S)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
-        <polyline points="17 21 17 13 7 13 7 21"/>
-        <polyline points="7 3 7 8 15 8"/>
-      </svg>
-    </button>
-
-    <div class="toolbar-divider"></div>
-
-    <!-- Presentation Mode -->
-    <button id="btn-presentation" title="프레젠테이션 (F5)">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="3" width="20" height="14" rx="2"/>
-        <path d="M8 21h8M12 17v4"/>
-        <path d="M9 10l3 2 3-2"/>
-      </svg>
-    </button>
 
     <div class="toolbar-divider"></div>
 

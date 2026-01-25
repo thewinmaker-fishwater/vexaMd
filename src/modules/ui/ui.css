@@ -218,6 +218,106 @@
   margin: 4px 0;
 }
 
+/* ========== Toolbar Dropdown ========== */
+.toolbar-dropdown-wrapper {
+  position: relative;
+  -webkit-app-region: no-drag;
+}
+
+.toolbar-dropdown-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  min-width: 200px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px var(--shadow);
+  z-index: 200;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.toolbar-dropdown-panel.hidden {
+  display: none;
+}
+
+.toolbar-dropdown-panel.align-right {
+  left: auto;
+  right: 0;
+}
+
+.toolbar-dropdown-panel select {
+  width: 100%;
+}
+
+.toolbar-dropdown-panel .dropdown-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.toolbar-dropdown-panel .dropdown-row {
+  display: flex;
+  gap: 6px;
+}
+
+.toolbar-dropdown-panel .dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0;
+}
+
+.toolbar-dropdown-panel button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.toolbar-dropdown-panel button:hover {
+  background: var(--accent-light);
+  border-color: var(--accent);
+}
+
+.toolbar-dropdown-panel .edit-mode-group {
+  display: flex;
+  gap: 0;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.toolbar-dropdown-panel .edit-mode-group button {
+  flex: 1;
+  justify-content: center;
+  padding: 6px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+}
+
+.toolbar-dropdown-panel .edit-mode-group button:hover {
+  background: var(--bg);
+}
+
+.toolbar-dropdown-panel .edit-mode-group button.active {
+  background: var(--bg);
+  box-shadow: 0 1px 3px var(--shadow);
+}
+
 /* ========== Modal ========== */
 .modal {
   position: fixed;
