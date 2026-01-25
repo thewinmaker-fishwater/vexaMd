@@ -173,7 +173,11 @@ feat: add plugin system with Mermaid diagram support
 
 ### 커밋 정보
 
-- 커밋 예정
+```
+commit 6725f8e
+feat: add toolbar dropdown grouping for Format and Tools
+4 files changed, 328 insertions(+), 106 deletions(-)
+```
 
 ---
 
