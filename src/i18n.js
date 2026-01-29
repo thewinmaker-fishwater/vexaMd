@@ -90,6 +90,7 @@ export const i18n = {
     themeImported: '커스텀 테마를 불러왔습니다!',
     previewApplied: '미리보기 적용됨',
     noPrintDoc: '인쇄할 문서가 없습니다.',
+    noPresentDoc: '프레젠테이션할 문서가 없습니다.',
     fileReloaded: '파일이 변경되어 새로고침되었습니다.',
 
     // Errors
@@ -320,6 +321,7 @@ export const i18n = {
     themeImported: 'Custom theme imported!',
     previewApplied: 'Preview applied',
     noPrintDoc: 'No document to print.',
+    noPresentDoc: 'No document to present.',
     fileReloaded: 'File changed and reloaded.',
 
     // Errors
@@ -550,6 +552,7 @@ export const i18n = {
     themeImported: 'カスタムテーマをインポートしました！',
     previewApplied: 'プレビュー適用',
     noPrintDoc: '印刷するドキュメントがありません。',
+    noPresentDoc: 'プレゼンテーションするドキュメントがありません。',
     fileReloaded: 'ファイルが変更され、再読み込みされました。',
 
     // Errors

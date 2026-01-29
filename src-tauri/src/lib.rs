@@ -91,6 +91,7 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(move |app| {
             // 초기 CLI 인자 처리 (첫 번째 인스턴스)
             let args: Vec<String> = env::args().collect();

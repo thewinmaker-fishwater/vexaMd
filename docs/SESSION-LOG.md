@@ -181,6 +181,61 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
+## 세션 2026-01-30
+
+### 작업 내용
+
+1. **버그 수정: 프레젠테이션 메시지 오류**
+   - 홈에서 프레젠테이션 클릭 시 "인쇄할 문서가 없습니다" 표시되던 문제
+   - `noPresentDoc` i18n 키 추가 (한/영/일)
+
+2. **버그 수정: TOC 목차 클릭 이동 안됨**
+   - `scrollIntoView` → `getBoundingClientRect` 기반 수동 스크롤 (zoom transform 호환)
+
+3. **버그 수정: ESC 키 홈 이동 제거**
+   - ESC 키가 모달/드롭다운이 없을 때 홈으로 이동하던 동작 제거
+   - 드롭다운 열려있으면 닫기만 수행
+
+4. **외부 링크 시스템 브라우저 열기**
+   - `@tauri-apps/plugin-shell` 설치 및 Rust/capabilities 등록
+   - `http://`, `https://` 링크 클릭 시 시스템 기본 브라우저에서 열기
+
+5. **마크다운 내부 앵커 링크 지원**
+   - GitHub 스타일 slug 생성 커스텀 heading 렌더러 추가
+   - `#anchor` 클릭 시 `#content` 컨테이너 내 스크롤 이동
+
+6. **커서/손끌기 토글 버튼**
+   - 툴바에 커서↔손 전환 버튼 추가
+   - 손 모드: 드래그로 스크롤, 커서 모드: 텍스트 선택/복사
+   - zoom 레벨 관계없이 동작
+
+7. **파일 삭제 시 탭 자동 닫기**
+   - 파일 watcher에서 `remove` 이벤트 감지 → 해당 탭 자동 닫기
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `index.html` | 커서/손끌기 토글 버튼 추가 |
+| `src/main.js` | 외부 링크, 앵커 링크, 커서 토글, 파일 삭제 감지, ESC 동작 수정, heading slug |
+| `src/i18n.js` | `noPresentDoc` 키 추가 (한/영/일) |
+| `src/modules/toc/toc.js` | TOC 클릭 스크롤 방식 변경 |
+| `src-tauri/Cargo.toml` | `tauri-plugin-shell` 의존성 추가 |
+| `src-tauri/src/lib.rs` | shell 플러그인 등록 |
+| `src-tauri/capabilities/default.json` | shell 권한 추가 |
+| `package.json` | `@tauri-apps/plugin-shell` 추가 |
+
+### 발생한 문제 및 해결
+
+| 문제 | 원인 | 해결 |
+|------|------|------|
+| 프레젠테이션 "인쇄할 문서가 없습니다" | `noPrintDoc` 키 잘못 사용 | `noPresentDoc` 키 신규 추가 |
+| TOC 클릭 이동 안됨 | zoom transform 하위에서 `scrollIntoView` 오작동 | `getBoundingClientRect` 기반 수동 스크롤 |
+| 마크다운 내부 목차 링크 안됨 | heading ID와 앵커 불일치 + 스크롤 컨테이너 문제 | GitHub 스타일 slug + 앵커 클릭 핸들러 |
+| 외부 링크가 앱 내에서 열림 | shell 플러그인 미설치 | `@tauri-apps/plugin-shell` 설치 |
+
+---
+
 ## 세션 로그 작성 가이드
 
 ### 세션 시작 시

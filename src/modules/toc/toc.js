@@ -167,8 +167,11 @@ function handleTocClick(e) {
   const heading = document.getElementById(id);
 
   if (heading) {
-    // 부드러운 스크롤
-    heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // #content 컨테이너 기준으로 수동 스크롤 (zoom transform 호환)
+    const containerRect = content.getBoundingClientRect();
+    const headingRect = heading.getBoundingClientRect();
+    const scrollTop = content.scrollTop + (headingRect.top - containerRect.top);
+    content.scrollTo({ top: scrollTop, behavior: 'smooth' });
 
     // 활성 상태 업데이트
     setActiveHeading(id);

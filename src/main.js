@@ -13,6 +13,7 @@ import { pluginManager } from './core/plugin-manager.js';
 import { getMarkdownHooks } from './core/plugin-api.js';
 import { eventBus, EVENTS } from './core/events.js';
 import { pluginUI } from './modules/plugins/plugin-ui.js';
+import { open } from '@tauri-apps/plugin-shell';
 
 // Tauri API (조건부 로드)
 let tauriApi = null;
@@ -56,6 +57,34 @@ marked.setOptions({
 // ========== Highlight.js 설정 ==========
 // marked용 커스텀 렌더러 설정
 const renderer = new marked.Renderer();
+
+// GitHub 스타일 slug 생성 (마크다운 목차 앵커와 일치)
+function githubSlug(text) {
+  return text
+    .toLowerCase()
+    .replace(/<[^>]*>/g, '')       // HTML 태그 제거
+    .replace(/[^\w\s\u3131-\uD79D가-힣-]/g, '') // 영문, 숫자, 한글, 하이픈, 공백만 유지
+    .replace(/\s+/g, '-')          // 공백 → 하이픈
+    .replace(/-+/g, '-')           // 연속 하이픈 제거
+    .replace(/^-|-$/g, '');        // 양끝 하이픈 제거
+}
+
+// 헤딩 ID를 GitHub 스타일 slug로 생성
+const headingCount = {};
+renderer.heading = function(text, level) {
+  // text가 객체인 경우 처리 (marked 버전에 따라 다름)
+  const rawText = typeof text === 'object' ? text.text : text;
+  let slug = githubSlug(rawText);
+  // 중복 slug 처리
+  if (headingCount[slug] !== undefined) {
+    headingCount[slug]++;
+    slug = `${slug}-${headingCount[slug]}`;
+  } else {
+    headingCount[slug] = 0;
+  }
+  return `<h${level} id="${slug}">${rawText}</h${level}>`;
+};
+
 const originalCodeRenderer = renderer.code.bind(renderer);
 
 renderer.code = function(code, language) {
@@ -673,14 +702,27 @@ function applyTabZoom(tabId) {
 }
 
 // ========== Pan (Drag to scroll when zoomed) ==========
+let isHandMode = false;
+const btnCursorMode = document.getElementById('btn-cursor-mode');
+const iconCursor = document.getElementById('icon-cursor');
+const iconHand = document.getElementById('icon-hand');
+
 function updatePanMode() {
-  if (currentZoom > 100) {
+  if (isHandMode) {
     content.classList.add('pan-enabled');
   } else {
     content.classList.remove('pan-enabled');
     content.classList.remove('panning');
     isPanning = false;
   }
+}
+
+function toggleCursorMode() {
+  isHandMode = !isHandMode;
+  iconCursor.style.display = isHandMode ? 'none' : '';
+  iconHand.style.display = isHandMode ? '' : 'none';
+  btnCursorMode.classList.toggle('active', isHandMode);
+  updatePanMode();
 }
 
 function isInteractivePanElement(element) {
@@ -703,7 +745,7 @@ function isInteractivePanElement(element) {
 }
 
 function onPanMouseDown(e) {
-  if (currentZoom <= 100) return;
+  if (!isHandMode) return;
   if (e.button !== 0) return; // Only left mouse button
   if (isInteractivePanElement(e.target)) return;
 
@@ -805,6 +847,20 @@ function handleFileChange(filePath, event) {
                      eventType?.modify ||
                      eventType?.Modify ||
                      (typeof eventType === 'object' && eventType !== null);
+
+    // 파일 삭제 감지 → 해당 탭 닫기
+    const isRemove = eventType === 'remove' ||
+                     eventType?.remove ||
+                     eventType?.Remove;
+
+    if (isRemove) {
+      const tabsToClose = tabs.filter(t => t.filePath === filePath);
+      for (const tab of tabsToClose) {
+        closeTab(tab.id);
+      }
+      showNotification('파일이 삭제되어 탭을 닫았습니다.');
+      return;
+    }
 
     if (isModify) {
       // Find all tabs with this file path and reload them
@@ -1971,7 +2027,7 @@ async function exportPdf() {
 // ========== Presentation Mode ==========
 function startPresentation() {
   if (pages.length === 0 || activeTabId === HOME_TAB_ID) {
-    showNotification(t('noPrintDoc'));
+    showNotification(t('noPresentDoc'));
     return;
   }
 
@@ -2700,6 +2756,8 @@ function renderMarkdown(text, isNewFile = true) {
     // Matches: standalone line with 3+ dashes, with optional spaces
     // Handles: ---  or ----  or -----  etc.
     const pageTexts = processedText.split(/\n\s*-{3,}\s*\n|\n\s*-{3,}\s*$|^\s*-{3,}\s*\n/);
+    // 헤딩 slug 카운터 리셋
+    Object.keys(headingCount).forEach(k => delete headingCount[k]);
     pages = pageTexts.filter(p => p.trim()).map(p => marked.parse(p));
 
     if (isNewFile) {
@@ -3024,12 +3082,16 @@ function setupKeyboard() {
         closeTab(activeTabId);
       }
     }
-    // Escape: Close modals/dropdowns or go home
+    // Escape: Close modals/dropdowns
     if (e.key === 'Escape') {
       e.preventDefault();
-      hideRecentDropdown();
-      hideHelpDropdown();
-      if (imageModal && !imageModal.classList.contains('hidden')) {
+      // 열린 드롭다운 확인
+      const hasOpenDropdown = !formatDropdown?.classList.contains('hidden') ||
+        !toolsDropdown?.classList.contains('hidden') ||
+        !helpDropdown?.classList.contains('hidden');
+      if (hasOpenDropdown) {
+        closeAllToolbarDropdowns();
+      } else if (imageModal && !imageModal.classList.contains('hidden')) {
         closeImageModal();
       } else if (!aboutModal.classList.contains('hidden')) {
         closeAboutModal();
@@ -3037,9 +3099,8 @@ function setupKeyboard() {
         closeShortcutsModal();
       } else if (isSearchVisible) {
         hideSearchBar();
-      } else {
-        showHome();
       }
+      hideRecentDropdown();
     }
     // Ctrl+Tab: Next tab (including home)
     if (e.ctrlKey && e.key === 'Tab') {
@@ -3373,6 +3434,7 @@ async function init() {
   });
 
   // Toolbar dropdown event listeners
+  btnCursorMode?.addEventListener('click', toggleCursorMode);
   btnFormat?.addEventListener('click', toggleFormatDropdown);
   btnTools?.addEventListener('click', toggleToolsDropdown);
 
@@ -3380,6 +3442,32 @@ async function init() {
   document.addEventListener('click', (e) => {
     if (!e.target.closest('.toolbar-dropdown-wrapper') && !e.target.closest('.help-menu-wrapper')) {
       closeAllToolbarDropdowns();
+    }
+  });
+
+  // Link click handler: external links → browser, anchor links → scroll
+  document.addEventListener('click', (e) => {
+    const anchor = e.target.closest('a[href]');
+    if (!anchor) return;
+    const href = anchor.getAttribute('href');
+    if (!href) return;
+    // 외부 링크: 시스템 브라우저에서 열기
+    if (/^https?:\/\//.test(href)) {
+      e.preventDefault();
+      open(href);
+      return;
+    }
+    // 앵커 링크: #content 내에서 스크롤 이동
+    if (href.startsWith('#')) {
+      e.preventDefault();
+      const targetId = decodeURIComponent(href.slice(1));
+      const target = document.getElementById(targetId);
+      if (target) {
+        const containerRect = content.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        const scrollTop = content.scrollTop + (targetRect.top - containerRect.top);
+        content.scrollTo({ top: scrollTop, behavior: 'smooth' });
+      }
     }
   });
 
