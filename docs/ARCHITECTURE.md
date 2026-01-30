@@ -20,12 +20,13 @@
 ```
 workspace-mdView/
 ├── src/                          # 프론트엔드 소스 (웹: JS, CSS)
-│   ├── main.js                   # 오케스트레이터 (~626줄) - 모듈 조립/초기화
+│   ├── main.js                   # 오케스트레이터 (~341줄) - 모듈 조립/초기화
 │   ├── i18n.js                   # 다국어 지원 (한국어/영어/일본어)
 │   │
 │   ├── styles/                   # CSS 모듈 시스템
 │   │   ├── index.css             # CSS 진입점 (@import)
-│   │   └── base.css              # 전역 리셋, 기본 레이아웃
+│   │   ├── base.css              # 전역 리셋, 기본 레이아웃
+│   │   └── animations.css        # 알림 애니메이션 (slideIn/slideOut)
 │   │
 │   ├── core/                     # 핵심 인프라
 │   │   ├── store.js              # 중앙 상태 관리 (Observer 패턴)
@@ -84,8 +85,16 @@ workspace-mdView/
 │   │   │   └── toc.css           # 목차 스타일
 │   │   │
 │   │   ├── editor/               # 마크다운 편집기
-│   │   │   ├── editor.js         # stub (편집 로직은 main.js에 인라인)
+│   │   │   ├── editor-manager.js # 에디터 모드/입력/저장 관리
+│   │   │   ├── editor.js         # stub (하위 호환)
 │   │   │   └── editor.css        # 편집기 스타일
+│   │   │
+│   │   ├── welcome/              # 웰컴 화면
+│   │   │   └── welcome.js        # 홈 화면 HTML 생성
+│   │   │
+│   │   ├── ui/                   # UI 공통
+│   │   │   ├── ui-texts.js       # i18n 기반 UI 텍스트 업데이트
+│   │   │   └── ui.css            # UI 컴포넌트 스타일
 │   │   │
 │   │   └── plugins/              # 플러그인 UI
 │   │       ├── plugin-ui.js      # 플러그인 관리 UI
@@ -173,17 +182,20 @@ search.init({
 | theme | theme-system.js | 테마 적용/에디터/임포트/내보내기/저장 테마 |
 | shortcuts | shortcuts.js | 키보드 단축키, 외부 링크, 앵커, 코드 복사 |
 | toc | toc.js | 목차 사이드바, 스크롤 스파이 |
+| editor-manager | editor-manager.js | 에디터 모드 전환, 입력 처리, 저장 |
+| welcome | welcome.js | 홈 화면 웰컴 HTML 생성 |
+| ui-texts | ui-texts.js | i18n 기반 전체 UI 텍스트 업데이트 |
 
 ### main.js (오케스트레이터)에 남은 것
 
 - 모듈 import 및 조립
-- DOM element 캐싱
-- 글로벌 상태 선언 (tabs, activeTabId, currentLanguage 등)
+- DOM element 캐싱 (툴바 드롭다운, 모달)
+- 글로벌 상태 선언 (currentLanguage)
 - `init()` 함수 (각 모듈 초기화 호출)
-- `updateUITexts()` (i18n UI 업데이트)
-- 에디터 함수 (setEditorMode, onEditorInput, saveCurrentFile)
+- `updateUITexts()` 래퍼 (실제 로직은 ui-texts.js)
 - 툴바 드롭다운 핸들러
-- Welcome HTML
+- VMD 컨텍스트 빌더
+- Export 버튼 상태 업데이트
 
 ---
 
@@ -196,9 +208,9 @@ search.init({
 - 프레젠테이션 오버레이
 - 드롭 오버레이
 
-### src/main.js (~626줄)
+### src/main.js (~341줄)
 - 앱 오케스트레이터 (진입점)
-- 13개 모듈 import 및 context 전달로 초기화
+- 16개 모듈 import 및 context 전달로 초기화
 - 툴바 이벤트 연결
 
 ### src/core/ (핵심 인프라)
@@ -533,6 +545,7 @@ const api = {
 | 9 | toc | toc.css | 목차 사이드바 |
 | 10 | editor | editor.css | 에디터 |
 | 11 | plugins | plugin-ui.css | 플러그인 UI |
+| 12 | animations | animations.css | 알림 애니메이션 |
 
 **⚠️ CSS 특이성 주의**: 나중에 로드된 CSS가 같은 특이성에서 우선. 하지만 **선택자 특이성이 다르면 순서와 무관**. 예: `#main-container #content` vs `#main-container.mode-split #content`.
 
@@ -579,6 +592,7 @@ src-tauri/target/release/
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-01-31 | main.js 추가 축소 리팩토링 - 626줄→341줄 (ui-texts, editor-manager, welcome, animations 추출) |
 | 2026-01-30 | main.js 모듈 분리 리팩토링 - 13개 모듈 구조로 전면 재작성 |
 | 2026-01-25 | 플러그인 시스템 아키텍처 추가 |
 | 2026-01-25 | CSS 모듈 로딩 순서 문서화 |
@@ -589,4 +603,4 @@ src-tauri/target/release/
 | 2026-01-22 | TOC 모듈 구조 추가 |
 | 2025-12-29 | 모듈화 아키텍처 문서화 |
 
-*마지막 업데이트: 2026-01-30*
+*마지막 업데이트: 2026-01-31*

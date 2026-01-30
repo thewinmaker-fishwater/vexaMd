@@ -4,6 +4,41 @@
 
 ---
 
+## 세션 2026-01-31
+
+### 작업 내용
+
+1. **main.js 추가 축소 리팩토링 (626줄 → 341줄)**
+   - `updateUITexts()` → `src/modules/ui/ui-texts.js` 추출 (~176줄)
+   - 에디터 함수 그룹 → `src/modules/editor/editor-manager.js` 추출 (~70줄)
+   - `getWelcomeHTML()` → `src/modules/welcome/welcome.js` 추출 (~18줄)
+   - CSS 애니메이션 → `src/styles/animations.css` 이동 (~12줄)
+   - 미사용 import 제거 (`showNotification`, `showError`, `hideToc`, `markdownEditor`)
+
+### 수정/생성된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/main.js` | 626줄→341줄, 4개 모듈 추출 후 import로 교체 |
+| `src/modules/ui/ui-texts.js` | 신규 - i18n 기반 UI 텍스트 업데이트 |
+| `src/modules/editor/editor-manager.js` | 신규 - 에디터 모드/입력/저장 관리 |
+| `src/modules/welcome/welcome.js` | 신규 - 웰컴 화면 HTML 생성 |
+| `src/styles/animations.css` | 신규 - slideIn/slideOut 애니메이션 |
+| `src/styles/index.css` | animations.css @import 추가 |
+| `docs/ARCHITECTURE.md` | 구조 업데이트 (새 모듈, CSS, 줄 수) |
+
+### 발생한 문제
+- 없음. 빌드(`npm run build`) 성공 확인.
+
+### 커밋 정보
+- 미커밋 (사용자 허가 대기)
+
+### 다음 세션 참고사항
+- `npm run tauri dev`로 기능 테스트 필요: 언어 전환, 에디터 모드, 웰컴 화면, 알림 애니메이션
+- 기존 `editor.js` stub 파일은 하위 호환을 위해 유지 (추후 제거 가능)
+
+---
+
 ## 세션 2026-01-25
 
 ### 작업 내용

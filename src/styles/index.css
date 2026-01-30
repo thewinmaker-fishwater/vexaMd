@@ -35,3 +35,6 @@
 
 /* 11. Plugins (플러그인 시스템) */
 @import '../modules/plugins/plugin-ui.css';
+
+/* 12. Animations (알림 애니메이션) */
+@import './animations.css';
