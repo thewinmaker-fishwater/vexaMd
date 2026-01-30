@@ -236,6 +236,56 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
+## 세션 2026-01-30 (2차)
+
+### 작업 내용
+
+1. **세션 복원 기능**
+   - 앱 종료 후 재실행 시 이전에 열었던 탭들 자동 복원
+   - 마지막 활성 탭도 복원, 삭제된 파일은 자동 건너뛰기
+   - CLI 인자로 파일을 열면 세션 복원 대신 해당 파일 열기
+   - `localStorage`에 `openTabs`, `activeTabPath` 저장
+
+2. **윈도우 크기/위치 기억**
+   - 앱 종료 시 윈도우 위치(x,y), 크기(w,h), 최대화 여부를 Rust 측에서 저장
+   - 다음 실행 시 동일 위치/크기로 복원
+   - 저장 위치: `%APPDATA%/com.vexa-md/window-state.json`
+   - 깜빡임 방지: 숨기기 → 복원 → 표시 순서로 처리
+
+3. **읽기전용 포맷 (.vmd) - AES-256-GCM 암호화**
+   - 도구 > "읽기전용 내보내기" 버튼으로 `.vmd` 파일 생성
+   - Rust AES-256-GCM 암호화로 외부에서 읽기 불가
+   - 파일 구조: MAGIC(4바이트) + NONCE(12바이트) + 암호화 데이터
+   - `.vmd` 열기 시 읽기전용 모드 (편집/분할 버튼 비활성화, 🔒 아이콘)
+   - 파일 열기 다이얼로그, 드래그앤드롭 모두 `.vmd` 지원
+
+4. **VMD → MD 내보내기**
+   - 읽기전용 탭에서 도구 > "MD로 내보내기"로 Markdown 파일로 변환
+   - 탭 상태에 따라 내보내기 메뉴 자동 활성화/비활성화
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/main.js` | 세션 저장/복원, VMD 내보내기/열기, 읽기전용 탭, 내보내기 버튼 활성화 관리 |
+| `src-tauri/src/lib.rs` | 윈도우 상태 저장/복원, AES-256 암호화/복호화 커맨드, `.vmd` 확장자 지원 |
+| `src-tauri/Cargo.toml` | `dirs`, `aes-gcm`, `rand` 의존성 추가 |
+| `src-tauri/tauri.conf.json` | `.vmd` 파일 연결 추가 예정 |
+| `index.html` | "읽기전용 내보내기", "MD로 내보내기" 버튼 추가 |
+| `src/i18n.js` | VMD 관련 번역 추가 (한/영/일) |
+| `src/modules/ui/ui.css` | 드롭다운 버튼 disabled 스타일 추가 |
+
+### 발생한 문제 및 해결
+
+| 문제 | 원인 | 해결 |
+|------|------|------|
+| 파일 읽기 실패 에러 | `loadFile`에서 `.vmd`를 `read_file`로 읽으려 함 (바이너리 파일) | `.vmd` 분기를 `read_file` 호출 전으로 이동 |
+| `on_window_event` 타입 불일치 | `Window` vs `WebviewWindow` 타입 차이 | 각각 별도 함수로 분리 |
+| 윈도우 위치 이동 깜빡임 | `visible: true`로 기본 위치에 먼저 표시됨 | setup에서 hide → restore → show 순서 처리 |
+| CLI 인자 중복 처리 | Rust 이벤트 + JS 직접 호출 중복 | Rust 쪽 이벤트 발송 제거, JS에서 직접 처리 |
+
+---
+
 ## 세션 로그 작성 가이드
 
 ### 세션 시작 시

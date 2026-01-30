@@ -298,6 +298,9 @@ let activeTabId = null;
 const MAX_RECENT_FILES = 10;
 let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
 
+// Session restore flag (prevent saving during restore)
+let isRestoringSession = false;
+
 // Welcome HTML cache (will be updated by i18n)
 function getWelcomeHTML() {
   const t = i18n[currentLanguage];
@@ -2236,12 +2239,196 @@ function attachImageClickListeners() {
   });
 }
 
+// ========== Session Save/Restore ==========
+function saveSession() {
+  if (isRestoringSession) return;
+  const sessionTabs = tabs
+    .filter(t => t.filePath && t.filePath !== t.name) // only real file tabs
+    .map(t => ({
+      filePath: t.filePath,
+      name: t.name,
+      zoom: t.zoom || 100,
+      readOnly: t.readOnly || false
+    }));
+  localStorage.setItem('openTabs', JSON.stringify(sessionTabs));
+  localStorage.setItem('activeTabPath', activeTabId !== HOME_TAB_ID
+    ? (tabs.find(t => t.id === activeTabId)?.filePath || '')
+    : '');
+}
+
+async function restoreSession() {
+  const savedTabs = JSON.parse(localStorage.getItem('openTabs') || '[]');
+  const activeTabPath = localStorage.getItem('activeTabPath') || '';
+  if (savedTabs.length === 0) return;
+
+  isRestoringSession = true;
+  let activeRestored = null;
+
+  for (const saved of savedTabs) {
+    try {
+      if (tauriApi) {
+        const isVmd = saved.filePath.toLowerCase().endsWith('.vmd');
+
+        if (isVmd) {
+          // VMD 파일은 복호화 경로로 복원
+          const jsonStr = await tauriApi.invoke('read_vmd', { path: saved.filePath });
+          const vmdData = JSON.parse(jsonStr);
+          const displayName = vmdData.title || saved.filePath.split(/[/\\]/).pop();
+          const tabId = generateTabId();
+          const tab = {
+            id: tabId,
+            name: displayName,
+            filePath: saved.filePath,
+            content: vmdData.content,
+            originalContent: vmdData.content,
+            isDirty: false,
+            editMode: 'view',
+            tocVisible: false,
+            zoom: saved.zoom || 100,
+            readOnly: true
+          };
+          tabs.push(tab);
+          if (saved.filePath === activeTabPath) activeRestored = tabId;
+        } else {
+          const text = await tauriApi.invoke('read_file', { path: saved.filePath });
+          const name = saved.filePath.split(/[/\\]/).pop();
+          const tabId = generateTabId();
+          const tab = {
+            id: tabId,
+            name: name,
+            filePath: saved.filePath,
+            content: text,
+            originalContent: text,
+            isDirty: false,
+            editMode: 'view',
+            tocVisible: false,
+            zoom: saved.zoom || 100,
+            readOnly: false
+          };
+          tabs.push(tab);
+          if (saved.filePath && saved.filePath !== name) {
+            startWatching(saved.filePath, tabId);
+          }
+          if (saved.filePath === activeTabPath) activeRestored = tabId;
+        }
+      }
+    } catch (e) {
+      console.log('Session restore: skipping file', saved.filePath, e);
+    }
+  }
+
+  isRestoringSession = false;
+
+  if (tabs.length > 0) {
+    renderTabs();
+    updateTabBarVisibility();
+    switchToTab(activeRestored || tabs[tabs.length - 1].id);
+  }
+}
+
+// ========== VMD (Read-Only Export) ==========
+async function exportVmd() {
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  if (!activeTab) {
+    const t = i18n[currentLanguage];
+    showNotification(t.noPrintDoc || '내보낼 문서가 없습니다.');
+    return;
+  }
+
+  const vmdData = {
+    format: 'vexa-md',
+    version: 1,
+    title: activeTab.name.replace(/\.(md|markdown|txt)$/i, ''),
+    created: new Date().toISOString(),
+    content: activeTab.content
+  };
+
+  if (dialogSave) {
+    const savePath = await dialogSave({
+      defaultPath: vmdData.title + '.vmd',
+      filters: [{ name: 'Vexa MD', extensions: ['vmd'] }]
+    });
+    if (savePath) {
+      try {
+        // Rust AES-256 암호화로 저장
+        await tauriApi.invoke('write_vmd', {
+          path: savePath,
+          jsonContent: JSON.stringify(vmdData)
+        });
+        const t = i18n[currentLanguage];
+        showNotification(t.exportVmd || '읽기전용 파일로 내보냈습니다.');
+      } catch (e) {
+        showError('내보내기 실패', e.toString());
+      }
+    }
+  }
+}
+
+async function exportVmdToMd() {
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  if (!activeTab || !activeTab.readOnly) {
+    showNotification(i18n[currentLanguage].noPrintDoc || '내보낼 VMD 문서가 없습니다.');
+    return;
+  }
+
+  const defaultName = activeTab.name.replace(/\.vmd$/i, '') + '.md';
+  if (dialogSave) {
+    const savePath = await dialogSave({
+      defaultPath: defaultName,
+      filters: [{ name: 'Markdown', extensions: ['md'] }]
+    });
+    if (savePath) {
+      try {
+        await tauriApi.invoke('write_file', { path: savePath, content: activeTab.content });
+        const t = i18n[currentLanguage];
+        showNotification(t.exportVmdToMd || 'Markdown 파일로 내보냈습니다.');
+      } catch (e) {
+        showError('내보내기 실패', e.toString());
+      }
+    }
+  }
+}
+
+async function loadVmdFile(filePath) {
+  try {
+    // Rust에서 AES-256 복호화
+    const jsonStr = await tauriApi.invoke('read_vmd', { path: filePath });
+    const vmdData = JSON.parse(jsonStr);
+    if (vmdData.format !== 'vexa-md') {
+      showError('VMD 오류', '유효한 VMD 파일이 아닙니다.');
+      return;
+    }
+    const displayName = vmdData.title || filePath.split(/[/\\]/).pop();
+    const tabId = generateTabId();
+    const tab = {
+      id: tabId,
+      name: displayName,
+      filePath: filePath,
+      content: vmdData.content,
+      originalContent: vmdData.content,
+      isDirty: false,
+      editMode: 'view',
+      tocVisible: false,
+      zoom: 100,
+      readOnly: true
+    };
+    tabs.push(tab);
+    renderTabs();
+    switchToTab(tabId);
+    updateTabBarVisibility();
+    addToRecentFiles(displayName, filePath);
+    saveSession();
+  } catch (e) {
+    showError('VMD 오류', e.toString());
+  }
+}
+
 // ========== Tabs Management ==========
 function generateTabId() {
   return 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 }
 
-function createTab(name, filePath, content) {
+function createTab(name, filePath, content, options = {}) {
   const tabId = generateTabId();
   const tab = {
     id: tabId,
@@ -2252,7 +2439,8 @@ function createTab(name, filePath, content) {
     isDirty: false,            // 변경 여부
     editMode: 'view',          // 편집 모드: 'view' | 'edit' | 'split'
     tocVisible: false,         // 새 탭은 TOC 숨김 상태로 시작
-    zoom: 100                  // 탭별 줌 레벨
+    zoom: 100,                 // 탭별 줌 레벨
+    readOnly: options.readOnly || false  // 읽기전용 플래그
   };
   tabs.push(tab);
   renderTabs();
@@ -2264,6 +2452,7 @@ function createTab(name, filePath, content) {
     startWatching(filePath, tabId);
   }
 
+  saveSession();
   return tabId;
 }
 
@@ -2293,6 +2482,7 @@ function switchToTab(tabId) {
     setEditorMode('view');
     // 홈 탭은 항상 100% zoom
     applyTabZoom(HOME_TAB_ID);
+    updateExportButtons();
     return;
   }
 
@@ -2312,10 +2502,40 @@ function switchToTab(tabId) {
 
   // 에디터에 콘텐츠 로드 및 모드 설정
   loadEditorContent(tab.content);
-  setEditorMode(tab.editMode || 'view');
+  // 읽기전용 탭은 항상 view 모드
+  if (tab.readOnly) {
+    setEditorMode('view');
+    updateEditModeButtonsDisabled(true);
+  } else {
+    setEditorMode(tab.editMode || 'view');
+    updateEditModeButtonsDisabled(false);
+  }
 
   // 해당 탭의 zoom 복원
   applyTabZoom(tabId);
+  updateExportButtons();
+  saveSession();
+}
+
+function updateEditModeButtonsDisabled(disabled) {
+  const btnModeEdit = document.getElementById('btn-mode-edit');
+  const btnModeSplit = document.getElementById('btn-mode-split');
+  if (btnModeEdit) btnModeEdit.disabled = disabled;
+  if (btnModeSplit) btnModeSplit.disabled = disabled;
+}
+
+function updateExportButtons() {
+  const activeTab = tabs.find(t => t.id === activeTabId);
+  const hasFile = activeTab != null;
+  const isReadOnly = activeTab?.readOnly || false;
+
+  const btnExportVmd = document.getElementById('btn-export-vmd');
+  const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
+
+  // 읽기전용 내보내기: 일반 파일 탭일 때만 활성화
+  if (btnExportVmd) btnExportVmd.disabled = !hasFile || isReadOnly;
+  // MD로 내보내기: 읽기전용(VMD) 탭일 때만 활성화
+  if (btnExportVmdToMd) btnExportVmdToMd.disabled = !hasFile || !isReadOnly;
 }
 
 function closeTab(tabId, event) {
@@ -2357,6 +2577,7 @@ function closeTab(tabId, event) {
 
   renderTabs();
   updateTabBarVisibility();
+  saveSession();
 }
 
 function renderTabs() {
@@ -2378,10 +2599,11 @@ function renderTabs() {
   // File tabs
   tabs.forEach(tab => {
     const dirtyIndicator = tab.isDirty ? ' •' : '';
+    const lockIcon = tab.readOnly ? ' 🔒' : '';
     const tabEl = document.createElement('div');
     tabEl.className = `tab ${tab.id === activeTabId ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
     tabEl.innerHTML = `
-      <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}${dirtyIndicator}</span>
+      <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}${lockIcon}${dirtyIndicator}</span>
       <button class="tab-close" title="닫기">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -2890,7 +3112,7 @@ async function openFile() {
       multiple: false,
       filters: [{
         name: 'Markdown',
-        extensions: ['md', 'markdown', 'txt']
+        extensions: ['md', 'markdown', 'txt', 'vmd']
       }]
     });
 
@@ -2918,9 +3140,6 @@ async function openFile() {
 async function loadFile(filePath) {
   try {
     if (tauriApi) {
-      const text = await tauriApi.invoke('read_file', { path: filePath });
-      const name = filePath.split(/[/\\]/).pop();
-
       // Check if file is already open
       const existingTab = tabs.find(t => t.filePath === filePath);
       if (existingTab) {
@@ -2928,6 +3147,14 @@ async function loadFile(filePath) {
         return;
       }
 
+      // .vmd 파일은 읽기전용으로 열기 (별도 복호화 경로)
+      if (filePath.toLowerCase().endsWith('.vmd')) {
+        await loadVmdFile(filePath);
+        return;
+      }
+
+      const text = await tauriApi.invoke('read_file', { path: filePath });
+      const name = filePath.split(/[/\\]/).pop();
       createTab(name, filePath, text);
       addToRecentFiles(name, filePath);
     }
@@ -2987,6 +3214,13 @@ function setupDragDrop() {
         const text = await file.text();
         createTab(file.name, file.name, text);
         addToRecentFiles(file.name, file.name);
+      } else if (file.name.toLowerCase().endsWith('.vmd')) {
+        // VMD 파일은 Tauri 경로가 필요 (브라우저 File API로는 복호화 불가)
+        if (tauriApi && file.path) {
+          await loadFile(file.path);
+        } else {
+          showError('VMD 오류', 'VMD 파일은 Tauri 환경에서만 열 수 있습니다.');
+        }
       } else if (file.name.endsWith('.json')) {
         // 테마 파일 드롭
         importTheme(file);
@@ -3170,7 +3404,7 @@ async function setupTauriEvents() {
         const paths = event.payload?.paths || event.payload;
         if (paths && paths.length > 0) {
           for (const filePath of paths) {
-            if (filePath.match(/\.(md|markdown|txt)$/i)) {
+            if (filePath.match(/\.(md|markdown|txt|vmd)$/i)) {
               await loadFile(filePath);
             } else if (filePath.match(/\.json$/i)) {
               // 테마 파일
@@ -3255,10 +3489,17 @@ async function init() {
   });
 
   // 2. Tauri 초기화 (백그라운드)
-  initTauri().then(() => {
+  initTauri().then(async () => {
     // console.log(`[PERF] Tauri 완료: ${(performance.now() - initStart).toFixed(1)}ms`);
     setupTauriEvents();
-    handleCliArgs();
+    const args = tauriApi ? await tauriApi.invoke('get_cli_args').catch(() => []) : [];
+    if (args && args.length > 0) {
+      // CLI 인자가 있으면 세션 복원 대신 인자 파일 열기
+      await loadFile(args[0]);
+    } else {
+      // CLI 인자 없으면 이전 세션 복원
+      await restoreSession();
+    }
   });
 
   // Event listeners
@@ -3282,6 +3523,16 @@ async function init() {
 
   if (btnPrint) {
     btnPrint.addEventListener('click', printDocument);
+  }
+
+  const btnExportVmd = document.getElementById('btn-export-vmd');
+  if (btnExportVmd) {
+    btnExportVmd.addEventListener('click', exportVmd);
+  }
+
+  const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
+  if (btnExportVmdToMd) {
+    btnExportVmdToMd.addEventListener('click', exportVmdToMd);
   }
 
   if (btnPdf) {

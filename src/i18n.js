@@ -232,7 +232,14 @@ export const i18n = {
     settings: '설정',
     noSettings: '설정 항목이 없습니다',
     pluginEnabled: '플러그인이 활성화되었습니다',
-    pluginDisabled: '플러그인이 비활성화되었습니다'
+    pluginDisabled: '플러그인이 비활성화되었습니다',
+
+    // VMD Export
+    exportVmd: '읽기전용 파일로 내보냈습니다.',
+    exportVmdBtn: '읽기전용 내보내기',
+    exportVmdToMd: 'Markdown 파일로 내보냈습니다.',
+    exportVmdToMdBtn: 'MD로 내보내기',
+    readOnly: '읽기전용'
   },
 
   en: {
@@ -463,7 +470,14 @@ export const i18n = {
     settings: 'Settings',
     noSettings: 'No settings available',
     pluginEnabled: 'Plugin enabled',
-    pluginDisabled: 'Plugin disabled'
+    pluginDisabled: 'Plugin disabled',
+
+    // VMD Export
+    exportVmd: 'Exported as read-only file.',
+    exportVmdBtn: 'Export Read-only',
+    exportVmdToMd: 'Exported as Markdown file.',
+    exportVmdToMdBtn: 'Export as MD',
+    readOnly: 'Read-only'
   },
 
   ja: {
@@ -694,7 +708,14 @@ export const i18n = {
     settings: '設定',
     noSettings: '設定項目がありません',
     pluginEnabled: 'プラグインが有効化されました',
-    pluginDisabled: 'プラグインが無効化されました'
+    pluginDisabled: 'プラグインが無効化されました',
+
+    // VMD Export
+    exportVmd: '読み取り専用ファイルとしてエクスポートしました。',
+    exportVmdBtn: '読み取り専用エクスポート',
+    exportVmdToMd: 'Markdownファイルとしてエクスポートしました。',
+    exportVmdToMdBtn: 'MDでエクスポート',
+    readOnly: '読み取り専用'
   }
 };
 

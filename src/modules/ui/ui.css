@@ -292,6 +292,11 @@
   border-color: var(--accent);
 }
 
+.toolbar-dropdown-panel button:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 .toolbar-dropdown-panel .edit-mode-group {
   display: flex;
   gap: 0;
