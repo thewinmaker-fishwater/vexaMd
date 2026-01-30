@@ -445,7 +445,10 @@ async function init() {
   });
 
   // Search init
-  search.init();
+  search.init({
+    getActiveTabId: () => tabManager.getActiveTabId(),
+    HOME_TAB_ID: tabManager.HOME_TAB_ID,
+  });
 
   // File operations init
   fileOps.init({

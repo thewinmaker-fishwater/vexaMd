@@ -8,8 +8,10 @@ let originalContent = '';
 let isSearchVisible = false;
 
 let els = {};
+let ctx = {};
 
-export function init() {
+export function init(context) {
+  ctx = context || {};
   els = {
     searchBar: document.getElementById('search-bar'),
     searchInput: document.getElementById('search-input'),
@@ -25,7 +27,9 @@ export function init() {
   els.searchInput.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      performSearch(e.target.value);
+      const activeTabId = ctx.getActiveTabId ? ctx.getActiveTabId() : null;
+      const homeTabId = ctx.HOME_TAB_ID || 'home';
+      performSearch(e.target.value, activeTabId, homeTabId);
     }, 200);
   });
 
