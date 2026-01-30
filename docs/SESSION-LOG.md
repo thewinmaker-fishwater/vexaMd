@@ -286,6 +286,80 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
+## 세션 2026-01-30 (3차)
+
+### 작업 내용
+
+1. **main.js 모듈 분리 대규모 리팩토링**
+   - `src/main.js` 3,780줄 → ~626줄 오케스트레이터로 축소
+   - 13개 독립 모듈로 기능 추출
+   - `init(context)` 패턴으로 모듈 간 통신
+   - 기존 미사용 dead code 모듈 12개 삭제
+
+2. **추출된 모듈 (13개)**
+   | 모듈 | 파일 | 내용 |
+   |------|------|------|
+   | notification | `notification/notification.js` | showNotification, showError |
+   | image-modal | `image-modal/image-modal.js` | 이미지 모달 열기/닫기/줌/드래그 |
+   | print | `print/print.js` | printDocument, exportPdf |
+   | presentation | `presentation/presentation-mode.js` | 프레젠테이션 시작/종료/네비게이션 |
+   | renderer | `markdown/renderer.js` | marked 설정, renderMarkdown, renderPages |
+   | search | `search/search-manager.js` | 검색 수행/하이라이트/네비게이션 |
+   | tabs | `tabs/tab-manager.js` | createTab, switchToTab, closeTab, renderTabs |
+   | zoom | `zoom/zoom-manager.js` | setViewMode, setZoom, zoomIn/Out/Reset, pan |
+   | file-ops | `files/file-ops.js` | openFile, loadFile, dragDrop, fileWatcher, recentFiles |
+   | session | `session/session.js` | saveSession, restoreSession |
+   | vmd | `vmd/vmd.js` | exportVmd, exportVmdToMd, loadVmdFile |
+   | theme | `theme/theme-system.js` | 테마 적용/에디터/임포트/내보내기 (~700줄) |
+   | shortcuts | `shortcuts/shortcuts.js` | 키보드 단축키, 링크 핸들러, 코드 복사 |
+
+3. **삭제된 미사용 파일 (12개)**
+   - `tabs/tabs.js`, `files/file-handler.js`, `files/recent-files.js`, `files/drag-drop.js`
+   - `search/search.js`, `viewer/markdown.js`, `viewer/presentation.js`
+   - `ui/settings.js`, `ui/help-menu.js`, `ui/keyboard.js`, `ui/zoom.js`, `ui/view-mode.js`
+   - `theme/theme-editor.js`, `theme/theme-manager.js`
+
+4. **버그 수정**
+   - `editor.js`가 삭제된 `tabs.js` import → stub으로 교체
+   - `renderer.js`, `theme-system.js`의 `require()` → ES `import`로 교체
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/main.js` | 3,780줄 → ~626줄 오케스트레이터로 재작성 |
+| `src/modules/notification/notification.js` | 신규 - 알림/에러 표시 |
+| `src/modules/image-modal/image-modal.js` | 신규 - 이미지 모달 |
+| `src/modules/print/print.js` | 신규 - 인쇄/PDF |
+| `src/modules/presentation/presentation-mode.js` | 신규 - 프레젠테이션 |
+| `src/modules/markdown/renderer.js` | 신규 - 마크다운 렌더링 |
+| `src/modules/search/search-manager.js` | 신규 - 검색 |
+| `src/modules/tabs/tab-manager.js` | 신규 - 탭 관리 |
+| `src/modules/zoom/zoom-manager.js` | 신규 - 줌/뷰모드 |
+| `src/modules/files/file-ops.js` | 신규 - 파일 열기/드래그/워처 |
+| `src/modules/session/session.js` | 신규 - 세션 저장/복원 |
+| `src/modules/vmd/vmd.js` | 신규 - VMD 내보내기/열기 |
+| `src/modules/theme/theme-system.js` | 신규 - 테마 시스템 전체 |
+| `src/modules/shortcuts/shortcuts.js` | 신규 - 키보드 단축키 |
+| `src/modules/editor/editor.js` | stub으로 재작성 |
+
+### 발생한 문제 및 해결
+
+| 문제 | 원인 | 해결 |
+|------|------|------|
+| 빌드 에러: `tabs/tabs.js` 없음 | `editor.js`가 삭제된 파일 import | `editor.js`를 no-op stub으로 교체 |
+| `require()` 런타임 에러 | ES 모듈에서 CommonJS `require()` 사용 | static `import`로 교체 |
+
+### 검증
+- `npm run build` ✅ 성공
+- `npm run tauri dev` ✅ 앱 정상 기동
+
+### 다음 세션 참고사항
+- main.js에 여전히 `updateUITexts()` (~200줄), 에디터 함수 등이 남아있어 ~626줄
+- 런타임 기능 테스트 (파일 열기, 탭, 검색, 테마, VMD, 세션 복원) 수동 검증 필요
+
+---
+
 ## 세션 로그 작성 가이드
 
 ### 세션 시작 시
@@ -368,4 +442,4 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
-*마지막 업데이트: 2026-01-26*
+*마지막 업데이트: 2026-01-30*

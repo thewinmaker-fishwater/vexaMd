@@ -1,4 +1,4 @@
-# SP MD Viewer - 기술 아키텍처
+# Vexa MD - 기술 아키텍처
 
 ## 기술 스택
 
@@ -11,92 +11,112 @@
 
 ### Backend
 - **Tauri 2.0**: 데스크톱 앱 프레임워크
-- **Rust**: 네이티브 기능 (파일 읽기/쓰기)
+- **Rust**: 네이티브 기능 (파일 읽기/쓰기, AES-256 암호화)
 
 ---
 
 ## 프로젝트 구조
 
 ```
-mdView/
-├── src/                      # 프론트엔드 소스 (웹: JS, CSS)
-│   ├── main.js               # 진입점 - 모듈 초기화
-│   ├── style.css             # 레거시 스타일시트 (참조용)
-│   ├── i18n.js               # 다국어 지원 (한국어/영어/일본어)
+workspace-mdView/
+├── src/                          # 프론트엔드 소스 (웹: JS, CSS)
+│   ├── main.js                   # 오케스트레이터 (~626줄) - 모듈 조립/초기화
+│   ├── i18n.js                   # 다국어 지원 (한국어/영어/일본어)
 │   │
-│   ├── styles/               # CSS 모듈 시스템 (신규)
-│   │   ├── index.css         # CSS 진입점 (모든 모듈 import)
-│   │   └── base.css          # 전역 리셋, 기본 레이아웃
+│   ├── styles/                   # CSS 모듈 시스템
+│   │   ├── index.css             # CSS 진입점 (@import)
+│   │   └── base.css              # 전역 리셋, 기본 레이아웃
 │   │
-│   ├── core/                 # 핵심 인프라
-│   │   ├── store.js          # 중앙 상태 관리 (Observer 패턴)
-│   │   ├── events.js         # 이벤트 버스 (모듈 간 통신)
-│   │   └── dom.js            # DOM 유틸리티
+│   ├── core/                     # 핵심 인프라
+│   │   ├── store.js              # 중앙 상태 관리 (Observer 패턴)
+│   │   ├── events.js             # 이벤트 버스 (모듈 간 통신)
+│   │   ├── dom.js                # DOM 유틸리티
+│   │   ├── plugin.js             # Plugin 기본 클래스
+│   │   ├── plugin-manager.js     # 플러그인 로딩/관리
+│   │   └── plugin-api.js         # 플러그인에 노출되는 API
 │   │
-│   ├── modules/              # 기능별 모듈
-│   │   ├── theme/            # 테마 시스템
-│   │   │   ├── theme-manager.js   # 테마 전환 로직
-│   │   │   ├── theme-editor.js    # 테마 편집기 모달
-│   │   │   └── theme.css          # 테마 CSS 변수
+│   ├── modules/                  # 기능별 모듈
+│   │   ├── notification/         # 알림 시스템
+│   │   │   └── notification.js   # showNotification, showError
 │   │   │
-│   │   ├── tabs/             # 탭 관리
-│   │   │   ├── tabs.js       # 탭 생성/전환/닫기
-│   │   │   └── tabs.css      # 탭 바 스타일
+│   │   ├── image-modal/          # 이미지 확대 모달
+│   │   │   └── image-modal.js    # 이미지 열기/닫기/줌/드래그
 │   │   │
-│   │   ├── search/           # 검색 기능
-│   │   │   ├── search.js     # 텍스트 검색 및 하이라이트
-│   │   │   └── search.css    # 검색 바 스타일
+│   │   ├── print/                # 인쇄/PDF
+│   │   │   └── print.js          # printDocument, exportPdf
 │   │   │
-│   │   ├── viewer/           # 마크다운 뷰어
-│   │   │   ├── markdown.js   # 마크다운 렌더링
-│   │   │   ├── presentation.js # 프레젠테이션 모드
-│   │   │   ├── viewer.css    # 뷰어 스타일
-│   │   │   └── syntax.css    # 코드 문법 하이라이트 스타일
+│   │   ├── presentation/         # 프레젠테이션
+│   │   │   └── presentation-mode.js  # 시작/종료/네비게이션
 │   │   │
-│   │   ├── toc/              # TOC 사이드바
-│   │   │   ├── toc.js        # 목차 생성/스크롤 스파이
-│   │   │   └── toc.css       # 목차 스타일
+│   │   ├── markdown/             # 마크다운 렌더링
+│   │   │   └── renderer.js       # marked 설정, renderMarkdown, renderPages
 │   │   │
-│   │   ├── editor/           # 마크다운 편집기 (신규)
-│   │   │   ├── editor.js     # 편집기 모듈
-│   │   │   └── editor.css    # 편집기 스타일
+│   │   ├── search/               # 검색 기능
+│   │   │   ├── search-manager.js # 검색 수행/하이라이트/네비게이션
+│   │   │   └── search.css        # 검색 바 스타일
 │   │   │
-│   │   ├── files/            # 파일 처리
-│   │   │   ├── file-handler.js   # 파일 열기/저장
-│   │   │   ├── drag-drop.js      # 드래그앤드롭
-│   │   │   ├── recent-files.js   # 최근 파일 관리
+│   │   ├── tabs/                 # 탭 관리
+│   │   │   ├── tab-manager.js    # createTab, switchToTab, closeTab, renderTabs
+│   │   │   └── tabs.css          # 탭 바 스타일
+│   │   │
+│   │   ├── zoom/                 # 줌/뷰모드
+│   │   │   └── zoom-manager.js   # setViewMode, setZoom, zoomIn/Out/Reset, pan
+│   │   │
+│   │   ├── files/                # 파일 처리
+│   │   │   ├── file-ops.js       # openFile, loadFile, dragDrop, fileWatcher, recentFiles
 │   │   │   └── files.css         # 파일 관련 스타일
 │   │   │
-│   │   └── ui/               # UI 컴포넌트
-│   │       ├── keyboard.js   # 키보드 단축키
-│   │       ├── view-mode.js  # 보기 모드 관리
-│   │       ├── zoom.js       # 줌 관리
-│   │       ├── help-menu.js  # 도움말 메뉴
-│   │       ├── settings.js   # 설정 (폰트, 언어 등)
-│   │       └── ui.css        # UI 컴포넌트 스타일
+│   │   ├── session/              # 세션 관리
+│   │   │   └── session.js        # saveSession, restoreSession
+│   │   │
+│   │   ├── vmd/                  # 읽기전용 포맷
+│   │   │   └── vmd.js            # exportVmd, exportVmdToMd, loadVmdFile
+│   │   │
+│   │   ├── theme/                # 테마 시스템
+│   │   │   ├── theme-system.js   # 테마 적용/에디터/임포트/내보내기
+│   │   │   └── theme.css         # 테마 CSS 변수
+│   │   │
+│   │   ├── shortcuts/            # 키보드 단축키
+│   │   │   └── shortcuts.js      # 키보드 핸들러, 링크 핸들러, 코드 복사
+│   │   │
+│   │   ├── toc/                  # TOC 사이드바
+│   │   │   ├── toc.js            # 목차 생성/스크롤 스파이
+│   │   │   └── toc.css           # 목차 스타일
+│   │   │
+│   │   ├── editor/               # 마크다운 편집기
+│   │   │   ├── editor.js         # stub (편집 로직은 main.js에 인라인)
+│   │   │   └── editor.css        # 편집기 스타일
+│   │   │
+│   │   └── plugins/              # 플러그인 UI
+│   │       ├── plugin-ui.js      # 플러그인 관리 UI
+│   │       └── plugin-ui.css     # 플러그인 스타일
 │   │
-│   ├── components/           # 재사용 컴포넌트 (신규)
-│   │   ├── icons.js          # SVG 아이콘 모음
-│   │   └── toolbar.js        # 툴바 컴포넌트
+│   ├── plugins/                  # 내장 플러그인
+│   │   └── mermaid/
+│   │       └── index.js          # Mermaid 다이어그램 플러그인
 │   │
-│   └── utils/                # 공통 유틸리티
-│       └── helpers.js        # 헬퍼 함수
+│   ├── components/               # 재사용 컴포넌트
+│   │   ├── icons.js              # SVG 아이콘 모음
+│   │   └── toolbar.js            # 툴바 컴포넌트
+│   │
+│   └── utils/                    # 공통 유틸리티
+│       └── helpers.js            # 헬퍼 함수
 │
-├── src-tauri/                # Tauri 백엔드 소스 (Rust)
+├── src-tauri/                    # Tauri 백엔드 소스 (Rust)
 │   ├── src/
-│   │   ├── lib.rs            # Tauri 커맨드 정의
-│   │   └── main.rs           # 앱 엔트리포인트
+│   │   ├── lib.rs                # Tauri 커맨드 정의
+│   │   └── main.rs               # 앱 엔트리포인트
 │   ├── capabilities/
-│   │   └── default.json      # 권한 설정
-│   ├── icons/                # 앱 아이콘
-│   ├── Cargo.toml            # Rust 의존성
-│   └── tauri.conf.json       # Tauri 설정
-├── public/                   # 정적 파일
-│   └── logo.jpg              # Seven Peaks 로고
-├── docs/                     # 문서
-├── index.html                # 메인 HTML
-├── package.json              # npm 의존성
-└── vite.config.js            # Vite 설정
+│   │   └── default.json          # 권한 설정
+│   ├── icons/                    # 앱 아이콘
+│   ├── Cargo.toml                # Rust 의존성
+│   └── tauri.conf.json           # Tauri 설정
+├── public/                       # 정적 파일
+│   └── logo.jpg                  # 로고
+├── docs/                         # 문서
+├── index.html                    # 메인 HTML
+├── package.json                  # npm 의존성
+└── vite.config.js                # Vite 설정
 ```
 
 ### 폴더 역할 설명
@@ -111,6 +131,62 @@ mdView/
 
 ---
 
+## 모듈 아키텍처
+
+### 모듈 통신 패턴
+
+각 모듈은 `init(context)` 또는 함수에 `ctx` 객체를 받아 다른 모듈의 기능에 접근합니다.
+
+```javascript
+// main.js (오케스트레이터)에서 모듈 조립
+import * as tabs from './modules/tabs/tab-manager.js';
+import * as search from './modules/search/search-manager.js';
+
+// 모듈 초기화 시 필요한 콜백/참조를 context로 전달
+tabs.init({
+  renderMarkdown: renderer.renderMarkdown,
+  switchToTab: tabs.switchToTab,
+  // ...
+});
+
+search.init({
+  getActiveTab: () => tabs.getTabs().find(t => t.id === tabs.getActiveTabId()),
+  // ...
+});
+```
+
+### 모듈 목록
+
+| 모듈 | 파일 | 역할 |
+|------|------|------|
+| notification | notification.js | 알림/에러 토스트 표시 |
+| image-modal | image-modal.js | 이미지 클릭 확대 모달 |
+| print | print.js | 인쇄 및 PDF 내보내기 |
+| presentation | presentation-mode.js | 프레젠테이션 모드 |
+| renderer | renderer.js | 마크다운 렌더링, 페이징 |
+| search | search-manager.js | 텍스트 검색, 하이라이트 |
+| tabs | tab-manager.js | 탭 생성/전환/닫기 |
+| zoom | zoom-manager.js | 줌, 뷰모드, pan |
+| file-ops | file-ops.js | 파일 열기/저장, 드래그앤드롭, 파일 워처, 최근 파일 |
+| session | session.js | 세션 저장/복원 |
+| vmd | vmd.js | 읽기전용 포맷 (.vmd) 내보내기/열기 |
+| theme | theme-system.js | 테마 적용/에디터/임포트/내보내기/저장 테마 |
+| shortcuts | shortcuts.js | 키보드 단축키, 외부 링크, 앵커, 코드 복사 |
+| toc | toc.js | 목차 사이드바, 스크롤 스파이 |
+
+### main.js (오케스트레이터)에 남은 것
+
+- 모듈 import 및 조립
+- DOM element 캐싱
+- 글로벌 상태 선언 (tabs, activeTabId, currentLanguage 등)
+- `init()` 함수 (각 모듈 초기화 호출)
+- `updateUITexts()` (i18n UI 업데이트)
+- 에디터 함수 (setEditorMode, onEditorInput, saveCurrentFile)
+- 툴바 드롭다운 핸들러
+- Welcome HTML
+
+---
+
 ## 주요 파일 설명
 
 ### index.html
@@ -120,9 +196,9 @@ mdView/
 - 프레젠테이션 오버레이
 - 드롭 오버레이
 
-### src/main.js (172줄)
-- 앱 진입점
-- 모듈 import 및 초기화
+### src/main.js (~626줄)
+- 앱 오케스트레이터 (진입점)
+- 13개 모듈 import 및 context 전달로 초기화
 - 툴바 이벤트 연결
 
 ### src/core/ (핵심 인프라)
@@ -147,36 +223,6 @@ $id('btn-home')  // document.getElementById
 $('.tab')        // document.querySelector
 $$('.tabs')      // querySelectorAll → Array
 ```
-
-### src/modules/ (기능별 모듈)
-
-| 모듈 | 파일 | 역할 |
-|------|------|------|
-| theme | theme-manager.js | 테마 전환, CSS 변수 관리 |
-| theme | theme-editor.js | 테마 편집기 모달 |
-| tabs | tabs.js | 탭 생성/전환/닫기 |
-| search | search.js | 텍스트 검색, 하이라이트 |
-| viewer | markdown.js | 마크다운 렌더링, 페이징 |
-| viewer | presentation.js | 프레젠테이션 모드 |
-| toc | toc.js | 목차 생성, 스크롤 스파이 |
-| editor | editor.js | 마크다운 편집기 (View/Edit/Split 모드) |
-| files | file-handler.js | 파일 열기/저장, Tauri 연동 |
-| files | drag-drop.js | 드래그앤드롭 처리 |
-| files | recent-files.js | 최근 파일 목록 관리 |
-| ui | keyboard.js | 키보드 단축키 |
-| ui | view-mode.js | 보기 모드 (single/double/paging) |
-| ui | zoom.js | 줌 레벨 관리 |
-| ui | help-menu.js | 도움말/정보 모달 |
-| ui | settings.js | 폰트, 언어 설정 + i18n 적용 |
-
-### src/style.css
-- CSS 변수 기반 테마 시스템
-- 라이트/다크 모드
-- 6개의 컬러 테마 정의
-- 마크다운 렌더링 스타일
-- 반응형 및 인쇄 스타일
-- 프레젠테이션 모드 스타일
-- 모달 스타일
 
 ### src/i18n.js
 - 다국어 번역 데이터 (한국어/영어)
@@ -533,6 +579,7 @@ src-tauri/target/release/
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-01-30 | main.js 모듈 분리 리팩토링 - 13개 모듈 구조로 전면 재작성 |
 | 2026-01-25 | 플러그인 시스템 아키텍처 추가 |
 | 2026-01-25 | CSS 모듈 로딩 순서 문서화 |
 | 2026-01-25 | 트러블슈팅 섹션 추가 |
@@ -542,4 +589,4 @@ src-tauri/target/release/
 | 2026-01-22 | TOC 모듈 구조 추가 |
 | 2025-12-29 | 모듈화 아키텍처 문서화 |
 
-*마지막 업데이트: 2026-01-25*
+*마지막 업데이트: 2026-01-30*

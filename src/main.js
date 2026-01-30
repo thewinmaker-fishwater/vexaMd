@@ -1,425 +1,40 @@
 /**
  * Vexa MD - Ultra Lightweight Markdown Viewer
  * Seven Peaks Software
- * Main JavaScript Module
+ * Main Orchestrator
  */
 
-import { marked } from 'marked';
-import hljs from 'highlight.js';
 import { i18n } from './i18n.js';
-import { generateToc, clearToc, toggleToc, updateTocTexts, getTocVisible, setTocVisible, hideToc } from './modules/toc/toc.js';
+import { toggleToc, updateTocTexts, clearToc, hideToc } from './modules/toc/toc.js';
 import { markdownEditor } from './modules/editor/editor.js';
 import { pluginManager } from './core/plugin-manager.js';
-import { getMarkdownHooks } from './core/plugin-api.js';
 import { eventBus, EVENTS } from './core/events.js';
 import { pluginUI } from './modules/plugins/plugin-ui.js';
-import { open } from '@tauri-apps/plugin-shell';
 
-// Tauri API (조건부 로드)
-let tauriApi = null;
-let dialogOpen = null;
-let dialogSave = null;
-let fsWriteTextFile = null;
-let fsWatchImmediate = null;
-
-// File watchers map (filePath -> { unwatch: Function, tabIds: Set })
-const fileWatchers = new Map();
-// Debounce map for file change events
-const fileChangeDebounce = new Map();
-
-async function initTauri() {
-  try {
-    // 모든 모듈을 병렬로 로드하여 초기화 시간 단축
-    const [coreModule, dialogModule, fsModule] = await Promise.all([
-      import('@tauri-apps/api/core'),
-      import('@tauri-apps/plugin-dialog'),
-      import('@tauri-apps/plugin-fs')
-    ]);
-
-    tauriApi = coreModule;
-    dialogOpen = dialogModule.open;
-    dialogSave = dialogModule.save;
-    fsWriteTextFile = fsModule.writeTextFile;
-    fsWatchImmediate = fsModule.watchImmediate;
-  } catch (e) {
-    console.log('Running in browser mode', e);
-  }
-}
-
-// ========== Marked 설정 ==========
-marked.setOptions({
-  gfm: true,
-  breaks: true,
-  headerIds: true,
-  mangle: false,
-});
-
-// ========== Highlight.js 설정 ==========
-// marked용 커스텀 렌더러 설정
-const renderer = new marked.Renderer();
-
-// GitHub 스타일 slug 생성 (마크다운 목차 앵커와 일치)
-function githubSlug(text) {
-  return text
-    .toLowerCase()
-    .replace(/<[^>]*>/g, '')       // HTML 태그 제거
-    .replace(/[^\w\s\u3131-\uD79D가-힣-]/g, '') // 영문, 숫자, 한글, 하이픈, 공백만 유지
-    .replace(/\s+/g, '-')          // 공백 → 하이픈
-    .replace(/-+/g, '-')           // 연속 하이픈 제거
-    .replace(/^-|-$/g, '');        // 양끝 하이픈 제거
-}
-
-// 헤딩 ID를 GitHub 스타일 slug로 생성
-const headingCount = {};
-renderer.heading = function(text, level) {
-  // text가 객체인 경우 처리 (marked 버전에 따라 다름)
-  const rawText = typeof text === 'object' ? text.text : text;
-  let slug = githubSlug(rawText);
-  // 중복 slug 처리
-  if (headingCount[slug] !== undefined) {
-    headingCount[slug]++;
-    slug = `${slug}-${headingCount[slug]}`;
-  } else {
-    headingCount[slug] = 0;
-  }
-  return `<h${level} id="${slug}">${rawText}</h${level}>`;
-};
-
-const originalCodeRenderer = renderer.code.bind(renderer);
-
-renderer.code = function(code, language) {
-  // code가 객체인 경우 처리 (marked 버전에 따라 다름)
-  if (typeof code === 'object') {
-    language = code.lang;
-    code = code.text;
-  }
-
-  // 원본 언어 보존 (플러그인에서 사용)
-  const originalLanguage = language || '';
-  const validLanguage = language && hljs.getLanguage(language) ? language : 'plaintext';
-  const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  // 라벨에는 원본 언어 표시 (mermaid 등 플러그인 언어도 표시)
-  const langLabel = originalLanguage || '';
-
-  const copyBtn = `<button class="code-copy-btn" title="복사">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path>
-    </svg>
-  </button>`;
-
-  try {
-    const highlighted = hljs.highlight(code, { language: validLanguage }).value;
-    // 원본 언어 클래스도 추가하여 플러그인이 감지할 수 있도록 함
-    const languageClass = originalLanguage ? `language-${originalLanguage}` : '';
-    return `<div class="code-block-wrapper" data-language="${originalLanguage}">
-      ${langLabel ? `<span class="code-lang-label">${langLabel}</span>` : ''}
-      ${copyBtn}
-      <pre data-code="${escapedCode}"><code class="hljs ${languageClass}">${highlighted}</code></pre>
-    </div>`;
-  } catch (e) {
-    console.warn('Highlight error:', e);
-    const languageClass = originalLanguage ? `language-${originalLanguage}` : '';
-    return `<div class="code-block-wrapper" data-language="${originalLanguage}">
-      ${copyBtn}
-      <pre data-code="${escapedCode}"><code class="hljs ${languageClass}">${hljs.highlightAuto(code).value}</code></pre>
-    </div>`;
-  }
-};
-
-marked.use({ renderer });
-
-// ========== DOM Elements ==========
-const content = document.getElementById('content');
-const btnHome = document.getElementById('btn-home');
-const btnOpen = document.getElementById('btn-open');
-const btnRecent = document.getElementById('btn-recent');
-const btnTheme = document.getElementById('btn-theme');
-const btnPrint = document.getElementById('btn-print');
-const btnPdf = document.getElementById('btn-pdf');
-const colorTheme = document.getElementById('color-theme');
-const fontFamily = document.getElementById('font-family');
-const fontSize = document.getElementById('font-size');
-const contentWidth = document.getElementById('content-width');
-const languageSelect = document.getElementById('language');
-const importInput = document.getElementById('import-input');
-const dropOverlay = document.getElementById('drop-overlay');
-const iconDark = document.getElementById('icon-dark');
-const iconLight = document.getElementById('icon-light');
-const tabBar = document.getElementById('tab-bar');
-const tabsContainer = document.getElementById('tabs-container');
-const recentDropdown = document.getElementById('recent-dropdown');
-const recentList = document.getElementById('recent-list');
-const recentEmpty = document.getElementById('recent-empty');
-const clearRecent = document.getElementById('clear-recent');
-const homeRecentList = document.getElementById('home-recent-list');
-const homeRecent = document.getElementById('home-recent');
-
-// View mode and zoom elements
-const btnViewSingle = document.getElementById('btn-view-single');
-const btnViewDouble = document.getElementById('btn-view-double');
-const btnViewPaging = document.getElementById('btn-view-paging');
-const btnZoomIn = document.getElementById('btn-zoom-in');
-const btnZoomOut = document.getElementById('btn-zoom-out');
-const btnZoomReset = document.getElementById('btn-zoom-reset');
-const zoomLevelDisplay = document.getElementById('zoom-level');
-
-// Search elements
-const searchBar = document.getElementById('search-bar');
-const searchInput = document.getElementById('search-input');
-const searchCount = document.getElementById('search-count');
-const searchPrev = document.getElementById('search-prev');
-const searchNext = document.getElementById('search-next');
-const searchClose = document.getElementById('search-close');
-const btnSearch = document.getElementById('btn-search');
-
-// Theme editor elements
-const themeEditorModal = document.getElementById('theme-editor-modal');
-const themeEditorClose = document.getElementById('theme-editor-close');
-const editorTabs = document.querySelectorAll('.editor-tab');
-const tabPanels = document.querySelectorAll('.tab-panel');
-const customCssTextarea = document.getElementById('custom-css');
-const themeReset = document.getElementById('theme-reset');
-const themePreview = document.getElementById('theme-preview');
-const themeImportBtn = document.getElementById('theme-import');
-const themeExportBtn = document.getElementById('theme-export');
-const themeCancel = document.getElementById('theme-cancel');
-const themeApply = document.getElementById('theme-apply');
-const btnCustomize = document.getElementById('btn-customize');
-
-// Saved themes elements
-const themeNameInput = document.getElementById('theme-name-input');
-const saveCurrentThemeBtn = document.getElementById('save-current-theme');
-const savedThemesList = document.getElementById('saved-themes-list');
-const savedThemesEmpty = document.getElementById('saved-themes-empty');
-
-// Presentation elements
-const btnPresentation = document.getElementById('btn-presentation');
-const presentationOverlay = document.getElementById('presentation-overlay');
-const presentationContent = document.querySelector('.presentation-content');
-const presIndicator = document.getElementById('pres-indicator');
-const presPrev = document.getElementById('pres-prev');
-const presNext = document.getElementById('pres-next');
-const presExit = document.getElementById('pres-exit');
-
-// Plugin elements
-const btnPlugins = document.getElementById('btn-plugins');
-
-// Toolbar dropdown elements
-const btnFormat = document.getElementById('btn-format');
-const formatDropdown = document.getElementById('format-dropdown');
-const btnTools = document.getElementById('btn-tools');
-const toolsDropdown = document.getElementById('tools-dropdown');
-
-// Help menu elements
-const btnHelp = document.getElementById('btn-help');
-const helpDropdown = document.getElementById('help-dropdown');
-const helpShortcuts = document.getElementById('help-shortcuts');
-const helpAbout = document.getElementById('help-about');
-const aboutModal = document.getElementById('about-modal');
-const aboutClose = document.getElementById('about-close');
-const aboutOk = document.getElementById('about-ok');
-const shortcutsModal = document.getElementById('shortcuts-modal');
-const shortcutsClose = document.getElementById('shortcuts-close');
-const shortcutsOk = document.getElementById('shortcuts-ok');
-
-// Image modal elements
-const imageModal = document.getElementById('image-modal');
-const imageModalImg = document.getElementById('image-modal-img');
-const imageZoomInfo = document.getElementById('image-zoom-info');
-const imageZoomIn = document.getElementById('image-zoom-in');
-const imageZoomOut = document.getElementById('image-zoom-out');
-const imageZoomReset = document.getElementById('image-zoom-reset');
-const imageModalClose = document.getElementById('image-modal-close');
-const imageModalBackdrop = imageModal?.querySelector('.image-modal-backdrop');
-const imageModalContent = imageModal?.querySelector('.image-modal-content');
+// Modules
+import { showNotification, showError } from './modules/notification/notification.js';
+import * as imageModal from './modules/image-modal/image-modal.js';
+import { printDocument, exportPdf } from './modules/print/print.js';
+import * as presentation from './modules/presentation/presentation-mode.js';
+import * as renderer from './modules/markdown/renderer.js';
+import * as search from './modules/search/search-manager.js';
+import * as tabManager from './modules/tabs/tab-manager.js';
+import * as zoom from './modules/zoom/zoom-manager.js';
+import * as fileOps from './modules/files/file-ops.js';
+import { saveSession, restoreSession } from './modules/session/session.js';
+import { exportVmd, exportVmdToMd, loadVmdFile } from './modules/vmd/vmd.js';
+import * as themeSystem from './modules/theme/theme-system.js';
+import * as shortcuts from './modules/shortcuts/shortcuts.js';
 
 // ========== State ==========
-let currentTheme = localStorage.getItem('theme') || 'light';
-let currentColor = localStorage.getItem('colorTheme') || 'default';
-let currentFontFamily = localStorage.getItem('fontFamily') || 'system';
-let currentFontSize = localStorage.getItem('fontSize') || 'medium';
 let currentLanguage = localStorage.getItem('language') || 'ko';
-let currentViewMode = localStorage.getItem('viewMode') || 'single';
-let currentZoom = parseInt(localStorage.getItem('zoom') || '100');
+const languageSelect = document.getElementById('language');
 
-// Pan state (for dragging content when zoomed in)
-let isPanning = false;
-let panStartX = 0;
-let panStartY = 0;
-let panScrollLeft = 0;
-let panScrollTop = 0;
-let currentContentWidth = localStorage.getItem('contentWidth') || 'narrow';
-
-// Image modal state
-let imageModalZoom = 1;
-const imageModalMinZoom = 0.5;
-const imageModalMaxZoom = 3;
-let isImageDragging = false;
-let imageStartX = 0;
-let imageStartY = 0;
-let imageTranslateX = 0;
-let imageTranslateY = 0;
-
-// Zoom levels
-const ZOOM_LEVELS = [50, 75, 90, 100, 110, 125, 150, 175, 200];
-
-// Search state
-let searchMatches = [];
-let currentMatchIndex = -1;
-let originalContent = '';
-let isSearchVisible = false;
-
-// Paging state
-let pages = [];
-let currentPage = 0;
-
-// Presentation state
-let isPresentationMode = false;
-let presentationPage = 0;
-
-// Custom theme state
-let customStyles = JSON.parse(localStorage.getItem('customStyles') || 'null');
-let customStyleElement = null;
-let customThemes = JSON.parse(localStorage.getItem('customThemes') || '[]');
-
-// Custom theme option element
-const customThemeOption = document.getElementById('custom-theme-option');
-
-// 테마 에디터 열기 전 상태 저장
-let editorOriginalState = null;
-
-// Tabs state
-const HOME_TAB_ID = 'home';
-let tabs = [];
-let activeTabId = null;
-
-// Recent files state
-const MAX_RECENT_FILES = 10;
-let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
-
-// Session restore flag (prevent saving during restore)
-let isRestoringSession = false;
-
-// Welcome HTML cache (will be updated by i18n)
-function getWelcomeHTML() {
-  const t = i18n[currentLanguage];
-  return `
-  <div class="welcome">
-    <div class="welcome-logo">
-      <img src="/logo.png" alt="Vexa MD" width="120">
-    </div>
-    <h1>Vexa MD</h1>
-    <p class="subtitle">${t.welcomeSubtitle}</p>
-    <p>${t.welcomeInstruction}</p>
-    <p><kbd>Ctrl</kbd>+<kbd>O</kbd> 열기 &nbsp; <kbd>Ctrl</kbd>+<kbd>D</kbd> 테마 &nbsp; <kbd>Ctrl</kbd>+<kbd>P</kbd> 인쇄 &nbsp; <kbd>Ctrl</kbd>+<kbd>F</kbd> 검색 &nbsp; <kbd>Esc</kbd> 홈</p>
-    <div id="home-recent" class="home-recent">
-      <h3>${t.recentFiles}</h3>
-      <div id="home-recent-list"></div>
-    </div>
-  </div>
-`;
+// ========== i18n helper ==========
+function t(key) {
+  return i18n[currentLanguage][key] || key;
 }
 
-// ========== Theme ==========
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  currentTheme = theme;
-  localStorage.setItem('theme', theme);
-
-  if (theme === 'dark') {
-    iconDark.style.display = 'none';
-    iconLight.style.display = 'block';
-  } else {
-    iconDark.style.display = 'block';
-    iconLight.style.display = 'none';
-  }
-}
-
-function applyColorTheme(color) {
-  // 저장된 테마인 경우 (theme- 접두사)
-  if (color.startsWith('theme-')) {
-    if (applySavedTheme(color)) {
-      return;
-    }
-    // 저장된 테마를 찾지 못하면 기본으로 폴백
-    color = 'default';
-  }
-
-  // 커스텀이나 저장된 테마가 아닌 경우 커스텀 스타일 비활성화
-  if (color !== 'custom') {
-    if (customStyleElement) {
-      customStyleElement.remove();
-      customStyleElement = null;
-    }
-  }
-
-  if (color === 'default') {
-    document.documentElement.removeAttribute('data-color');
-  } else if (color === 'custom') {
-    // 커스텀 선택 시 data-color 제거하고 커스텀 스타일 적용
-    document.documentElement.removeAttribute('data-color');
-    if (customStyles) {
-      applyCustomStyles(customStyles);
-    }
-  } else {
-    // 프리셋 테마 선택
-    document.documentElement.setAttribute('data-color', color);
-  }
-  currentColor = color;
-  localStorage.setItem('colorTheme', color);
-  colorTheme.value = color;
-}
-
-function selectCustomTheme() {
-  // 커스텀 옵션을 보이게 하고 선택
-  if (customThemeOption) {
-    customThemeOption.hidden = false;
-    colorTheme.value = 'custom';
-    currentColor = 'custom';
-    localStorage.setItem('colorTheme', 'custom');
-  }
-}
-
-function hideCustomThemeOption() {
-  // 커스텀 옵션 숨기고 기본 테마로
-  if (customThemeOption) {
-    customThemeOption.hidden = true;
-    colorTheme.value = 'default';
-    currentColor = 'default';
-    localStorage.setItem('colorTheme', 'default');
-  }
-}
-
-function toggleTheme() {
-  applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
-}
-
-// ========== Font Family ==========
-function applyFontFamily(family) {
-  document.documentElement.setAttribute('data-font-family', family);
-  currentFontFamily = family;
-  localStorage.setItem('fontFamily', family);
-  fontFamily.value = family;
-}
-
-// ========== Font Size ==========
-function applyFontSize(size) {
-  document.documentElement.setAttribute('data-font-size', size);
-  currentFontSize = size;
-  localStorage.setItem('fontSize', size);
-  fontSize.value = size;
-}
-
-// ========== Content Width ==========
-function applyContentWidth(width) {
-  document.documentElement.setAttribute('data-content-width', width);
-  currentContentWidth = width;
-  localStorage.setItem('contentWidth', width);
-  contentWidth.value = width;
-}
-
-// ========== Language ==========
 function applyLanguage(lang) {
   currentLanguage = lang;
   localStorage.setItem('language', lang);
@@ -427,46 +42,181 @@ function applyLanguage(lang) {
   updateUITexts();
 }
 
-function t(key) {
-  return i18n[currentLanguage][key] || key;
+// ========== Welcome HTML ==========
+function getWelcomeHTML() {
+  const lang = i18n[currentLanguage];
+  return `
+  <div class="welcome">
+    <div class="welcome-logo">
+      <img src="/logo.png" alt="Vexa MD" width="120">
+    </div>
+    <h1>Vexa MD</h1>
+    <p class="subtitle">${lang.welcomeSubtitle}</p>
+    <p>${lang.welcomeInstruction}</p>
+    <p><kbd>Ctrl</kbd>+<kbd>O</kbd> 열기 &nbsp; <kbd>Ctrl</kbd>+<kbd>D</kbd> 테마 &nbsp; <kbd>Ctrl</kbd>+<kbd>P</kbd> 인쇄 &nbsp; <kbd>Ctrl</kbd>+<kbd>F</kbd> 검색 &nbsp; <kbd>Esc</kbd> 홈</p>
+    <div id="home-recent" class="home-recent">
+      <h3>${lang.recentFiles}</h3>
+      <div id="home-recent-list"></div>
+    </div>
+  </div>
+`;
 }
 
+// ========== Editor Functions ==========
+const editorPane = document.getElementById('editor-pane');
+const editorTextarea = document.getElementById('markdown-editor');
+const mainContainer = document.getElementById('main-container');
+const btnModeView = document.getElementById('btn-mode-view');
+const btnModeEdit = document.getElementById('btn-mode-edit');
+const btnModeSplit = document.getElementById('btn-mode-split');
+const btnSave = document.getElementById('btn-save');
+const contentEl = document.getElementById('content');
+
+let editorDebounceTimer = null;
+const EDITOR_DEBOUNCE_DELAY = 300;
+
+function loadEditorContent(content) {
+  if (editorTextarea) editorTextarea.value = content || '';
+}
+
+function setEditorMode(mode) {
+  if (!mainContainer) return;
+  if (tabManager.getActiveTabId() === tabManager.HOME_TAB_ID) mode = 'view';
+  const activeTab = tabManager.getTabs().find(t => t.id === tabManager.getActiveTabId());
+  if (activeTab) activeTab.editMode = mode;
+  updateEditorModeButtons(mode);
+  mainContainer.classList.remove('mode-view', 'mode-edit', 'mode-split');
+  mainContainer.classList.add(`mode-${mode}`);
+  if (editorPane) {
+    if (mode === 'view') editorPane.classList.add('hidden');
+    else editorPane.classList.remove('hidden');
+  }
+  if (mode === 'split') updateEditorPreview();
+}
+
+function updateEditorModeButtons(mode) {
+  if (btnModeView) btnModeView.classList.toggle('active', mode === 'view');
+  if (btnModeEdit) btnModeEdit.classList.toggle('active', mode === 'edit');
+  if (btnModeSplit) btnModeSplit.classList.toggle('active', mode === 'split');
+}
+
+function updateEditModeButtonsDisabled(disabled) {
+  if (btnModeEdit) btnModeEdit.disabled = disabled;
+  if (btnModeSplit) btnModeSplit.disabled = disabled;
+}
+
+function onEditorInput() {
+  const editorContent = editorTextarea?.value || '';
+  const activeTab = tabManager.getTabs().find(t => t.id === tabManager.getActiveTabId());
+  if (activeTab && tabManager.getActiveTabId() !== tabManager.HOME_TAB_ID) {
+    activeTab.content = editorContent;
+    const wasDirty = activeTab.isDirty;
+    activeTab.isDirty = activeTab.content !== activeTab.originalContent;
+    if (wasDirty !== activeTab.isDirty) tabManager.renderTabs();
+    const currentMode = mainContainer?.classList.contains('mode-split') ? 'split' :
+                        mainContainer?.classList.contains('mode-edit') ? 'edit' : 'view';
+    if (currentMode === 'split') {
+      if (editorDebounceTimer) clearTimeout(editorDebounceTimer);
+      editorDebounceTimer = setTimeout(() => updateEditorPreview(), EDITOR_DEBOUNCE_DELAY);
+    }
+  }
+}
+
+function updateEditorPreview() {
+  const editorContent = editorTextarea?.value || '';
+  if (contentEl) doRenderMarkdown(editorContent, false);
+}
+
+async function saveCurrentFile() {
+  const activeTab = tabManager.getTabs().find(t => t.id === tabManager.getActiveTabId());
+  if (!activeTab || tabManager.getActiveTabId() === tabManager.HOME_TAB_ID) return;
+  const editorContent = editorTextarea?.value || activeTab.content;
+  const fsWrite = fileOps.getFsWriteTextFile();
+  if (activeTab.filePath && fsWrite) {
+    try {
+      await fsWrite(activeTab.filePath, editorContent);
+      activeTab.content = editorContent;
+      activeTab.originalContent = editorContent;
+      activeTab.isDirty = false;
+      tabManager.renderTabs();
+      showNotification(t('saved') || '저장되었습니다');
+    } catch (error) {
+      showError('저장 실패', error.toString());
+    }
+  }
+}
+
+// ========== Export Buttons ==========
+function updateExportButtons() {
+  const activeTab = tabManager.getTabs().find(t => t.id === tabManager.getActiveTabId());
+  const hasFile = activeTab != null;
+  const isReadOnly = activeTab?.readOnly || false;
+  const btnExportVmd = document.getElementById('btn-export-vmd');
+  const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
+  if (btnExportVmd) btnExportVmd.disabled = !hasFile || isReadOnly;
+  if (btnExportVmdToMd) btnExportVmdToMd.disabled = !hasFile || !isReadOnly;
+}
+
+// ========== Toolbar Dropdowns ==========
+const formatDropdown = document.getElementById('format-dropdown');
+const toolsDropdown = document.getElementById('tools-dropdown');
+const helpDropdown = document.getElementById('help-dropdown');
+const btnFormat = document.getElementById('btn-format');
+const btnTools = document.getElementById('btn-tools');
+const btnHelp = document.getElementById('btn-help');
+const aboutModal = document.getElementById('about-modal');
+const shortcutsModal = document.getElementById('shortcuts-modal');
+
+function closeAllToolbarDropdowns() {
+  formatDropdown?.classList.add('hidden');
+  toolsDropdown?.classList.add('hidden');
+  helpDropdown?.classList.add('hidden');
+}
+
+// ========== Render wrapper ==========
+function doRenderMarkdown(text, isNewFile) {
+  renderer.renderMarkdown(text, isNewFile, {
+    contentEl,
+    currentLanguage,
+    currentViewMode: zoom.getCurrentViewMode(),
+    attachImageClickListeners: imageModal.attachImageClickListeners,
+  });
+}
+
+// ========== updateUITexts ==========
 function updateUITexts() {
   const lang = i18n[currentLanguage];
 
-  // Toolbar buttons
-  btnHome.title = lang.homeTooltip;
-  btnOpen.title = lang.openFile;
-  btnRecent.title = lang.recentFiles;
-  btnTheme.title = lang.toggleTheme;
-  btnCustomize.title = lang.themeCustomizer;
+  document.getElementById('btn-home').title = lang.homeTooltip;
+  document.getElementById('btn-open').title = lang.openFile;
+  document.getElementById('btn-recent').title = lang.recentFiles;
+  document.getElementById('btn-theme').title = lang.toggleTheme;
+  document.getElementById('btn-customize').title = lang.themeCustomizer;
+  const btnPrint = document.getElementById('btn-print');
+  const btnPdf = document.getElementById('btn-pdf');
   if (btnPrint) btnPrint.title = lang.print;
   if (btnPdf) btnPdf.title = lang.exportPdf;
-  btnSearch.title = lang.search;
-  btnViewSingle.title = lang.viewSingle;
-  btnViewDouble.title = lang.viewDouble;
-  btnViewPaging.title = lang.viewPaging;
-  btnZoomIn.title = lang.zoomIn;
-  btnZoomOut.title = lang.zoomOut;
-  btnZoomReset.title = lang.zoomReset;
-  btnPresentation.title = lang.presentation;
+  document.getElementById('btn-search').title = lang.search;
+  document.getElementById('btn-view-single').title = lang.viewSingle;
+  document.getElementById('btn-view-double').title = lang.viewDouble;
+  document.getElementById('btn-view-paging').title = lang.viewPaging;
+  document.getElementById('btn-zoom-in').title = lang.zoomIn;
+  document.getElementById('btn-zoom-out').title = lang.zoomOut;
+  document.getElementById('btn-zoom-reset').title = lang.zoomReset;
+  document.getElementById('btn-presentation').title = lang.presentation;
   btnHelp.title = lang.help;
+  document.getElementById('zoom-level').title = lang.zoomRatio;
 
-  // Zoom level tooltip
-  zoomLevelDisplay.title = lang.zoomRatio;
+  // Search
+  document.getElementById('search-input').placeholder = lang.searchPlaceholder;
+  document.getElementById('search-prev').title = lang.searchPrev;
+  document.getElementById('search-next').title = lang.searchNext;
+  document.getElementById('search-close').title = lang.searchClose;
 
-  // Search bar
-  searchInput.placeholder = lang.searchPlaceholder;
-  searchPrev.title = lang.searchPrev;
-  searchNext.title = lang.searchNext;
-  searchClose.title = lang.searchClose;
-
-  // Recent dropdown
+  // Recent
   document.getElementById('recent-empty').textContent = lang.recentEmpty;
   document.getElementById('clear-recent').textContent = lang.clearList;
   document.querySelector('.dropdown-header').textContent = lang.recentFiles;
-
-  // Drop overlay
   document.querySelector('.drop-message').textContent = lang.dropMessage;
 
   // Color theme select
@@ -480,7 +230,7 @@ function updateUITexts() {
   colorTheme.querySelector('[value="rose"]').textContent = lang.themeRose;
   colorTheme.querySelector('[value="custom"]').textContent = lang.themeCustom;
 
-  // Font family select
+  // Font
   const fontFamilySelect = document.getElementById('font-family');
   fontFamilySelect.title = lang.fontFamily;
   fontFamilySelect.querySelector('[value="system"]').textContent = lang.fontSystem;
@@ -489,7 +239,6 @@ function updateUITexts() {
   fontFamilySelect.querySelector('[value="pretendard"]').textContent = lang.fontPretendard;
   fontFamilySelect.querySelector('[value="noto"]').textContent = lang.fontNoto;
 
-  // Font size select
   const fontSizeSelect = document.getElementById('font-size');
   fontSizeSelect.title = lang.fontSize;
   fontSizeSelect.querySelector('[value="small"]').textContent = lang.fontSmall;
@@ -497,7 +246,6 @@ function updateUITexts() {
   fontSizeSelect.querySelector('[value="large"]').textContent = lang.fontLarge;
   fontSizeSelect.querySelector('[value="xlarge"]').textContent = lang.fontXlarge;
 
-  // Content width select
   const contentWidthSelect = document.getElementById('content-width');
   contentWidthSelect.title = lang.contentWidth;
   contentWidthSelect.querySelector('[value="narrow"]').textContent = lang.widthNarrow;
@@ -505,19 +253,16 @@ function updateUITexts() {
   contentWidthSelect.querySelector('[value="wide"]').textContent = lang.widthWide;
   contentWidthSelect.querySelector('[value="full"]').textContent = lang.widthFull;
 
-  // Language select
   languageSelect.title = lang.language;
-
-  // Help menu
   document.querySelector('#help-shortcuts span').textContent = lang.shortcuts;
   document.querySelector('#help-about span').textContent = lang.about;
 
-  // Presentation controls
-  presPrev.title = lang.prevSlide;
-  presNext.title = lang.nextSlide;
-  presExit.title = lang.exitPresentation;
+  // Presentation
+  document.getElementById('pres-prev').title = lang.prevSlide;
+  document.getElementById('pres-next').title = lang.nextSlide;
+  document.getElementById('pres-exit').title = lang.exitPresentation;
 
-  // About modal
+  // About
   document.querySelector('#about-modal .modal-header h2').textContent = lang.aboutTitle;
   document.querySelector('.about-version').textContent = `${lang.version} 1.0.0`;
   document.querySelector('.about-description').textContent = lang.welcomeSubtitle;
@@ -527,9 +272,9 @@ function updateUITexts() {
     aboutInfoPs[1].innerHTML = `<strong>${lang.technology}</strong>: Tauri 2.x + Vanilla JavaScript`;
     aboutInfoPs[2].innerHTML = `<strong>${lang.license}</strong>: Apache 2.0`;
   }
-  aboutOk.textContent = lang.confirm;
+  document.getElementById('about-ok').textContent = lang.confirm;
 
-  // Shortcuts modal
+  // Shortcuts
   document.querySelector('#shortcuts-modal .modal-header h2').textContent = lang.shortcutsTitle;
   const shortcutSections = document.querySelectorAll('.shortcuts-section h4');
   if (shortcutSections.length >= 3) {
@@ -537,7 +282,6 @@ function updateUITexts() {
     shortcutSections[1].textContent = lang.shortcutView;
     shortcutSections[2].textContent = lang.shortcutNav;
   }
-  // Shortcut items
   const shortcutItems = document.querySelectorAll('.shortcut-item span');
   const shortcutTexts = [
     lang.scOpenFile, lang.scCloseTab, lang.scPrint, lang.scHome,
@@ -547,27 +291,19 @@ function updateUITexts() {
   shortcutItems.forEach((item, idx) => {
     if (shortcutTexts[idx]) item.textContent = shortcutTexts[idx];
   });
-  shortcutsOk.textContent = lang.confirm;
+  document.getElementById('shortcuts-ok').textContent = lang.confirm;
 
-  // Theme editor modal
+  // Theme editor
   document.querySelector('#theme-editor-modal .modal-header h2').textContent = lang.themeEditorTitle;
-  const editorTabs = document.querySelectorAll('.editor-tab');
-  if (editorTabs.length >= 2) {
-    editorTabs[0].textContent = lang.tabUIEditor;
-    editorTabs[1].textContent = lang.tabCSSEditor;
+  const edTabs = document.querySelectorAll('.editor-tab');
+  if (edTabs.length >= 2) {
+    edTabs[0].textContent = lang.tabUIEditor;
+    edTabs[1].textContent = lang.tabCSSEditor;
   }
-
-  // Theme editor sections
   const sectionTitles = document.querySelectorAll('.editor-section h3');
-  const sectionTexts = [
-    lang.sectionColors, lang.sectionFont, lang.sectionCode, lang.sectionBlockquote,
-    lang.sectionTable, lang.sectionHeadings, lang.sectionTextMark, lang.sectionToolbar
-  ];
-  sectionTitles.forEach((title, idx) => {
-    if (sectionTexts[idx]) title.textContent = sectionTexts[idx];
-  });
+  const sectionTexts = [lang.sectionColors, lang.sectionFont, lang.sectionCode, lang.sectionBlockquote, lang.sectionTable, lang.sectionHeadings, lang.sectionTextMark, lang.sectionToolbar];
+  sectionTitles.forEach((title, idx) => { if (sectionTexts[idx]) title.textContent = sectionTexts[idx]; });
 
-  // Theme editor labels
   const labels = document.querySelectorAll('.editor-field label');
   const labelTexts = [
     lang.labelBgColor, lang.labelTextColor, lang.labelAccentColor, lang.labelBorderColor,
@@ -580,3186 +316,296 @@ function updateUITexts() {
     lang.labelHighlightBg, lang.labelHighlightText, lang.labelListMarker,
     lang.labelToolbarBg, lang.labelToolbarGradient, lang.labelTabbarBg
   ];
-  labels.forEach((label, idx) => {
-    if (labelTexts[idx]) label.textContent = labelTexts[idx];
-  });
+  labels.forEach((label, idx) => { if (labelTexts[idx]) label.textContent = labelTexts[idx]; });
 
-  // Theme editor font selects
   const bodyFontSelect = document.getElementById('custom-font-family');
   if (bodyFontSelect) {
     const options = bodyFontSelect.querySelectorAll('option');
-    if (options.length >= 5) {
-      options[0].textContent = lang.fontSystem;
-      options[2].textContent = lang.fontMalgun;
-      options[3].textContent = lang.fontNanum;
-    }
+    if (options.length >= 5) { options[0].textContent = lang.fontSystem; options[2].textContent = lang.fontMalgun; options[3].textContent = lang.fontNanum; }
   }
   const codeFontSelect = document.getElementById('custom-code-font');
   if (codeFontSelect) {
     const firstOption = codeFontSelect.querySelector('option');
     if (firstOption) firstOption.textContent = lang.labelCodeFontDefault;
   }
-
-  // CSS editor info
   const cssInfo = document.querySelector('.css-editor-info p');
   if (cssInfo) cssInfo.textContent = lang.cssEditorInfo;
 
-  // Theme editor buttons
-  themeReset.textContent = lang.reset;
-  themeImportBtn.textContent = lang.import;
-  themeExportBtn.textContent = lang.export;
-  themeCancel.textContent = lang.cancel;
-  themePreview.textContent = lang.preview;
-  themeApply.textContent = lang.apply;
+  document.getElementById('theme-reset').textContent = lang.reset;
+  document.getElementById('theme-import').textContent = lang.import;
+  document.getElementById('theme-export').textContent = lang.export;
+  document.getElementById('theme-cancel').textContent = lang.cancel;
+  document.getElementById('theme-preview').textContent = lang.preview;
+  document.getElementById('theme-apply').textContent = lang.apply;
 
-  // Image modal buttons
-  if (imageZoomIn) imageZoomIn.title = lang.zoomIn?.replace(' (Ctrl++)', '') || '확대';
-  if (imageZoomOut) imageZoomOut.title = lang.zoomOut?.replace(' (Ctrl+-)', '') || '축소';
-  if (imageZoomReset) imageZoomReset.title = lang.zoomReset?.replace(' (Ctrl+0)', '') || '원래 크기';
-  if (imageModalClose) imageModalClose.title = lang.close || '닫기';
+  const imageZoomInEl = document.getElementById('image-zoom-in');
+  const imageZoomOutEl = document.getElementById('image-zoom-out');
+  const imageZoomResetEl = document.getElementById('image-zoom-reset');
+  const imageModalCloseEl = document.getElementById('image-modal-close');
+  if (imageZoomInEl) imageZoomInEl.title = lang.zoomIn?.replace(' (Ctrl++)', '') || '확대';
+  if (imageZoomOutEl) imageZoomOutEl.title = lang.zoomOut?.replace(' (Ctrl+-)', '') || '축소';
+  if (imageZoomResetEl) imageZoomResetEl.title = lang.zoomReset?.replace(' (Ctrl+0)', '') || '원래 크기';
+  if (imageModalCloseEl) imageModalCloseEl.title = lang.close || '닫기';
 
-  // If on home, refresh welcome screen
-  if (activeTabId === HOME_TAB_ID) {
-    content.innerHTML = getWelcomeHTML();
-    renderHomeRecentFiles();
+  if (tabManager.getActiveTabId() === tabManager.HOME_TAB_ID) {
+    contentEl.innerHTML = getWelcomeHTML();
+    fileOps.renderHomeRecentFiles();
   }
-
-  // Re-render pages to update page navigation text
-  if (activeTabId !== HOME_TAB_ID && pages.length > 0) {
-    renderPages();
+  if (tabManager.getActiveTabId() !== tabManager.HOME_TAB_ID && renderer.getPages().length > 0) {
+    renderer.renderPages(contentEl, {
+      currentViewMode: zoom.getCurrentViewMode(),
+      currentLanguage,
+      attachImageClickListeners: imageModal.attachImageClickListeners,
+    });
   }
-
-  // Update TOC texts
   updateTocTexts();
 }
 
-// ========== View Mode ==========
-function setViewMode(mode) {
-  currentViewMode = mode;
-  localStorage.setItem('viewMode', mode);
-
-  // Update button states
-  btnViewSingle.classList.remove('active');
-  btnViewDouble.classList.remove('active');
-  btnViewPaging.classList.remove('active');
-
-  if (mode === 'single') {
-    btnViewSingle.classList.add('active');
-  } else if (mode === 'double') {
-    btnViewDouble.classList.add('active');
-  } else if (mode === 'paging') {
-    btnViewPaging.classList.add('active');
-  }
-
-  // Reset page when switching modes
-  currentPage = 0;
-
-  // Re-render pages if we have content
-  if (activeTabId !== HOME_TAB_ID && pages.length > 0) {
-    renderPages();
-  }
-}
-
-// ========== Zoom ==========
-function setZoom(level) {
-  // 홈 탭에서는 zoom 변경 불가
-  if (activeTabId === HOME_TAB_ID) {
-    return;
-  }
-
-  // Clamp zoom level
-  level = Math.max(ZOOM_LEVELS[0], Math.min(ZOOM_LEVELS[ZOOM_LEVELS.length - 1], level));
-
-  // Find nearest zoom level
-  let nearest = ZOOM_LEVELS.reduce((prev, curr) =>
-    Math.abs(curr - level) < Math.abs(prev - level) ? curr : prev
-  );
-
-  currentZoom = nearest;
-
-  // 현재 탭에 zoom 저장
-  const currentTab = tabs.find(t => t.id === activeTabId);
-  if (currentTab) {
-    currentTab.zoom = nearest;
-  }
-
-  content.setAttribute('data-zoom', nearest.toString());
-  zoomLevelDisplay.textContent = `${nearest}%`;
-
-  // Enable/disable pan mode based on zoom level
-  updatePanMode();
-}
-
-function applyTabZoom(tabId) {
-  let zoom = 100;
-  if (tabId !== HOME_TAB_ID) {
-    const tab = tabs.find(t => t.id === tabId);
-    if (tab) {
-      zoom = tab.zoom || 100;
-    }
-  }
-  currentZoom = zoom;
-  content.setAttribute('data-zoom', zoom.toString());
-  zoomLevelDisplay.textContent = `${zoom}%`;
-  updatePanMode();
-}
-
-// ========== Pan (Drag to scroll when zoomed) ==========
-let isHandMode = false;
-const btnCursorMode = document.getElementById('btn-cursor-mode');
-const iconCursor = document.getElementById('icon-cursor');
-const iconHand = document.getElementById('icon-hand');
-
-function updatePanMode() {
-  if (isHandMode) {
-    content.classList.add('pan-enabled');
-  } else {
-    content.classList.remove('pan-enabled');
-    content.classList.remove('panning');
-    isPanning = false;
-  }
-}
-
-function toggleCursorMode() {
-  isHandMode = !isHandMode;
-  iconCursor.style.display = isHandMode ? 'none' : '';
-  iconHand.style.display = isHandMode ? '' : 'none';
-  btnCursorMode.classList.toggle('active', isHandMode);
-  updatePanMode();
-}
-
-function isInteractivePanElement(element) {
-  // Don't start panning on interactive elements
-  const interactiveTags = ['A', 'BUTTON', 'INPUT', 'TEXTAREA', 'SELECT', 'LABEL'];
-  const interactiveClasses = ['tab', 'tab-close', 'page-nav-btn', 'search-nav', 'search-box'];
-
-  let current = element;
-  while (current && current !== content) {
-    if (interactiveTags.includes(current.tagName)) {
-      return true;
-    }
-    if (interactiveClasses.some(cls => current.classList?.contains(cls))) {
-      return true;
-    }
-    current = current.parentElement;
-  }
-
-  return false;
-}
-
-function onPanMouseDown(e) {
-  if (!isHandMode) return;
-  if (e.button !== 0) return; // Only left mouse button
-  if (isInteractivePanElement(e.target)) return;
-
-  isPanning = true;
-  panStartX = e.pageX;
-  panStartY = e.pageY;
-  panScrollLeft = content.scrollLeft;
-  panScrollTop = content.scrollTop;
-
-  content.classList.add('panning');
-  e.preventDefault();
-}
-
-function onPanMouseMove(e) {
-  if (!isPanning) return;
-
-  e.preventDefault();
-
-  const deltaX = e.pageX - panStartX;
-  const deltaY = e.pageY - panStartY;
-
-  // Move in opposite direction of mouse movement
-  content.scrollLeft = panScrollLeft - deltaX;
-  content.scrollTop = panScrollTop - deltaY;
-}
-
-function onPanMouseUp(e) {
-  if (!isPanning) return;
-
-  isPanning = false;
-  content.classList.remove('panning');
-}
-
-function onPanMouseLeave(e) {
-  if (!isPanning) return;
-
-  isPanning = false;
-  content.classList.remove('panning');
-}
-
-// ========== File Watcher (Auto-reload on external change) ==========
-async function startWatching(filePath, tabId) {
-  if (!fsWatchImmediate || !filePath) return;
-
-  try {
-    // Check if already watching this file
-    if (fileWatchers.has(filePath)) {
-      fileWatchers.get(filePath).tabIds.add(tabId);
-      return;
-    }
-
-    // Start watching with watchImmediate for real-time updates
-    const unwatch = await fsWatchImmediate(filePath, (event) => {
-      handleFileChange(filePath, event);
-    }, { recursive: false });
-
-    fileWatchers.set(filePath, {
-      unwatch: unwatch,
-      tabIds: new Set([tabId])
-    });
-  } catch (error) {
-    console.error('Failed to watch file:', filePath, error);
-  }
-}
-
-async function stopWatching(filePath, tabId) {
-  if (!fileWatchers.has(filePath)) return;
-
-  const watcher = fileWatchers.get(filePath);
-  watcher.tabIds.delete(tabId);
-
-  // If no more tabs are watching this file, stop the watcher
-  if (watcher.tabIds.size === 0) {
-    try {
-      if (typeof watcher.unwatch === 'function') {
-        await watcher.unwatch();
-      }
-      fileWatchers.delete(filePath);
-      console.log(`Stopped watching: ${filePath}`);
-    } catch (error) {
-      console.error(`Failed to stop watching: ${filePath}`, error);
-    }
-  }
-}
-
-function handleFileChange(filePath, event) {
-  // Debounce: file changes can trigger multiple events in quick succession
-  if (fileChangeDebounce.has(filePath)) {
-    clearTimeout(fileChangeDebounce.get(filePath));
-  }
-
-  fileChangeDebounce.set(filePath, setTimeout(async () => {
-    fileChangeDebounce.delete(filePath);
-
-    // Check event type - watchImmediate returns different event structure
-    const eventType = event?.type;
-    const isModify = eventType === 'modify' ||
-                     eventType === 'any' ||
-                     eventType?.modify ||
-                     eventType?.Modify ||
-                     (typeof eventType === 'object' && eventType !== null);
-
-    // 파일 삭제 감지 → 해당 탭 닫기
-    const isRemove = eventType === 'remove' ||
-                     eventType?.remove ||
-                     eventType?.Remove;
-
-    if (isRemove) {
-      const tabsToClose = tabs.filter(t => t.filePath === filePath);
-      for (const tab of tabsToClose) {
-        closeTab(tab.id);
-      }
-      showNotification('파일이 삭제되어 탭을 닫았습니다.');
-      return;
-    }
-
-    if (isModify) {
-      // Find all tabs with this file path and reload them
-      const tabsToReload = tabs.filter(t => t.filePath === filePath);
-
-      for (const tab of tabsToReload) {
-        try {
-          const text = await tauriApi.invoke('read_file', { path: filePath });
-          tab.content = text;
-
-          // If this tab is active, re-render
-          if (activeTabId === tab.id) {
-            renderMarkdown(text, false);
-            showNotification(t('fileReloaded') || '파일이 새로고침되었습니다');
-          }
-        } catch (error) {
-          console.error('Failed to reload file:', filePath, error);
-        }
-      }
-    }
-  }, 300)); // 300ms debounce
-}
-
-function zoomIn() {
-  if (activeTabId === HOME_TAB_ID) return;
-  const currentIndex = ZOOM_LEVELS.indexOf(currentZoom);
-  if (currentIndex < ZOOM_LEVELS.length - 1) {
-    setZoom(ZOOM_LEVELS[currentIndex + 1]);
-  }
-}
-
-function zoomOut() {
-  if (activeTabId === HOME_TAB_ID) return;
-  const currentIndex = ZOOM_LEVELS.indexOf(currentZoom);
-  if (currentIndex > 0) {
-    setZoom(ZOOM_LEVELS[currentIndex - 1]);
-  }
-}
-
-function zoomReset() {
-  if (activeTabId === HOME_TAB_ID) return;
-  setZoom(100);
-}
-
-// ========== Search ==========
-function performSearch(query) {
-  clearSearchHighlights();
-
-  if (!query || query.trim() === '' || activeTabId === HOME_TAB_ID) {
-    searchCount.textContent = '';
-    searchMatches = [];
-    currentMatchIndex = -1;
-    return;
-  }
-
-  const contentEl = document.getElementById('content');
-  if (!contentEl) return;
-
-  // Store original content if not already stored
-  if (!originalContent) {
-    originalContent = contentEl.innerHTML;
-  }
-
-  // Find all text nodes and search
-  const walker = document.createTreeWalker(
-    contentEl,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  );
-
-  const textNodes = [];
-  let node;
-  while (node = walker.nextNode()) {
-    if (node.textContent.trim()) {
-      textNodes.push(node);
-    }
-  }
-
-  searchMatches = [];
-  const searchLower = query.toLowerCase();
-
-  textNodes.forEach(textNode => {
-    const text = textNode.textContent;
-    const textLower = text.toLowerCase();
-    let index = 0;
-
-    while ((index = textLower.indexOf(searchLower, index)) !== -1) {
-      searchMatches.push({
-        node: textNode,
-        index: index,
-        length: query.length
-      });
-      index += query.length;
-    }
+// ========== doSaveSession ==========
+function doSaveSession() {
+  saveSession({
+    tabs: tabManager.getTabs(),
+    activeTabId: tabManager.getActiveTabId(),
+    HOME_TAB_ID: tabManager.HOME_TAB_ID,
   });
-
-  if (searchMatches.length > 0) {
-    highlightMatches(query);
-    currentMatchIndex = 0;
-    scrollToMatch(currentMatchIndex);
-    updateSearchCount();
-  } else {
-    searchCount.textContent = '0개';
-    currentMatchIndex = -1;
-  }
 }
 
-function highlightMatches(query) {
-  const contentEl = document.getElementById('content');
-  if (!contentEl) return;
-
-  // Use regex to highlight all matches
-  const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
-
-  const walk = (node) => {
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent;
-      if (regex.test(text)) {
-        const span = document.createElement('span');
-        span.innerHTML = text.replace(regex, '<mark class="search-highlight">$1</mark>');
-        node.parentNode.replaceChild(span, node);
-      }
-    } else if (node.nodeType === Node.ELEMENT_NODE &&
-               !['SCRIPT', 'STYLE', 'MARK'].includes(node.tagName)) {
-      Array.from(node.childNodes).forEach(walk);
-    }
-  };
-
-  walk(contentEl);
-
-  // Update searchMatches to point to the new mark elements
-  searchMatches = Array.from(contentEl.querySelectorAll('.search-highlight'));
-}
-
-function escapeRegex(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function clearSearchHighlights() {
-  const contentEl = document.getElementById('content');
-  if (!contentEl) return;
-
-  // Remove all highlight marks
-  const marks = contentEl.querySelectorAll('.search-highlight');
-  marks.forEach(mark => {
-    const parent = mark.parentNode;
-    parent.replaceChild(document.createTextNode(mark.textContent), mark);
-    parent.normalize();
-  });
-
-  // Clean up empty spans
-  const spans = contentEl.querySelectorAll('span:empty');
-  spans.forEach(span => span.remove());
-
-  searchMatches = [];
-  currentMatchIndex = -1;
-}
-
-function scrollToMatch(index) {
-  if (index < 0 || index >= searchMatches.length) return;
-
-  // Remove current class from all
-  searchMatches.forEach(el => {
-    if (el.classList) el.classList.remove('current');
-  });
-
-  // Add current class to active match
-  const currentMatch = searchMatches[index];
-  if (currentMatch && currentMatch.classList) {
-    currentMatch.classList.add('current');
-    currentMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }
-
-  updateSearchCount();
-}
-
-function updateSearchCount() {
-  if (searchMatches.length === 0) {
-    searchCount.textContent = '0개';
-  } else {
-    searchCount.textContent = `${currentMatchIndex + 1}/${searchMatches.length}`;
-  }
-}
-
-function searchPrevMatch() {
-  if (searchMatches.length === 0) return;
-  currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
-  scrollToMatch(currentMatchIndex);
-}
-
-function searchNextMatch() {
-  if (searchMatches.length === 0) return;
-  currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
-  scrollToMatch(currentMatchIndex);
-}
-
-function clearSearch() {
-  searchInput.value = '';
-  clearSearchHighlights();
-  searchCount.textContent = '';
-  originalContent = '';
-}
-
-function showSearchBar() {
-  isSearchVisible = true;
-  searchBar.classList.remove('hidden');
-  updateSearchBarPosition();
-  searchInput.focus();
-  searchInput.select();
-}
-
-function hideSearchBar() {
-  isSearchVisible = false;
-  searchBar.classList.add('hidden');
-  clearSearch();
-}
-
-function toggleSearchBar() {
-  if (isSearchVisible) {
-    hideSearchBar();
-  } else {
-    showSearchBar();
-  }
-}
-
-function updateSearchBarPosition() {
-  // 탭이 없으면 toolbar 바로 아래에 위치
-  if (tabs.length === 0) {
-    searchBar.classList.add('no-tabs');
-  } else {
-    searchBar.classList.remove('no-tabs');
-  }
-}
-
-// ========== Theme Editor ==========
-function openThemeEditor() {
-  // 현재 상태 저장 (취소 시 복원용)
-  editorOriginalState = {
-    colorTheme: currentColor,
-    customStyles: customStyles ? JSON.parse(JSON.stringify(customStyles)) : null,
-    hasCustomStyleElement: !!customStyleElement
-  };
-
-  themeEditorModal.classList.remove('hidden');
-  loadCurrentStylesToEditor();
-  refreshSavedThemesList();
-}
-
-function closeThemeEditor() {
-  themeEditorModal.classList.add('hidden');
-}
-
-function cancelThemeEditor() {
-  // 미리보기로 적용된 스타일 제거
-  if (customStyleElement) {
-    customStyleElement.remove();
-    customStyleElement = null;
-  }
-
-  // 원래 상태로 복원
-  if (editorOriginalState) {
-    // 원래 커스텀 스타일이 있었으면 복원
-    if (editorOriginalState.customStyles) {
-      customStyles = editorOriginalState.customStyles;
-      if (editorOriginalState.colorTheme === 'custom') {
-        applyCustomStyles(customStyles);
-      }
-    }
-
-    // 원래 테마로 복원
-    applyColorTheme(editorOriginalState.colorTheme);
-    editorOriginalState = null;
-  }
-
-  closeThemeEditor();
-}
-
-let currentEditorTab = 'ui';
-
-function switchEditorTab(tabName) {
-  currentEditorTab = tabName;
-  editorTabs.forEach(tab => {
-    tab.classList.toggle('active', tab.dataset.tab === tabName);
-  });
-  tabPanels.forEach(panel => {
-    panel.classList.toggle('active', panel.id === `tab-${tabName}`);
-  });
-
-  // 저장된 테마 탭에서는 미리보기/적용 버튼 숨기기
-  const previewBtn = document.getElementById('theme-preview');
-  const applyBtn = document.getElementById('theme-apply');
-  if (tabName === 'saved') {
-    previewBtn.style.display = 'none';
-    applyBtn.style.display = 'none';
-  } else {
-    previewBtn.style.display = '';
-    applyBtn.style.display = '';
-  }
-}
-
-function getDefaultStyles() {
+// ========== VMD context builder ==========
+function buildVmdCtx() {
   return {
-    bg: '#ffffff',
-    text: '#1f2328',
-    accent: '#656d76',
-    border: '#d0d7de',
-    fontFamily: 'system-ui',
-    fontSize: 16,
-    lineHeight: 1.7,
-    codeBg: '#f6f8fa',
-    codeText: '#1f2328',
-    codeFont: "'SFMono-Regular', Consolas, monospace",
-    blockquoteBg: '#f6f8fa',
-    blockquoteBorder: '#d0d7de',
-    blockquoteBorderWidth: 4,
-    tableHeaderBg: '#f6f8fa',
-    tableHeaderText: '#1f2328',
-    tableRadius: 8,
-    h1Color: '#24292f',
-    h2Color: '#656d76',
-    h1Gradient: true,
-    linkColor: '#656d76',
-    boldColor: '#656d76',
-    italicColor: '#57606a',
-    markBg: '#fff8c5',
-    markText: '#656d76',
-    listMarker: '#656d76',
-    toolbarBg: '#f6f8fa',
-    toolbarBg2: '#f6f8fa',
-    tabbarBg: '#ffffff',
-    customCss: ''
+    tabs: tabManager.getTabs(),
+    activeTabId: tabManager.getActiveTabId(),
+    currentLanguage,
+    tauriApi: fileOps.getTauriApi(),
+    dialogSave: fileOps.getDialogSave(),
+    generateTabId: () => 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+    pushTab: tabManager.pushTab,
+    renderTabs: tabManager.renderTabs,
+    switchToTab: tabManager.switchToTab,
+    updateTabBarVisibility: () => {},
+    addToRecentFiles: fileOps.addToRecentFiles,
+    saveSession: doSaveSession,
   };
-}
-
-function getDefaultCssTemplate() {
-  return `/* ========================================
-   Vexa MD - Custom Theme CSS Template
-   UI 에디터와 동일한 수준의 커스터마이징 가능
-
-   중요: !important를 사용해야 스타일이 적용됩니다!
-   ======================================== */
-
-/* ========== 1. 기본 색상 변수 (Basic Colors) ==========
-   이 변수들을 수정하면 전체 UI에 적용됩니다.
-*/
-:root {
-  --bg: #ffffff !important;                /* 배경색 */
-  --text: #1f2328 !important;              /* 기본 텍스트 */
-  --accent: #656d76 !important;            /* 강조색 (링크, 버튼 등) */
-  --border: #d0d7de !important;            /* 테두리 색상 */
-  --code-bg: #f6f8fa !important;           /* 코드 블록 배경 */
-  --code-text: #1f2328 !important;         /* 코드 텍스트 */
-  --blockquote-bg: #f6f8fa !important;     /* 인용문 배경 */
-  --blockquote-border: #d0d7de !important; /* 인용문 테두리 */
-  --table-header-bg: #f6f8fa !important;   /* 테이블 헤더 배경 */
-  --table-header-text: #1f2328 !important; /* 테이블 헤더 텍스트 */
-}
-
-/* ========== 2. 글꼴 설정 (Typography) ========== */
-body {
-  /* 본문 글꼴: system-ui, 'Noto Sans KR', 'Malgun Gothic' 등 */
-  font-family: system-ui, -apple-system, sans-serif !important;
-}
-
-.markdown-body {
-  /* 줄 간격: 1.2 ~ 2.2 권장 */
-  line-height: 1.7 !important;
-}
-
-/* 코드 글꼴 */
-.markdown-body code,
-.markdown-body pre code {
-  /* 'Fira Code', 'JetBrains Mono', 'D2Coding', Consolas 등 */
-  font-family: 'SFMono-Regular', Consolas, monospace !important;
-}
-
-/* ========== 3. 제목 스타일 (Headings) ========== */
-/* H1 - 그라데이션 적용 */
-.markdown-body h1 {
-  background: linear-gradient(135deg, #24292f, #656d76) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;
-}
-
-/* H1 - 단색 사용시 (위 그라데이션 주석처리 후 사용) */
-/*
-.markdown-body h1 {
-  color: #24292f !important;
-  -webkit-text-fill-color: #24292f !important;
-}
-*/
-
-/* H2, H3 색상 */
-.markdown-body h2,
-.markdown-body h3 {
-  color: #656d76 !important;
-}
-
-/* ========== 4. 코드 블록 (Code Blocks) ========== */
-.markdown-body pre {
-  background: var(--code-bg) !important;
-  /* border-radius: 8px !important; */
-  /* border: 1px solid var(--border) !important; */
-}
-
-/* ========== 5. 인용문 (Blockquote) ========== */
-.markdown-body blockquote {
-  background: var(--blockquote-bg) !important;
-  border-left-color: var(--blockquote-border) !important;
-  /* 테두리 두께: 2px ~ 8px */
-  border-left-width: 4px !important;
-  /* border-radius: 0 8px 8px 0 !important; */
-}
-
-/* ========== 6. 테이블 (Table) ========== */
-.markdown-body table {
-  /* 테두리 반경: 0 ~ 16px */
-  border-radius: 8px !important;
-}
-
-.markdown-body table th {
-  background: var(--table-header-bg) !important;
-  color: var(--table-header-text) !important;
-}
-
-/* ========== 7. 텍스트 스타일 (Text Marks) ========== */
-/* 링크 */
-.markdown-body a {
-  color: #656d76 !important;
-}
-.markdown-body a:hover {
-  border-bottom-color: #656d76 !important;
-}
-
-/* 굵은 글씨 */
-.markdown-body strong {
-  color: #656d76 !important;
-}
-
-/* 기울임 */
-.markdown-body em {
-  color: #57606a !important;
-}
-
-/* 하이라이트 (mark) */
-.markdown-body mark {
-  background: #fff8c5 !important;
-  color: #656d76 !important;
-}
-
-/* 목록 마커 */
-.markdown-body li::marker {
-  color: #656d76 !important;
-}
-
-/* 구분선 */
-.markdown-body hr {
-  background: linear-gradient(90deg, transparent, #656d76, transparent) !important;
-}
-
-/* ========== 8. 툴바 & 탭바 (Toolbar & Tab bar) ========== */
-#toolbar {
-  /* 그라데이션 배경 */
-  background: linear-gradient(135deg, #f6f8fa 0%, #f6f8fa 100%) !important;
-}
-
-#tab-bar {
-  background: #ffffff !important;
-}
-
-/* ========== 9. 추가 커스텀 스타일 (Additional Styles) ========== */
-/* 여기에 원하는 스타일을 자유롭게 추가하세요 */
-/* !important를 꼭 붙여주세요! */
-
-`;
-}
-
-function rgbToHex(rgb) {
-  // rgb(r, g, b) 형식을 #rrggbb로 변환
-  if (!rgb || rgb === 'transparent') return '#ffffff';
-  if (rgb.startsWith('#')) return rgb;
-
-  const match = rgb.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return '#ffffff';
-
-  const r = parseInt(match[1]).toString(16).padStart(2, '0');
-  const g = parseInt(match[2]).toString(16).padStart(2, '0');
-  const b = parseInt(match[3]).toString(16).padStart(2, '0');
-  return `#${r}${g}${b}`;
-}
-
-function getCurrentThemeColors() {
-  // 현재 적용된 CSS 변수 값들을 읽어옴
-  const computedStyle = getComputedStyle(document.documentElement);
-
-  return {
-    bg: rgbToHex(computedStyle.getPropertyValue('--bg').trim()),
-    text: rgbToHex(computedStyle.getPropertyValue('--text').trim()),
-    accent: rgbToHex(computedStyle.getPropertyValue('--accent').trim()),
-    border: rgbToHex(computedStyle.getPropertyValue('--border').trim()),
-    codeBg: rgbToHex(computedStyle.getPropertyValue('--code-bg').trim()),
-    codeText: rgbToHex(computedStyle.getPropertyValue('--code-text').trim()),
-    blockquoteBg: rgbToHex(computedStyle.getPropertyValue('--blockquote-bg').trim()),
-    blockquoteBorder: rgbToHex(computedStyle.getPropertyValue('--blockquote-border').trim()),
-    tableHeaderBg: rgbToHex(computedStyle.getPropertyValue('--table-header-bg').trim()),
-    tableHeaderText: rgbToHex(computedStyle.getPropertyValue('--table-header-text').trim()),
-    h1Color: rgbToHex(computedStyle.getPropertyValue('--gradient-start').trim()),
-    h2Color: rgbToHex(computedStyle.getPropertyValue('--accent').trim()),
-    textSecondary: rgbToHex(computedStyle.getPropertyValue('--text-secondary').trim()),
-    accentLight: rgbToHex(computedStyle.getPropertyValue('--accent-light').trim())
-  };
-}
-
-function loadCurrentStylesToEditor() {
-  // 현재 테마 색상 읽기
-  const currentThemeColors = getCurrentThemeColors();
-  const defaults = getDefaultStyles();
-
-  // "커스텀" 테마가 선택된 경우에만 customStyles 사용, 아니면 현재 테마 색상 사용
-  const useCustom = currentColor === 'custom' && customStyles;
-  const styles = useCustom ? customStyles : defaults;
-
-  // 기본 색상
-  document.getElementById('custom-bg').value = useCustom ? customStyles.bg : currentThemeColors.bg || '#ffffff';
-  document.getElementById('custom-text').value = useCustom ? customStyles.text : currentThemeColors.text || '#1f2328';
-  document.getElementById('custom-accent').value = useCustom ? customStyles.accent : currentThemeColors.accent || '#656d76';
-  document.getElementById('custom-border').value = useCustom ? customStyles.border : currentThemeColors.border || '#d0d7de';
-
-  // 글꼴
-  document.getElementById('custom-font-family').value = styles.fontFamily || 'system-ui';
-  document.getElementById('custom-font-size').value = styles.fontSize || 16;
-  document.getElementById('custom-line-height').value = styles.lineHeight || 1.7;
-
-  // 코드 블록
-  document.getElementById('custom-code-bg').value = useCustom ? customStyles.codeBg : currentThemeColors.codeBg || '#f6f8fa';
-  document.getElementById('custom-code-text').value = useCustom ? customStyles.codeText : currentThemeColors.codeText || '#1f2328';
-  document.getElementById('custom-code-font').value = styles.codeFont || "'SFMono-Regular', Consolas, monospace";
-
-  // 인용문
-  document.getElementById('custom-blockquote-bg').value = useCustom ? customStyles.blockquoteBg : currentThemeColors.blockquoteBg || '#f6f8fa';
-  document.getElementById('custom-blockquote-border').value = useCustom ? customStyles.blockquoteBorder : currentThemeColors.blockquoteBorder || '#d0d7de';
-  document.getElementById('custom-blockquote-border-width').value = styles.blockquoteBorderWidth || 4;
-
-  // 테이블
-  document.getElementById('custom-table-header-bg').value = useCustom ? customStyles.tableHeaderBg : currentThemeColors.tableHeaderBg || '#f6f8fa';
-  document.getElementById('custom-table-header-text').value = useCustom ? customStyles.tableHeaderText : currentThemeColors.tableHeaderText || '#1f2328';
-  document.getElementById('custom-table-radius').value = styles.tableRadius || 8;
-
-  // 제목
-  document.getElementById('custom-h1-color').value = useCustom ? customStyles.h1Color : currentThemeColors.h1Color || '#24292f';
-  document.getElementById('custom-h2-color').value = useCustom ? customStyles.h2Color : currentThemeColors.h2Color || '#656d76';
-  document.getElementById('custom-h1-gradient').checked = styles.h1Gradient !== false;
-
-  // 텍스트 마크
-  document.getElementById('custom-link-color').value = useCustom ? customStyles.linkColor : currentThemeColors.accent || '#656d76';
-  document.getElementById('custom-bold-color').value = useCustom ? customStyles.boldColor : currentThemeColors.accent || '#656d76';
-  document.getElementById('custom-italic-color').value = useCustom ? customStyles.italicColor : currentThemeColors.textSecondary || '#57606a';
-  document.getElementById('custom-mark-bg').value = useCustom ? customStyles.markBg : currentThemeColors.accentLight || '#fff8c5';
-  document.getElementById('custom-mark-text').value = useCustom ? customStyles.markText : currentThemeColors.accent || '#656d76';
-  document.getElementById('custom-list-marker').value = useCustom ? customStyles.listMarker : currentThemeColors.accent || '#656d76';
-
-  // 툴바
-  document.getElementById('custom-toolbar-bg').value = useCustom ? customStyles.toolbarBg : currentThemeColors.bg || '#f6f8fa';
-  document.getElementById('custom-toolbar-bg2').value = useCustom ? customStyles.toolbarBg2 : currentThemeColors.bg || '#f6f8fa';
-  document.getElementById('custom-tabbar-bg').value = useCustom ? customStyles.tabbarBg : currentThemeColors.bg || '#ffffff';
-
-  // CSS - 저장된 CSS가 없으면 템플릿 표시
-  customCssTextarea.value = styles.customCss || getDefaultCssTemplate();
-
-  // Range 값 표시 업데이트
-  updateRangeDisplays();
-}
-
-function updateRangeDisplays() {
-  document.querySelectorAll('.editor-field input[type="range"]').forEach(range => {
-    const display = range.parentElement.querySelector('.range-value');
-    if (display) {
-      const unit = range.id.includes('height') ? '' : 'px';
-      display.textContent = range.value + unit;
-    }
-  });
-}
-
-function getStylesFromEditor() {
-  return {
-    bg: document.getElementById('custom-bg').value,
-    text: document.getElementById('custom-text').value,
-    accent: document.getElementById('custom-accent').value,
-    border: document.getElementById('custom-border').value,
-    fontFamily: document.getElementById('custom-font-family').value,
-    fontSize: parseInt(document.getElementById('custom-font-size').value),
-    lineHeight: parseFloat(document.getElementById('custom-line-height').value),
-    codeBg: document.getElementById('custom-code-bg').value,
-    codeText: document.getElementById('custom-code-text').value,
-    codeFont: document.getElementById('custom-code-font').value,
-    blockquoteBg: document.getElementById('custom-blockquote-bg').value,
-    blockquoteBorder: document.getElementById('custom-blockquote-border').value,
-    blockquoteBorderWidth: parseInt(document.getElementById('custom-blockquote-border-width').value),
-    tableHeaderBg: document.getElementById('custom-table-header-bg').value,
-    tableHeaderText: document.getElementById('custom-table-header-text').value,
-    tableRadius: parseInt(document.getElementById('custom-table-radius').value),
-    h1Color: document.getElementById('custom-h1-color').value,
-    h2Color: document.getElementById('custom-h2-color').value,
-    h1Gradient: document.getElementById('custom-h1-gradient').checked,
-    linkColor: document.getElementById('custom-link-color').value,
-    boldColor: document.getElementById('custom-bold-color').value,
-    italicColor: document.getElementById('custom-italic-color').value,
-    markBg: document.getElementById('custom-mark-bg').value,
-    markText: document.getElementById('custom-mark-text').value,
-    listMarker: document.getElementById('custom-list-marker').value,
-    toolbarBg: document.getElementById('custom-toolbar-bg').value,
-    toolbarBg2: document.getElementById('custom-toolbar-bg2').value,
-    tabbarBg: document.getElementById('custom-tabbar-bg').value,
-    customCss: customCssTextarea.value
-  };
-}
-
-function generateCustomCss(styles) {
-  let css = `
-/* Vexa MD - Custom Theme */
-:root {
-  --bg: ${styles.bg} !important;
-  --text: ${styles.text} !important;
-  --accent: ${styles.accent} !important;
-  --border: ${styles.border} !important;
-  --code-bg: ${styles.codeBg} !important;
-  --code-text: ${styles.codeText} !important;
-  --blockquote-bg: ${styles.blockquoteBg} !important;
-  --blockquote-border: ${styles.blockquoteBorder} !important;
-  --table-header-bg: ${styles.tableHeaderBg} !important;
-  --table-header-text: ${styles.tableHeaderText} !important;
-}
-
-body {
-  font-family: ${styles.fontFamily} !important;
-}
-
-.markdown-body {
-  line-height: ${styles.lineHeight} !important;
-}
-
-.markdown-body code,
-.markdown-body pre code {
-  font-family: ${styles.codeFont} !important;
-}
-
-.markdown-body blockquote {
-  border-left-width: ${styles.blockquoteBorderWidth}px !important;
-}
-
-.markdown-body table {
-  border-radius: ${styles.tableRadius}px !important;
-}
-
-.markdown-body h1 {
-  ${styles.h1Gradient
-    ? `background: linear-gradient(135deg, ${styles.h1Color}, ${styles.accent}) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  background-clip: text !important;`
-    : `color: ${styles.h1Color} !important;
-  -webkit-text-fill-color: ${styles.h1Color} !important;`}
-}
-
-.markdown-body h2,
-.markdown-body h3 {
-  color: ${styles.h2Color} !important;
-}
-
-/* 텍스트 마크 스타일 */
-.markdown-body a {
-  color: ${styles.linkColor} !important;
-}
-
-.markdown-body a:hover {
-  border-bottom-color: ${styles.linkColor} !important;
-}
-
-.markdown-body strong {
-  color: ${styles.boldColor} !important;
-}
-
-.markdown-body em {
-  color: ${styles.italicColor} !important;
-}
-
-.markdown-body mark {
-  background: ${styles.markBg} !important;
-  color: ${styles.markText} !important;
-}
-
-.markdown-body li::marker {
-  color: ${styles.listMarker} !important;
-}
-
-.markdown-body hr {
-  background: linear-gradient(90deg, transparent, ${styles.linkColor}, transparent) !important;
-}
-
-/* 툴바 스타일 */
-#toolbar {
-  background: linear-gradient(135deg, ${styles.toolbarBg} 0%, ${styles.toolbarBg2} 100%) !important;
-}
-
-#tab-bar {
-  background: ${styles.tabbarBg} !important;
-}
-`;
-
-  // customCss 적용 (저장된 테마나 이전에 저장된 스타일용)
-  if (styles.customCss && styles.customCss.trim()) {
-    // 기본 템플릿이 아닌 경우에만 적용
-    const isDefaultTemplate = styles.customCss.includes('Vexa MD - Custom Theme CSS Template');
-    if (!isDefaultTemplate) {
-      css += `\n/* User Custom CSS */\n${styles.customCss}`;
-    }
-  }
-
-  return css;
-}
-
-function applyCustomStyles(styles) {
-  // 기존 커스텀 스타일 제거
-  if (customStyleElement) {
-    customStyleElement.remove();
-  }
-
-  // 새 스타일 적용
-  customStyleElement = document.createElement('style');
-  customStyleElement.id = 'custom-theme-styles';
-  customStyleElement.textContent = generateCustomCss(styles);
-  document.head.appendChild(customStyleElement);
-}
-
-function previewTheme() {
-  if (currentEditorTab === 'css') {
-    // CSS 편집 탭: CSS만 직접 적용
-    applyCssOnly(customCssTextarea.value);
-    showNotification('CSS 미리보기 적용됨');
-  } else {
-    // UI 에디터 탭: UI 에디터 값 적용
-    const styles = getStylesFromEditor();
-    applyCustomStyles(styles);
-    showNotification('미리보기 적용됨');
-  }
-}
-
-function applyCssOnly(cssContent) {
-  if (customStyleElement) {
-    customStyleElement.remove();
-  }
-  customStyleElement = document.createElement('style');
-  customStyleElement.id = 'custom-theme-styles';
-  customStyleElement.textContent = cssContent;
-  document.head.appendChild(customStyleElement);
-}
-
-function applyAndSaveTheme() {
-  if (currentEditorTab === 'css') {
-    // CSS 편집 탭: CSS만 저장 및 적용
-    const cssContent = customCssTextarea.value;
-    customStyles = { ...getDefaultStyles(), customCss: cssContent };
-    localStorage.setItem('customStyles', JSON.stringify(customStyles));
-    applyCssOnly(cssContent);
-    selectCustomTheme();
-    closeThemeEditor();
-    showNotification('CSS 테마가 적용되었습니다!');
-  } else {
-    // UI 에디터 탭: UI 에디터 값 저장 및 적용
-    const styles = getStylesFromEditor();
-    customStyles = styles;
-    localStorage.setItem('customStyles', JSON.stringify(styles));
-    applyCustomStyles(styles);
-    selectCustomTheme();
-    closeThemeEditor();
-    showNotification('테마가 적용되었습니다!');
-  }
-}
-
-function resetTheme() {
-  customStyles = null;
-  localStorage.removeItem('customStyles');
-  if (customStyleElement) {
-    customStyleElement.remove();
-    customStyleElement = null;
-  }
-  hideCustomThemeOption();
-  loadCurrentStylesToEditor();
-  showNotification('테마가 초기화되었습니다');
-}
-
-async function exportTheme() {
-  const styles = getStylesFromEditor();
-  const themeData = {
-    version: '2.0',
-    app: 'Vexa MD',
-    exportedAt: new Date().toISOString(),
-    baseTheme: currentTheme,
-    colorTheme: currentColor,
-    customStyles: styles,
-    generatedCss: generateCustomCss(styles)
-  };
-
-  const jsonContent = JSON.stringify(themeData, null, 2);
-  const defaultFileName = `chilbong-custom-theme-${Date.now()}.json`;
-
-  if (dialogSave && tauriApi) {
-    try {
-      const filePath = await dialogSave({
-        defaultPath: defaultFileName,
-        filters: [{ name: 'JSON', extensions: ['json'] }]
-      });
-
-      if (filePath) {
-        console.log('Saving to:', filePath);
-        await fsWriteTextFile(filePath, jsonContent);
-        showNotification('테마를 저장했습니다!');
-      }
-    } catch (error) {
-      console.error('Export error:', error);
-      showError('저장 실패', String(error));
-    }
-  } else {
-    const blob = new Blob([jsonContent], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = defaultFileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-}
-
-function importTheme(file) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-
-      if (data.version === '2.0' && data.customStyles) {
-        // 새 형식 (커스텀 스타일 포함)
-        customStyles = data.customStyles;
-        localStorage.setItem('customStyles', JSON.stringify(customStyles));
-        applyCustomStyles(customStyles);
-        selectCustomTheme();
-        loadCurrentStylesToEditor();
-        showNotification('커스텀 테마를 불러왔습니다!');
-      } else if (data.theme || data.colorTheme) {
-        // 구 형식 (기본 테마만)
-        if (data.theme) applyTheme(data.theme);
-        if (data.colorTheme) applyColorTheme(data.colorTheme);
-        if (data.fontSize) applyFontSize(data.fontSize);
-        showNotification('테마 설정을 불러왔습니다!');
-      } else {
-        throw new Error('알 수 없는 테마 형식');
-      }
-    } catch (error) {
-      showError('테마 불러오기 실패', '유효한 테마 파일이 아닙니다.');
-    }
-  };
-  reader.readAsText(file);
-}
-
-function handleThemeImport() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.onchange = (e) => {
-    if (e.target.files.length > 0) {
-      importTheme(e.target.files[0]);
-    }
-  };
-  input.click();
-}
-
-// ========== Saved Themes ==========
-function getSavedThemes() {
-  return customThemes;
-}
-
-function saveCurrentTheme() {
-  const name = themeNameInput?.value?.trim();
-  if (!name) {
-    showNotification('테마 이름을 입력하세요');
-    return;
-  }
-
-  const styles = getStylesFromEditor();
-  const newTheme = {
-    id: 'theme-' + Date.now(),
-    name: name,
-    styles: JSON.parse(JSON.stringify(styles)),
-    createdAt: new Date().toISOString()
-  };
-
-  customThemes.push(newTheme);
-  localStorage.setItem('customThemes', JSON.stringify(customThemes));
-  updateColorThemeSelect();
-  refreshSavedThemesList();
-
-  themeNameInput.value = '';
-  showNotification(`"${name}" 테마가 저장되었습니다!`);
-}
-
-function deleteSavedTheme(themeId) {
-  const theme = customThemes.find(t => t.id === themeId);
-  if (!theme) return;
-
-  // 삭제 실행
-  customThemes = customThemes.filter(t => t.id !== themeId);
-  localStorage.setItem('customThemes', JSON.stringify(customThemes));
-
-  // 현재 적용된 테마가 삭제된 경우 기본으로 변경
-  if (currentColor === themeId) {
-    applyColorTheme('default');
-  }
-
-  updateColorThemeSelect();
-  refreshSavedThemesList();
-  showNotification(`"${theme.name}" 테마가 삭제되었습니다`);
-}
-
-function loadSavedTheme(themeId) {
-  const theme = customThemes.find(t => t.id === themeId);
-  if (!theme) return;
-
-  // 에디터에 스타일 로드
-  const styles = theme.styles;
-
-  document.getElementById('custom-bg').value = styles.bg || '#ffffff';
-  document.getElementById('custom-text').value = styles.text || '#1f2328';
-  document.getElementById('custom-accent').value = styles.accent || '#656d76';
-  document.getElementById('custom-border').value = styles.border || '#d0d7de';
-  document.getElementById('custom-font-family').value = styles.fontFamily || 'system-ui';
-  document.getElementById('custom-font-size').value = styles.fontSize || 16;
-  document.getElementById('custom-line-height').value = styles.lineHeight || 1.7;
-  document.getElementById('custom-code-bg').value = styles.codeBg || '#f6f8fa';
-  document.getElementById('custom-code-text').value = styles.codeText || '#1f2328';
-  document.getElementById('custom-code-font').value = styles.codeFont || "'SFMono-Regular', Consolas, monospace";
-  document.getElementById('custom-blockquote-bg').value = styles.blockquoteBg || '#f6f8fa';
-  document.getElementById('custom-blockquote-border').value = styles.blockquoteBorder || '#d0d7de';
-  document.getElementById('custom-blockquote-border-width').value = styles.blockquoteBorderWidth || 4;
-  document.getElementById('custom-table-header-bg').value = styles.tableHeaderBg || '#f6f8fa';
-  document.getElementById('custom-table-header-text').value = styles.tableHeaderText || '#1f2328';
-  document.getElementById('custom-table-radius').value = styles.tableRadius || 8;
-  document.getElementById('custom-h1-color').value = styles.h1Color || '#24292f';
-  document.getElementById('custom-h2-color').value = styles.h2Color || '#656d76';
-  document.getElementById('custom-h1-gradient').checked = styles.h1Gradient !== false;
-  document.getElementById('custom-link-color').value = styles.linkColor || '#656d76';
-  document.getElementById('custom-bold-color').value = styles.boldColor || '#656d76';
-  document.getElementById('custom-italic-color').value = styles.italicColor || '#57606a';
-  document.getElementById('custom-mark-bg').value = styles.markBg || '#fff8c5';
-  document.getElementById('custom-mark-text').value = styles.markText || '#656d76';
-  document.getElementById('custom-list-marker').value = styles.listMarker || '#656d76';
-  document.getElementById('custom-toolbar-bg').value = styles.toolbarBg || '#f6f8fa';
-  document.getElementById('custom-toolbar-bg2').value = styles.toolbarBg2 || '#f6f8fa';
-  document.getElementById('custom-tabbar-bg').value = styles.tabbarBg || '#ffffff';
-  // 저장된 customCss가 없으면 기본 템플릿 유지
-  customCssTextarea.value = styles.customCss || getDefaultCssTemplate();
-
-  updateRangeDisplays();
-
-  // 바로 적용
-  applyCustomStyles(styles);
-  customStyles = styles;
-  localStorage.setItem('customStyles', JSON.stringify(styles));
-  selectCustomTheme();
-
-  // UI 탭으로 전환
-  switchEditorTab('ui');
-  showNotification(`"${theme.name}" 테마가 로드되었습니다!`);
-}
-
-function applySavedTheme(themeId) {
-  const theme = customThemes.find(t => t.id === themeId);
-  if (theme) {
-    customStyles = theme.styles;
-    localStorage.setItem('customStyles', JSON.stringify(customStyles));
-    applyCustomStyles(customStyles);
-    currentColor = themeId;
-    localStorage.setItem('colorTheme', themeId);
-    colorTheme.value = themeId;
-    return true;
-  }
-  return false;
-}
-
-function refreshSavedThemesList() {
-  if (!savedThemesList) return;
-
-  const themes = getSavedThemes();
-
-  if (themes.length === 0) {
-    savedThemesList.innerHTML = '<div class="saved-themes-empty">저장된 테마가 없습니다</div>';
-    return;
-  }
-
-  savedThemesList.innerHTML = themes.map(theme => {
-    const date = new Date(theme.createdAt).toLocaleDateString();
-    return `
-      <div class="saved-theme-item" data-theme-id="${theme.id}">
-        <div class="saved-theme-info">
-          <span class="saved-theme-name">${escapeHtml(theme.name)}</span>
-          <span class="saved-theme-date">${date}</span>
-        </div>
-        <div class="saved-theme-actions">
-          <button class="btn-icon load-theme-btn" title="불러오기" data-theme-id="${theme.id}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
-            </svg>
-          </button>
-          <button class="btn-icon delete-theme-btn" title="삭제" data-theme-id="${theme.id}">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  // 이벤트 리스너 추가
-  savedThemesList.querySelectorAll('.load-theme-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      loadSavedTheme(btn.dataset.themeId);
-    });
-  });
-
-  savedThemesList.querySelectorAll('.delete-theme-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      deleteSavedTheme(btn.dataset.themeId);
-    });
-  });
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-function updateColorThemeSelect() {
-  if (!colorTheme) return;
-
-  // 기존 저장된 테마 옵션 제거
-  const existingCustomOptions = colorTheme.querySelectorAll('option[data-custom-theme]');
-  existingCustomOptions.forEach(opt => opt.remove());
-
-  // 저장된 테마 옵션 추가
-  customThemes.forEach(theme => {
-    const option = document.createElement('option');
-    option.value = theme.id;
-    option.textContent = `★ ${theme.name}`;
-    option.setAttribute('data-custom-theme', 'true');
-    // custom 옵션 앞에 삽입
-    if (customThemeOption) {
-      colorTheme.insertBefore(option, customThemeOption);
-    } else {
-      colorTheme.appendChild(option);
-    }
-  });
-
-  // 현재 선택된 테마 복원
-  if (currentColor) {
-    colorTheme.value = currentColor;
-  }
-}
-
-function showNotification(message) {
-  const notification = document.createElement('div');
-  notification.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    padding: 12px 24px;
-    background: var(--accent);
-    color: white;
-    border-radius: 8px;
-    font-size: 14px;
-    z-index: 1001;
-    animation: slideIn 0.3s ease;
-  `;
-  notification.textContent = message;
-  document.body.appendChild(notification);
-
-  setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease';
-    setTimeout(() => notification.remove(), 300);
-  }, 2000);
-}
-
-// ========== Print ==========
-function printDocument() {
-  if (tabs.length === 0) {
-    showNotification('인쇄할 문서가 없습니다.');
-    return;
-  }
-  window.print();
-}
-
-// ========== PDF Export ==========
-async function exportPdf() {
-  if (tabs.length === 0 || activeTabId === HOME_TAB_ID) {
-    showNotification(t('noPdfDoc'));
-    return;
-  }
-
-  const activeTab = tabs.find(tab => tab.id === activeTabId);
-  if (!activeTab) {
-    showNotification(t('noPdfDoc'));
-    return;
-  }
-
-  showNotification(t('exportingPdf'));
-
-  try {
-    // html2pdf.js 동적 로드
-    const html2pdf = (await import('html2pdf.js')).default;
-
-    // 현재 콘텐츠 가져오기
-    const contentElement = document.querySelector('.markdown-body');
-    if (!contentElement) {
-      showNotification(t('pdfExportFailed'));
-      return;
-    }
-
-    // 파일명 생성 (확장자 제외)
-    const fileName = activeTab.name.replace(/\.md$/i, '') + '.pdf';
-
-    // PDF 옵션 설정
-    const opt = {
-      margin: 10,
-      filename: fileName,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        letterRendering: true
-      },
-      jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait'
-      },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    // PDF 생성 및 저장
-    await html2pdf().set(opt).from(contentElement).save();
-
-    showNotification(t('pdfExportSuccess'));
-  } catch (error) {
-    console.error('PDF export error:', error);
-    showNotification(t('pdfExportFailed'));
-  }
-}
-
-// ========== Presentation Mode ==========
-function startPresentation() {
-  if (pages.length === 0 || activeTabId === HOME_TAB_ID) {
-    showNotification(t('noPresentDoc'));
-    return;
-  }
-
-  isPresentationMode = true;
-  presentationPage = 0;
-  presentationOverlay.classList.remove('hidden');
-  renderPresentationSlide();
-
-  // Request fullscreen
-  if (document.documentElement.requestFullscreen) {
-    document.documentElement.requestFullscreen().catch(() => {
-      // Fullscreen not supported or denied, continue anyway
-    });
-  }
-}
-
-function exitPresentation() {
-  isPresentationMode = false;
-  presentationOverlay.classList.add('hidden');
-
-  // Exit fullscreen
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {});
-  }
-}
-
-function renderPresentationSlide() {
-  if (!presentationContent) return;
-
-  presentationContent.innerHTML = pages[presentationPage] || '';
-  presIndicator.textContent = `${presentationPage + 1} / ${pages.length}`;
-
-  presPrev.disabled = presentationPage === 0;
-  presNext.disabled = presentationPage >= pages.length - 1;
-}
-
-function presentationPrev() {
-  if (presentationPage > 0) {
-    presentationPage--;
-    renderPresentationSlide();
-  }
-}
-
-function presentationNext() {
-  if (presentationPage < pages.length - 1) {
-    presentationPage++;
-    renderPresentationSlide();
-  }
-}
-
-// ========== Toolbar Dropdowns ==========
-function closeAllToolbarDropdowns() {
-  formatDropdown?.classList.add('hidden');
-  toolsDropdown?.classList.add('hidden');
-  helpDropdown?.classList.add('hidden');
-}
-
-function toggleFormatDropdown(e) {
-  e?.stopPropagation();
-  const isOpen = !formatDropdown.classList.contains('hidden');
-  closeAllToolbarDropdowns();
-  if (!isOpen) {
-    formatDropdown.classList.remove('hidden');
-  }
-}
-
-function toggleToolsDropdown(e) {
-  e?.stopPropagation();
-  const isOpen = !toolsDropdown.classList.contains('hidden');
-  closeAllToolbarDropdowns();
-  if (!isOpen) {
-    toolsDropdown.classList.remove('hidden');
-  }
-}
-
-// ========== Help Menu ==========
-function toggleHelpDropdown(e) {
-  e?.stopPropagation();
-  const isOpen = !helpDropdown.classList.contains('hidden');
-  closeAllToolbarDropdowns();
-  if (!isOpen) {
-    helpDropdown.classList.remove('hidden');
-  }
-}
-
-function showHelpDropdown() {
-  helpDropdown.classList.remove('hidden');
-}
-
-function hideHelpDropdown() {
-  helpDropdown.classList.add('hidden');
-}
-
-function showAboutModal() {
-  hideHelpDropdown();
-  aboutModal.classList.remove('hidden');
-}
-
-function closeAboutModal() {
-  aboutModal.classList.add('hidden');
-}
-
-function showShortcutsModal() {
-  hideHelpDropdown();
-  shortcutsModal.classList.remove('hidden');
-}
-
-function closeShortcutsModal() {
-  shortcutsModal.classList.add('hidden');
-}
-
-// ========== Image Modal ==========
-function openImageModal(src, alt = '') {
-  if (!imageModal || !imageModalImg) return;
-
-  imageModalImg.src = src;
-  imageModalImg.alt = alt;
-  resetImageModalZoom();
-  imageModal.classList.remove('hidden');
-}
-
-function closeImageModal() {
-  if (!imageModal) return;
-
-  imageModal.classList.add('hidden');
-  if (imageModalImg) {
-    imageModalImg.src = '';
-  }
-}
-
-function imageModalZoomIn(amount = 0.25) {
-  imageModalZoom = Math.min(imageModalMaxZoom, imageModalZoom + amount);
-  applyImageModalZoom();
-}
-
-function imageModalZoomOut(amount = 0.25) {
-  imageModalZoom = Math.max(imageModalMinZoom, imageModalZoom - amount);
-  applyImageModalZoom();
-}
-
-function resetImageModalZoom() {
-  imageModalZoom = 1;
-  imageTranslateX = 0;
-  imageTranslateY = 0;
-  applyImageModalZoom();
-}
-
-function applyImageModalZoom() {
-  if (!imageModalImg || !imageZoomInfo) return;
-
-  imageModalImg.style.transform = `translate(${imageTranslateX}px, ${imageTranslateY}px) scale(${imageModalZoom})`;
-  imageZoomInfo.textContent = `${Math.round(imageModalZoom * 100)}%`;
-
-  // Update cursor based on zoom level
-  if (imageModalContent) {
-    if (imageModalZoom > 1) {
-      imageModalContent.style.cursor = isImageDragging ? 'grabbing' : 'grab';
-    } else {
-      imageModalContent.style.cursor = 'default';
-    }
-  }
-}
-
-function onImageDragStart(e) {
-  if (imageModalZoom <= 1) return;
-
-  isImageDragging = true;
-  imageStartX = e.clientX - imageTranslateX;
-  imageStartY = e.clientY - imageTranslateY;
-
-  if (imageModalContent) {
-    imageModalContent.style.cursor = 'grabbing';
-  }
-}
-
-function onImageDrag(e) {
-  if (!isImageDragging) return;
-
-  imageTranslateX = e.clientX - imageStartX;
-  imageTranslateY = e.clientY - imageStartY;
-  applyImageModalZoom();
-}
-
-function onImageDragEnd() {
-  isImageDragging = false;
-  if (imageModalContent && imageModalZoom > 1) {
-    imageModalContent.style.cursor = 'grab';
-  }
-}
-
-function attachImageClickListeners() {
-  // Find all images in markdown content
-  const images = content.querySelectorAll('img');
-  images.forEach(img => {
-    // Skip if already has listener
-    if (img.dataset.modalEnabled) return;
-
-    img.dataset.modalEnabled = 'true';
-    img.style.cursor = 'zoom-in';
-
-    img.addEventListener('click', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      openImageModal(img.src, img.alt);
-    });
-  });
-}
-
-// ========== Session Save/Restore ==========
-function saveSession() {
-  if (isRestoringSession) return;
-  const sessionTabs = tabs
-    .filter(t => t.filePath && t.filePath !== t.name) // only real file tabs
-    .map(t => ({
-      filePath: t.filePath,
-      name: t.name,
-      zoom: t.zoom || 100,
-      readOnly: t.readOnly || false
-    }));
-  localStorage.setItem('openTabs', JSON.stringify(sessionTabs));
-  localStorage.setItem('activeTabPath', activeTabId !== HOME_TAB_ID
-    ? (tabs.find(t => t.id === activeTabId)?.filePath || '')
-    : '');
-}
-
-async function restoreSession() {
-  const savedTabs = JSON.parse(localStorage.getItem('openTabs') || '[]');
-  const activeTabPath = localStorage.getItem('activeTabPath') || '';
-  if (savedTabs.length === 0) return;
-
-  isRestoringSession = true;
-  let activeRestored = null;
-
-  for (const saved of savedTabs) {
-    try {
-      if (tauriApi) {
-        const isVmd = saved.filePath.toLowerCase().endsWith('.vmd');
-
-        if (isVmd) {
-          // VMD 파일은 복호화 경로로 복원
-          const jsonStr = await tauriApi.invoke('read_vmd', { path: saved.filePath });
-          const vmdData = JSON.parse(jsonStr);
-          const displayName = vmdData.title || saved.filePath.split(/[/\\]/).pop();
-          const tabId = generateTabId();
-          const tab = {
-            id: tabId,
-            name: displayName,
-            filePath: saved.filePath,
-            content: vmdData.content,
-            originalContent: vmdData.content,
-            isDirty: false,
-            editMode: 'view',
-            tocVisible: false,
-            zoom: saved.zoom || 100,
-            readOnly: true
-          };
-          tabs.push(tab);
-          if (saved.filePath === activeTabPath) activeRestored = tabId;
-        } else {
-          const text = await tauriApi.invoke('read_file', { path: saved.filePath });
-          const name = saved.filePath.split(/[/\\]/).pop();
-          const tabId = generateTabId();
-          const tab = {
-            id: tabId,
-            name: name,
-            filePath: saved.filePath,
-            content: text,
-            originalContent: text,
-            isDirty: false,
-            editMode: 'view',
-            tocVisible: false,
-            zoom: saved.zoom || 100,
-            readOnly: false
-          };
-          tabs.push(tab);
-          if (saved.filePath && saved.filePath !== name) {
-            startWatching(saved.filePath, tabId);
-          }
-          if (saved.filePath === activeTabPath) activeRestored = tabId;
-        }
-      }
-    } catch (e) {
-      console.log('Session restore: skipping file', saved.filePath, e);
-    }
-  }
-
-  isRestoringSession = false;
-
-  if (tabs.length > 0) {
-    renderTabs();
-    updateTabBarVisibility();
-    switchToTab(activeRestored || tabs[tabs.length - 1].id);
-  }
-}
-
-// ========== VMD (Read-Only Export) ==========
-async function exportVmd() {
-  const activeTab = tabs.find(t => t.id === activeTabId);
-  if (!activeTab) {
-    const t = i18n[currentLanguage];
-    showNotification(t.noPrintDoc || '내보낼 문서가 없습니다.');
-    return;
-  }
-
-  const vmdData = {
-    format: 'vexa-md',
-    version: 1,
-    title: activeTab.name.replace(/\.(md|markdown|txt)$/i, ''),
-    created: new Date().toISOString(),
-    content: activeTab.content
-  };
-
-  if (dialogSave) {
-    const savePath = await dialogSave({
-      defaultPath: vmdData.title + '.vmd',
-      filters: [{ name: 'Vexa MD', extensions: ['vmd'] }]
-    });
-    if (savePath) {
-      try {
-        // Rust AES-256 암호화로 저장
-        await tauriApi.invoke('write_vmd', {
-          path: savePath,
-          jsonContent: JSON.stringify(vmdData)
-        });
-        const t = i18n[currentLanguage];
-        showNotification(t.exportVmd || '읽기전용 파일로 내보냈습니다.');
-      } catch (e) {
-        showError('내보내기 실패', e.toString());
-      }
-    }
-  }
-}
-
-async function exportVmdToMd() {
-  const activeTab = tabs.find(t => t.id === activeTabId);
-  if (!activeTab || !activeTab.readOnly) {
-    showNotification(i18n[currentLanguage].noPrintDoc || '내보낼 VMD 문서가 없습니다.');
-    return;
-  }
-
-  const defaultName = activeTab.name.replace(/\.vmd$/i, '') + '.md';
-  if (dialogSave) {
-    const savePath = await dialogSave({
-      defaultPath: defaultName,
-      filters: [{ name: 'Markdown', extensions: ['md'] }]
-    });
-    if (savePath) {
-      try {
-        await tauriApi.invoke('write_file', { path: savePath, content: activeTab.content });
-        const t = i18n[currentLanguage];
-        showNotification(t.exportVmdToMd || 'Markdown 파일로 내보냈습니다.');
-      } catch (e) {
-        showError('내보내기 실패', e.toString());
-      }
-    }
-  }
-}
-
-async function loadVmdFile(filePath) {
-  try {
-    // Rust에서 AES-256 복호화
-    const jsonStr = await tauriApi.invoke('read_vmd', { path: filePath });
-    const vmdData = JSON.parse(jsonStr);
-    if (vmdData.format !== 'vexa-md') {
-      showError('VMD 오류', '유효한 VMD 파일이 아닙니다.');
-      return;
-    }
-    const displayName = vmdData.title || filePath.split(/[/\\]/).pop();
-    const tabId = generateTabId();
-    const tab = {
-      id: tabId,
-      name: displayName,
-      filePath: filePath,
-      content: vmdData.content,
-      originalContent: vmdData.content,
-      isDirty: false,
-      editMode: 'view',
-      tocVisible: false,
-      zoom: 100,
-      readOnly: true
-    };
-    tabs.push(tab);
-    renderTabs();
-    switchToTab(tabId);
-    updateTabBarVisibility();
-    addToRecentFiles(displayName, filePath);
-    saveSession();
-  } catch (e) {
-    showError('VMD 오류', e.toString());
-  }
-}
-
-// ========== Tabs Management ==========
-function generateTabId() {
-  return 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-}
-
-function createTab(name, filePath, content, options = {}) {
-  const tabId = generateTabId();
-  const tab = {
-    id: tabId,
-    name: name,
-    filePath: filePath,
-    content: content,
-    originalContent: content,  // 원본 콘텐츠 (dirty 비교용)
-    isDirty: false,            // 변경 여부
-    editMode: 'view',          // 편집 모드: 'view' | 'edit' | 'split'
-    tocVisible: false,         // 새 탭은 TOC 숨김 상태로 시작
-    zoom: 100,                 // 탭별 줌 레벨
-    readOnly: options.readOnly || false  // 읽기전용 플래그
-  };
-  tabs.push(tab);
-  renderTabs();
-  switchToTab(tabId);
-  updateTabBarVisibility();
-
-  // Start watching for file changes (if it's a real file path)
-  if (filePath && filePath !== name) {
-    startWatching(filePath, tabId);
-  }
-
-  saveSession();
-  return tabId;
-}
-
-function switchToTab(tabId) {
-  // Hide search bar when switching tabs
-  if (isSearchVisible) {
-    hideSearchBar();
-  }
-
-  // 현재 탭의 TOC 상태 저장 (홈이 아닌 경우)
-  if (activeTabId !== HOME_TAB_ID) {
-    const currentTab = tabs.find(t => t.id === activeTabId);
-    if (currentTab) {
-      currentTab.tocVisible = getTocVisible();
-    }
-  }
-
-  if (tabId === HOME_TAB_ID) {
-    activeTabId = HOME_TAB_ID;
-    content.innerHTML = getWelcomeHTML();
-    content.classList.remove('view-double'); // 홈은 항상 한 페이지
-    renderHomeRecentFiles();
-    renderTabs();
-    // 홈 탭은 항상 TOC 숨김
-    clearToc();
-    // 홈 탭은 항상 view 모드 (에디터 숨김)
-    setEditorMode('view');
-    // 홈 탭은 항상 100% zoom
-    applyTabZoom(HOME_TAB_ID);
-    updateExportButtons();
-    return;
-  }
-
-  const tab = tabs.find(t => t.id === tabId);
-  if (!tab) return;
-
-  activeTabId = tabId;
-  renderMarkdown(tab.content, false);
-  // 파일 탭에서는 저장된 뷰 모드 적용
-  if (currentViewMode === 'double') {
-    content.classList.add('view-double');
-  }
-  renderTabs();
-
-  // 해당 탭의 TOC 상태 복원
-  setTocVisible(tab.tocVisible || false);
-
-  // 에디터에 콘텐츠 로드 및 모드 설정
-  loadEditorContent(tab.content);
-  // 읽기전용 탭은 항상 view 모드
-  if (tab.readOnly) {
-    setEditorMode('view');
-    updateEditModeButtonsDisabled(true);
-  } else {
-    setEditorMode(tab.editMode || 'view');
-    updateEditModeButtonsDisabled(false);
-  }
-
-  // 해당 탭의 zoom 복원
-  applyTabZoom(tabId);
-  updateExportButtons();
-  saveSession();
-}
-
-function updateEditModeButtonsDisabled(disabled) {
-  const btnModeEdit = document.getElementById('btn-mode-edit');
-  const btnModeSplit = document.getElementById('btn-mode-split');
-  if (btnModeEdit) btnModeEdit.disabled = disabled;
-  if (btnModeSplit) btnModeSplit.disabled = disabled;
-}
-
-function updateExportButtons() {
-  const activeTab = tabs.find(t => t.id === activeTabId);
-  const hasFile = activeTab != null;
-  const isReadOnly = activeTab?.readOnly || false;
-
-  const btnExportVmd = document.getElementById('btn-export-vmd');
-  const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
-
-  // 읽기전용 내보내기: 일반 파일 탭일 때만 활성화
-  if (btnExportVmd) btnExportVmd.disabled = !hasFile || isReadOnly;
-  // MD로 내보내기: 읽기전용(VMD) 탭일 때만 활성화
-  if (btnExportVmdToMd) btnExportVmdToMd.disabled = !hasFile || !isReadOnly;
-}
-
-function closeTab(tabId, event) {
-  if (event) {
-    event.stopPropagation();
-  }
-
-  // Cannot close home tab
-  if (tabId === HOME_TAB_ID) return;
-
-  const tabIndex = tabs.findIndex(t => t.id === tabId);
-  if (tabIndex === -1) return;
-
-  // 미저장 변경사항 확인
-  const tab = tabs[tabIndex];
-  if (tab.isDirty) {
-    const t = i18n[currentLanguage];
-    const confirmed = window.confirm(t.confirmClose || '저장하지 않은 변경사항이 있습니다. 정말 닫으시겠습니까?');
-    if (!confirmed) return;
-  }
-
-  // Stop watching this file
-  if (tab.filePath && tab.filePath !== tab.name) {
-    stopWatching(tab.filePath, tabId);
-  }
-
-  tabs.splice(tabIndex, 1);
-
-  if (activeTabId === tabId) {
-    if (tabs.length === 0) {
-      // No more file tabs, go to home
-      switchToTab(HOME_TAB_ID);
-    } else {
-      // Switch to adjacent tab
-      const newIndex = Math.min(tabIndex, tabs.length - 1);
-      switchToTab(tabs[newIndex].id);
-    }
-  }
-
-  renderTabs();
-  updateTabBarVisibility();
-  saveSession();
-}
-
-function renderTabs() {
-  tabsContainer.innerHTML = '';
-
-  // Home tab first
-  const homeTabEl = document.createElement('div');
-  homeTabEl.className = `tab ${activeTabId === HOME_TAB_ID ? 'active' : ''}`;
-  homeTabEl.innerHTML = `
-    <svg class="tab-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-      <polyline points="9 22 9 12 15 12 15 22"/>
-    </svg>
-    <span class="tab-title">홈</span>
-  `;
-  homeTabEl.addEventListener('click', () => switchToTab(HOME_TAB_ID));
-  tabsContainer.appendChild(homeTabEl);
-
-  // File tabs
-  tabs.forEach(tab => {
-    const dirtyIndicator = tab.isDirty ? ' •' : '';
-    const lockIcon = tab.readOnly ? ' 🔒' : '';
-    const tabEl = document.createElement('div');
-    tabEl.className = `tab ${tab.id === activeTabId ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
-    tabEl.innerHTML = `
-      <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}${lockIcon}${dirtyIndicator}</span>
-      <button class="tab-close" title="닫기">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    `;
-
-    tabEl.querySelector('.tab-title').addEventListener('click', () => switchToTab(tab.id));
-    tabEl.querySelector('.tab-close').addEventListener('click', (e) => closeTab(tab.id, e));
-
-    tabsContainer.appendChild(tabEl);
-  });
-}
-
-function updateTabBarVisibility() {
-  // Tab bar is always visible (home tab is always there)
-  tabBar.classList.remove('hidden');
-  content.classList.remove('no-tabs');
-}
-
-// ========== Editor Functions ==========
-const editorPane = document.getElementById('editor-pane');
-const editorTextarea = document.getElementById('markdown-editor');
-const mainContainer = document.getElementById('main-container');
-const btnModeView = document.getElementById('btn-mode-view');
-const btnModeEdit = document.getElementById('btn-mode-edit');
-const btnModeSplit = document.getElementById('btn-mode-split');
-const btnSave = document.getElementById('btn-save');
-
-let editorDebounceTimer = null;
-const EDITOR_DEBOUNCE_DELAY = 300;
-
-function loadEditorContent(content) {
-  if (editorTextarea) {
-    editorTextarea.value = content || '';
-  }
-}
-
-function setEditorMode(mode) {
-  if (!mainContainer) return;
-
-  // 홈 탭이면 항상 view 모드
-  if (activeTabId === HOME_TAB_ID) {
-    mode = 'view';
-  }
-
-  // 현재 탭의 editMode 업데이트
-  const activeTab = tabs.find(t => t.id === activeTabId);
-  if (activeTab) {
-    activeTab.editMode = mode;
-  }
-
-  // UI 업데이트
-  updateEditorModeButtons(mode);
-
-  // 메인 컨테이너 모드 클래스 설정
-  mainContainer.classList.remove('mode-view', 'mode-edit', 'mode-split');
-  mainContainer.classList.add(`mode-${mode}`);
-
-  // 에디터 패널 hidden 클래스 관리
-  if (editorPane) {
-    if (mode === 'view') {
-      editorPane.classList.add('hidden');
-    } else {
-      editorPane.classList.remove('hidden');
-    }
-  }
-
-  // 분할 모드에서 미리보기 업데이트
-  if (mode === 'split') {
-    updateEditorPreview();
-  }
-}
-
-function updateEditorModeButtons(mode) {
-  if (btnModeView) btnModeView.classList.toggle('active', mode === 'view');
-  if (btnModeEdit) btnModeEdit.classList.toggle('active', mode === 'edit');
-  if (btnModeSplit) btnModeSplit.classList.toggle('active', mode === 'split');
-}
-
-function onEditorInput() {
-  const editorContent = editorTextarea?.value || '';
-  const activeTab = tabs.find(t => t.id === activeTabId);
-
-  if (activeTab && activeTabId !== HOME_TAB_ID) {
-    // 탭 콘텐츠 업데이트
-    activeTab.content = editorContent;
-
-    // dirty 상태 계산
-    const wasDirty = activeTab.isDirty;
-    activeTab.isDirty = activeTab.content !== activeTab.originalContent;
-
-    if (wasDirty !== activeTab.isDirty) {
-      renderTabs();
-    }
-
-    // 분할 모드에서 디바운스된 미리보기 업데이트
-    const currentMode = mainContainer?.classList.contains('mode-split') ? 'split' :
-                        mainContainer?.classList.contains('mode-edit') ? 'edit' : 'view';
-    if (currentMode === 'split') {
-      debouncedUpdatePreview();
-    }
-  }
-}
-
-function debouncedUpdatePreview() {
-  if (editorDebounceTimer) {
-    clearTimeout(editorDebounceTimer);
-  }
-  editorDebounceTimer = setTimeout(() => {
-    updateEditorPreview();
-  }, EDITOR_DEBOUNCE_DELAY);
-}
-
-function updateEditorPreview() {
-  const editorContent = editorTextarea?.value || '';
-  if (content) {
-    renderMarkdown(editorContent, false);
-  }
-}
-
-async function saveCurrentFile() {
-  const activeTab = tabs.find(t => t.id === activeTabId);
-  if (!activeTab || activeTabId === HOME_TAB_ID) return;
-
-  const editorContent = editorTextarea?.value || activeTab.content;
-
-  if (activeTab.filePath && fsWriteTextFile) {
-    try {
-      await fsWriteTextFile(activeTab.filePath, editorContent);
-      // 저장 성공 - dirty 상태 초기화
-      activeTab.content = editorContent;
-      activeTab.originalContent = editorContent;
-      activeTab.isDirty = false;
-      renderTabs();
-
-      const t = i18n[currentLanguage];
-      showNotification(t.saved || '저장되었습니다');
-    } catch (error) {
-      showError('저장 실패', error.toString());
-    }
-  } else {
-    console.log('Cannot save: no file path or fs API');
-  }
-}
-
-// ========== Recent Files ==========
-function addToRecentFiles(name, filePath) {
-  // Remove if already exists
-  recentFiles = recentFiles.filter(f => f.path !== filePath);
-
-  // Add to beginning
-  recentFiles.unshift({
-    name: name,
-    path: filePath,
-    openedAt: Date.now()
-  });
-
-  // Keep only MAX_RECENT_FILES
-  if (recentFiles.length > MAX_RECENT_FILES) {
-    recentFiles = recentFiles.slice(0, MAX_RECENT_FILES);
-  }
-
-  localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
-  renderRecentFiles();
-  renderHomeRecentFiles();
-}
-
-function renderRecentFiles() {
-  recentList.innerHTML = '';
-
-  if (recentFiles.length === 0) {
-    recentEmpty.style.display = 'block';
-    clearRecent.style.display = 'none';
-    return;
-  }
-
-  recentEmpty.style.display = 'none';
-  clearRecent.style.display = 'block';
-
-  recentFiles.forEach(file => {
-    const item = document.createElement('div');
-    item.className = 'recent-item';
-    item.innerHTML = `
-      <div class="recent-item-content">
-        <div class="recent-item-name">${file.name}</div>
-        <div class="recent-item-path">${file.path}</div>
-      </div>
-      <button class="recent-item-remove" title="목록에서 제거">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-    `;
-
-    item.querySelector('.recent-item-content').addEventListener('click', () => {
-      hideRecentDropdown();
-      loadFile(file.path);
-    });
-
-    item.querySelector('.recent-item-remove').addEventListener('click', (e) => {
-      e.stopPropagation();
-      removeFromRecentFiles(file.path);
-    });
-
-    recentList.appendChild(item);
-  });
-}
-
-function renderHomeRecentFiles() {
-  const homeList = document.getElementById('home-recent-list');
-  const homeRecentSection = document.getElementById('home-recent');
-
-  if (!homeList || !homeRecentSection) return;
-
-  if (recentFiles.length === 0) {
-    homeRecentSection.style.display = 'none';
-    return;
-  }
-
-  homeRecentSection.style.display = 'block';
-  homeList.innerHTML = '';
-
-  // Show only first 5 items on home
-  recentFiles.slice(0, 5).forEach(file => {
-    const item = document.createElement('div');
-    item.className = 'home-recent-item';
-    item.innerHTML = `
-      <svg class="home-recent-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-        <polyline points="14 2 14 8 20 8"/>
-      </svg>
-      <div class="home-recent-info">
-        <div class="home-recent-name">${file.name}</div>
-        <div class="home-recent-path">${file.path}</div>
-      </div>
-    `;
-    item.addEventListener('click', () => loadFile(file.path));
-    homeList.appendChild(item);
-  });
-}
-
-function removeFromRecentFiles(filePath) {
-  recentFiles = recentFiles.filter(f => f.path !== filePath);
-  localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
-  renderRecentFiles();
-  renderHomeRecentFiles();
-}
-
-function clearRecentFiles() {
-  recentFiles = [];
-  localStorage.setItem('recentFiles', JSON.stringify(recentFiles));
-  renderRecentFiles();
-  renderHomeRecentFiles();
-  hideRecentDropdown();
-}
-
-function toggleRecentDropdown() {
-  if (recentDropdown.classList.contains('hidden')) {
-    showRecentDropdown();
-  } else {
-    hideRecentDropdown();
-  }
-}
-
-function showRecentDropdown() {
-  renderRecentFiles();
-  recentDropdown.classList.remove('hidden');
-
-  // Position dropdown below button
-  const btnRect = btnRecent.getBoundingClientRect();
-  recentDropdown.style.top = (btnRect.bottom + 4) + 'px';
-  recentDropdown.style.left = btnRect.left + 'px';
-}
-
-function hideRecentDropdown() {
-  recentDropdown.classList.add('hidden');
-}
-
-// ========== Home ==========
-function showHome() {
-  switchToTab(HOME_TAB_ID);
-  clearToc();
-}
-
-// ========== GitHub-style Alerts (Callout Boxes) ==========
-// Supports: [!NOTE], [!TIP], [!IMPORTANT], [!WARNING], [!CAUTION]
-const ALERT_TYPES = {
-  NOTE: {
-    icon: '📝',
-    class: 'alert-note',
-    label: { ko: '참고', en: 'Note' }
-  },
-  TIP: {
-    icon: '💡',
-    class: 'alert-tip',
-    label: { ko: '팁', en: 'Tip' }
-  },
-  IMPORTANT: {
-    icon: '❗',
-    class: 'alert-important',
-    label: { ko: '중요', en: 'Important' }
-  },
-  WARNING: {
-    icon: '⚠️',
-    class: 'alert-warning',
-    label: { ko: '경고', en: 'Warning' }
-  },
-  CAUTION: {
-    icon: '🚨',
-    class: 'alert-caution',
-    label: { ko: '주의', en: 'Caution' }
-  }
-};
-
-function processAlerts(text) {
-  // Match GitHub-style alerts: > [!TYPE] followed by content lines starting with >
-  const alertPattern = /^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\][ \t]*\n((?:>.*\n?)*)/gim;
-
-  return text.replace(alertPattern, (match, type, content) => {
-    const alertType = ALERT_TYPES[type.toUpperCase()];
-    if (!alertType) return match;
-
-    // Remove leading > from each line and trim
-    const contentText = content
-      .split('\n')
-      .map(line => line.replace(/^>\s?/, ''))
-      .join('\n')
-      .trim();
-
-    const label = alertType.label[currentLanguage] || alertType.label.en;
-
-    // Return a placeholder that will be converted to HTML after marked parsing
-    return `\n<div class="alert-box ${alertType.class}">
-<div class="alert-header">
-<span class="alert-icon">${alertType.icon}</span>
-<span class="alert-title">${label}</span>
-</div>
-<div class="alert-content">
-
-${contentText}
-
-</div>
-</div>\n`;
-  });
-}
-
-// ========== Markdown Rendering ==========
-function renderMarkdown(text, isNewFile = true) {
-  const startTime = performance.now();
-
-  try {
-    // Normalize line endings to \n
-    let normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-    // Apply plugin beforeRender hooks
-    const markdownHooks = getMarkdownHooks();
-    for (const hook of markdownHooks.beforeRender) {
-      try {
-        normalizedText = hook.callback(normalizedText) || normalizedText;
-      } catch (err) {
-        console.error(`[Plugin] beforeRender hook error (${hook.pluginId}):`, err);
-      }
-    }
-
-    // Process GitHub-style alerts before markdown parsing
-    const processedText = processAlerts(normalizedText);
-
-    // Split by --- (page breaks) for paging
-    // Matches: standalone line with 3+ dashes, with optional spaces
-    // Handles: ---  or ----  or -----  etc.
-    const pageTexts = processedText.split(/\n\s*-{3,}\s*\n|\n\s*-{3,}\s*$|^\s*-{3,}\s*\n/);
-    // 헤딩 slug 카운터 리셋
-    Object.keys(headingCount).forEach(k => delete headingCount[k]);
-    pages = pageTexts.filter(p => p.trim()).map(p => marked.parse(p));
-
-    if (isNewFile) {
-      currentPage = 0;
-    }
-
-    renderPages();
-
-    const elapsed = (performance.now() - startTime).toFixed(1);
-    console.log(`Rendered ${pages.length} pages in ${elapsed}ms`);
-  } catch (error) {
-    showError('Markdown 파싱 오류', error.message);
-  }
-}
-
-function renderPages() {
-  content.classList.add('markdown-body');
-  const lang = i18n[currentLanguage];
-
-  if (currentViewMode === 'single') {
-    // Single view: Continuous scroll (all content)
-    const allContent = pages.join('<hr class="page-break">');
-    content.innerHTML = `<div class="markdown-content-wrapper">${allContent}</div>`;
-  } else if (currentViewMode === 'double') {
-    // Double view: Two pages side by side, continuous scroll
-    let doubleContent = '';
-    for (let i = 0; i < pages.length; i += 2) {
-      const leftPage = pages[i] || '';
-      const rightPage = pages[i + 1] || '';
-      doubleContent += `
-        <div class="double-page-row">
-          <div class="page-left">${leftPage}</div>
-          <div class="page-right">${rightPage}</div>
-        </div>
-      `;
-      if (i + 2 < pages.length) {
-        doubleContent += '<hr class="page-break">';
-      }
-    }
-    content.innerHTML = `<div class="markdown-content-wrapper double-scroll-view">${doubleContent}</div>`;
-  } else if (currentViewMode === 'paging') {
-    // Paging view: One page at a time with navigation
-    const totalPages = pages.length;
-    const currentDisplay = currentPage + 1;
-
-    if (totalPages <= 1) {
-      content.innerHTML = `<div class="markdown-content-wrapper">${pages[0] || ''}</div>`;
-    } else {
-      content.innerHTML = `
-        <div class="markdown-content-wrapper paging-view">
-          ${pages[currentPage] || ''}
-        </div>
-        <div class="page-nav">
-          <button id="page-prev" class="page-nav-btn" ${currentPage === 0 ? 'disabled' : ''}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M15 18l-6-6 6-6"/>
-            </svg>
-          </button>
-          <div class="page-indicator-group">
-            <input type="number" id="page-input" class="page-input" value="${currentDisplay}" min="1" max="${totalPages}" />
-            <span class="page-total">/ ${totalPages}</span>
-          </div>
-          <button id="page-next" class="page-nav-btn" ${currentPage >= totalPages - 1 ? 'disabled' : ''}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 18l6-6-6-6"/>
-            </svg>
-          </button>
-        </div>
-      `;
-
-      // Add event listeners for paging navigation
-      const prevBtn = document.getElementById('page-prev');
-      const nextBtn = document.getElementById('page-next');
-      const pageInput = document.getElementById('page-input');
-
-      if (prevBtn) prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
-      if (nextBtn) nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
-      if (pageInput) {
-        pageInput.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') {
-            const targetPage = parseInt(pageInput.value) - 1;
-            goToPage(targetPage);
-          }
-        });
-        pageInput.addEventListener('blur', () => {
-          const targetPage = parseInt(pageInput.value) - 1;
-          goToPage(targetPage);
-        });
-      }
-    }
-  } else {
-    // Fallback: show all content
-    const allContent = pages.join('<hr class="page-break">');
-    content.innerHTML = `<div class="markdown-content-wrapper">${allContent}</div>`;
-  }
-
-  // Attach click listeners to images for modal
-  attachImageClickListeners();
-
-  // Generate TOC from headings
-  generateToc();
-
-  // Apply plugin afterRender hooks
-  const markdownHooks = getMarkdownHooks();
-  for (const hook of markdownHooks.afterRender) {
-    try {
-      hook.callback(content.innerHTML, content);
-    } catch (err) {
-      console.error(`[Plugin] afterRender hook error (${hook.pluginId}):`, err);
-    }
-  }
-
-  // Emit content rendered event for plugins
-  eventBus.emit(EVENTS.CONTENT_RENDERED, { container: content });
-}
-
-function goToPage(pageNum) {
-  if (pageNum < 0) pageNum = 0;
-  if (pageNum >= pages.length) pageNum = pages.length - 1;
-  currentPage = pageNum;
-  renderPages();
-  content.scrollTop = 0;
-}
-
-// ========== File Handling ==========
-async function openFile() {
-  if (dialogOpen) {
-    // Tauri 환경
-    const selected = await dialogOpen({
-      multiple: false,
-      filters: [{
-        name: 'Markdown',
-        extensions: ['md', 'markdown', 'txt', 'vmd']
-      }]
-    });
-
-    if (selected) {
-      await loadFile(selected);
-    }
-  } else {
-    // 브라우저 환경 (개발용)
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.md,.markdown,.txt';
-    input.onchange = async (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const text = await file.text();
-        // Browser mode: create tab with file content
-        createTab(file.name, file.name, text);
-        addToRecentFiles(file.name, file.name);
-      }
-    };
-    input.click();
-  }
-}
-
-async function loadFile(filePath) {
-  try {
-    if (tauriApi) {
-      // Check if file is already open
-      const existingTab = tabs.find(t => t.filePath === filePath);
-      if (existingTab) {
-        switchToTab(existingTab.id);
-        return;
-      }
-
-      // .vmd 파일은 읽기전용으로 열기 (별도 복호화 경로)
-      if (filePath.toLowerCase().endsWith('.vmd')) {
-        await loadVmdFile(filePath);
-        return;
-      }
-
-      const text = await tauriApi.invoke('read_file', { path: filePath });
-      const name = filePath.split(/[/\\]/).pop();
-      createTab(name, filePath, text);
-      addToRecentFiles(name, filePath);
-    }
-  } catch (error) {
-    showError('파일 읽기 실패', error.toString());
-    // Remove from recent files if it failed to load
-    removeFromRecentFiles(filePath);
-  }
-}
-
-// ========== CLI 인자 처리 ==========
-async function handleCliArgs() {
-  if (tauriApi) {
-    try {
-      const args = await tauriApi.invoke('get_cli_args');
-      if (args && args.length > 0) {
-        await loadFile(args[0]);
-      }
-    } catch (e) {
-      console.log('No CLI args');
-    }
-  }
-}
-
-// ========== Drag & Drop ==========
-function setupDragDrop() {
-  let dragCounter = 0;
-
-  document.addEventListener('dragenter', (e) => {
-    e.preventDefault();
-    dragCounter++;
-    dropOverlay.classList.add('active');
-  });
-
-  document.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    dragCounter--;
-    if (dragCounter === 0) {
-      dropOverlay.classList.remove('active');
-    }
-  });
-
-  document.addEventListener('dragover', (e) => {
-    e.preventDefault();
-  });
-
-  document.addEventListener('drop', async (e) => {
-    e.preventDefault();
-    dragCounter = 0;
-    dropOverlay.classList.remove('active');
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      const file = files[0];
-
-      if (file.name.match(/\.(md|markdown|txt)$/i)) {
-        const text = await file.text();
-        createTab(file.name, file.name, text);
-        addToRecentFiles(file.name, file.name);
-      } else if (file.name.toLowerCase().endsWith('.vmd')) {
-        // VMD 파일은 Tauri 경로가 필요 (브라우저 File API로는 복호화 불가)
-        if (tauriApi && file.path) {
-          await loadFile(file.path);
-        } else {
-          showError('VMD 오류', 'VMD 파일은 Tauri 환경에서만 열 수 있습니다.');
-        }
-      } else if (file.name.endsWith('.json')) {
-        // 테마 파일 드롭
-        importTheme(file);
-      } else {
-        showError('지원하지 않는 형식', 'Markdown 파일(.md, .markdown, .txt) 또는 테마 파일(.json)만 지원합니다.');
-      }
-    }
-  });
-}
-
-// ========== Keyboard Shortcuts ==========
-function setupKeyboard() {
-  document.addEventListener('keydown', (e) => {
-    // Presentation mode keyboard handling
-    if (isPresentationMode) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        exitPresentation();
-        return;
-      }
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
-        e.preventDefault();
-        presentationPrev();
-        return;
-      }
-      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown' || e.key === ' ') {
-        e.preventDefault();
-        presentationNext();
-        return;
-      }
-      return; // Block other keys in presentation mode
-    }
-
-    // F5: Start presentation
-    if (e.key === 'F5') {
-      e.preventDefault();
-      startPresentation();
-    }
-    // Ctrl+O: Open file
-    if (e.ctrlKey && e.key === 'o') {
-      e.preventDefault();
-      openFile();
-    }
-    // Ctrl+D: Toggle dark/light theme
-    if (e.ctrlKey && e.key === 'd') {
-      e.preventDefault();
-      toggleTheme();
-    }
-    // Ctrl+E: Export theme
-    if (e.ctrlKey && e.key === 'e') {
-      e.preventDefault();
-      exportTheme();
-    }
-    // Ctrl+P: Print
-    if (e.ctrlKey && e.key === 'p') {
-      e.preventDefault();
-      printDocument();
-    }
-    // Ctrl+S: Save file
-    if (e.ctrlKey && e.key === 's') {
-      e.preventDefault();
-      saveCurrentFile();
-    }
-    // Ctrl++: Zoom in
-    if (e.ctrlKey && (e.key === '+' || e.key === '=')) {
-      e.preventDefault();
-      zoomIn();
-    }
-    // Ctrl+-: Zoom out
-    if (e.ctrlKey && e.key === '-') {
-      e.preventDefault();
-      zoomOut();
-    }
-    // Ctrl+0: Reset zoom
-    if (e.ctrlKey && e.key === '0') {
-      e.preventDefault();
-      zoomReset();
-    }
-    // Ctrl+F: Toggle search bar
-    if (e.ctrlKey && e.key === 'f') {
-      e.preventDefault();
-      toggleSearchBar();
-    }
-    // Ctrl+Shift+T: Toggle TOC sidebar
-    if (e.ctrlKey && e.shiftKey && e.key === 'T') {
-      e.preventDefault();
-      toggleToc();
-    }
-    // Ctrl+W: Close current tab
-    if (e.ctrlKey && e.key === 'w') {
-      e.preventDefault();
-      if (activeTabId) {
-        closeTab(activeTabId);
-      }
-    }
-    // Escape: Close modals/dropdowns
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      // 열린 드롭다운 확인
-      const hasOpenDropdown = !formatDropdown?.classList.contains('hidden') ||
-        !toolsDropdown?.classList.contains('hidden') ||
-        !helpDropdown?.classList.contains('hidden');
-      if (hasOpenDropdown) {
-        closeAllToolbarDropdowns();
-      } else if (imageModal && !imageModal.classList.contains('hidden')) {
-        closeImageModal();
-      } else if (!aboutModal.classList.contains('hidden')) {
-        closeAboutModal();
-      } else if (!shortcutsModal.classList.contains('hidden')) {
-        closeShortcutsModal();
-      } else if (isSearchVisible) {
-        hideSearchBar();
-      }
-      hideRecentDropdown();
-    }
-    // Ctrl+Tab: Next tab (including home)
-    if (e.ctrlKey && e.key === 'Tab') {
-      e.preventDefault();
-      const allTabs = [HOME_TAB_ID, ...tabs.map(t => t.id)];
-      const currentIndex = allTabs.indexOf(activeTabId);
-      const nextIndex = (currentIndex + 1) % allTabs.length;
-      switchToTab(allTabs[nextIndex]);
-    }
-    // Arrow keys for page navigation (paging view only, when not in search or input)
-    if (!isSearchVisible && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
-      if (currentViewMode === 'paging' && pages.length > 1) {
-        if (e.key === 'ArrowLeft') {
-          e.preventDefault();
-          goToPage(currentPage - 1);
-        }
-        if (e.key === 'ArrowRight') {
-          e.preventDefault();
-          goToPage(currentPage + 1);
-        }
-      }
-    }
-  });
-
-  // Mouse wheel zoom (Ctrl + scroll)
-  document.addEventListener('wheel', (e) => {
-    if (e.ctrlKey) {
-      e.preventDefault();
-      if (e.deltaY < 0) {
-        zoomIn();
-      } else {
-        zoomOut();
-      }
-    }
-  }, { passive: false });
-
-  // Close dropdowns when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!recentDropdown.contains(e.target) && !btnRecent.contains(e.target)) {
-      hideRecentDropdown();
-    }
-    if (!helpDropdown.contains(e.target) && !btnHelp.contains(e.target)) {
-      hideHelpDropdown();
-    }
-  });
-}
-
-// ========== Error Display ==========
-function showError(title, message) {
-  content.innerHTML = `
-    <div class="welcome" style="color: var(--accent);">
-      <h2>${title}</h2>
-      <p>${message}</p>
-    </div>
-  `;
-}
-
-// ========== Tauri Events ==========
-async function setupTauriEvents() {
-  if (tauriApi) {
-    try {
-      const { listen } = await import('@tauri-apps/api/event');
-
-      // 파일 드롭 이벤트 (Tauri 2.0)
-      await listen('tauri://drag-drop', async (event) => {
-        console.log('Drag drop event:', event);
-        const paths = event.payload?.paths || event.payload;
-        if (paths && paths.length > 0) {
-          for (const filePath of paths) {
-            if (filePath.match(/\.(md|markdown|txt|vmd)$/i)) {
-              await loadFile(filePath);
-            } else if (filePath.match(/\.json$/i)) {
-              // 테마 파일
-              try {
-                const text = await tauriApi.invoke('read_file', { path: filePath });
-                const data = JSON.parse(text);
-                if (data.customStyles) {
-                  customStyles = data.customStyles;
-                  localStorage.setItem('customStyles', JSON.stringify(customStyles));
-                  applyCustomStyles(customStyles);
-                  selectCustomTheme();
-                  showNotification(t('themeImported') || '테마를 불러왔습니다');
-                }
-              } catch (e) {
-                console.error('Failed to import theme:', e);
-              }
-            }
-          }
-        }
-      });
-
-      // 싱글 인스턴스: 두 번째 인스턴스에서 파일 열기 요청
-      await listen('open-files-from-instance', async (event) => {
-        const filePaths = event.payload;
-        if (filePaths && filePaths.length > 0) {
-          for (const filePath of filePaths) {
-            await loadFile(filePath);
-          }
-        }
-      });
-    } catch (e) {
-      console.log('Tauri events not available');
-    }
-  }
 }
 
 // ========== Initialize ==========
 async function init() {
-  // [PERF] 성능 측정 코드 (필요시 주석 해제)
-  // const initStart = performance.now();
-  // console.log('[PERF] init() 시작');
+  // Theme system init (DOM refs)
+  themeSystem.init({
+    getDialogSave: fileOps.getDialogSave,
+    getFsWriteTextFile: fileOps.getFsWriteTextFile,
+    getTauriApi: fileOps.getTauriApi,
+  });
+  themeSystem.initStyles();
 
-  // 1. UI 먼저 렌더링 (즉시 화면 표시)
-  applyTheme(currentTheme);
-  applyFontFamily(currentFontFamily);
-  applyFontSize(currentFontSize);
+  // Tab manager init
+  tabManager.init({
+    getWelcomeHTML,
+    renderHomeRecentFiles: fileOps.renderHomeRecentFiles,
+    setEditorMode,
+    applyTabZoom: zoom.applyTabZoom,
+    updateExportButtons,
+    renderMarkdown: (text, isNew) => doRenderMarkdown(text, isNew),
+    getCurrentViewMode: zoom.getCurrentViewMode,
+    loadEditorContent,
+    updateEditModeButtonsDisabled,
+    hideSearchBar: search.hideSearchBar,
+    startWatching: fileOps.startWatching,
+    stopWatching: fileOps.stopWatching,
+    saveSession: doSaveSession,
+    getCurrentLanguage: () => currentLanguage,
+  });
 
-  if (customStyles && customThemeOption) {
-    customThemeOption.hidden = false;
-  }
+  // Zoom init
+  zoom.init({
+    getActiveTabId: tabManager.getActiveTabId,
+    HOME_TAB_ID: tabManager.HOME_TAB_ID,
+    getTabs: tabManager.getTabs,
+    onViewModeChange: (mode) => {
+      // Reset page and re-render
+      if (tabManager.getActiveTabId() !== tabManager.HOME_TAB_ID && renderer.getPages().length > 0) {
+        renderer.renderPages(contentEl, {
+          currentViewMode: mode,
+          currentLanguage,
+          attachImageClickListeners: imageModal.attachImageClickListeners,
+        });
+      }
+    },
+  });
+  zoom.setViewMode(localStorage.getItem('viewMode') || 'single');
+  zoom.applyTabZoom(tabManager.getActiveTabId());
 
-  // 저장된 테마 초기화
-  updateColorThemeSelect();
-  refreshSavedThemesList();
+  // Image modal init
+  imageModal.init({});
 
-  applyColorTheme(currentColor);
+  // Presentation init
+  presentation.init({
+    getPages: renderer.getPages,
+    t,
+  });
 
-  activeTabId = HOME_TAB_ID;
-  updateTabBarVisibility();
-  renderTabs();
-  renderHomeRecentFiles();
+  // Search init
+  search.init();
 
-  setViewMode(currentViewMode);
-  applyTabZoom(activeTabId);  // 탭별 zoom 적용
-  applyContentWidth(currentContentWidth);
+  // File operations init
+  fileOps.init({
+    createTab: tabManager.createTab,
+    switchToTab: tabManager.switchToTab,
+    getTabs: tabManager.getTabs,
+    getActiveTabId: tabManager.getActiveTabId,
+    closeTab: tabManager.closeTab,
+    renderMarkdown: (text, isNew) => doRenderMarkdown(text, isNew),
+    t,
+    loadVmdFile: (path) => loadVmdFile(path, buildVmdCtx()),
+    importTheme: themeSystem.importTheme,
+    importThemeData: themeSystem.importThemeData,
+  });
+  fileOps.setupDragDrop();
+
+  // Shortcuts init
+  shortcuts.init({
+    handlePresentationKeydown: presentation.handleKeydown,
+    startPresentation: presentation.startPresentation,
+    openFile: fileOps.openFile,
+    toggleTheme: themeSystem.toggleTheme,
+    exportTheme: themeSystem.exportTheme,
+    printDocument: () => printDocument({ getTabs: tabManager.getTabs }),
+    saveCurrentFile,
+    zoomIn: zoom.zoomIn,
+    zoomOut: zoom.zoomOut,
+    zoomReset: zoom.zoomReset,
+    toggleSearchBar: () => search.toggleSearchBar(tabManager.getTabs().length),
+    toggleToc,
+    closeCurrentTab: () => { if (tabManager.getActiveTabId()) tabManager.closeTab(tabManager.getActiveTabId()); },
+    handleEscape: () => {
+      const hasOpenDropdown = !formatDropdown?.classList.contains('hidden') ||
+        !toolsDropdown?.classList.contains('hidden') ||
+        !helpDropdown?.classList.contains('hidden');
+      if (hasOpenDropdown) { closeAllToolbarDropdowns(); }
+      else if (imageModal.isOpen()) { imageModal.closeImageModal(); }
+      else if (!aboutModal.classList.contains('hidden')) { aboutModal.classList.add('hidden'); }
+      else if (!shortcutsModal.classList.contains('hidden')) { shortcutsModal.classList.add('hidden'); }
+      else if (search.getIsSearchVisible()) { search.hideSearchBar(); }
+      fileOps.hideRecentDropdown();
+    },
+    nextTab: () => {
+      const allTabs = [tabManager.HOME_TAB_ID, ...tabManager.getTabs().map(t => t.id)];
+      const currentIndex = allTabs.indexOf(tabManager.getActiveTabId());
+      tabManager.switchToTab(allTabs[(currentIndex + 1) % allTabs.length]);
+    },
+    getIsSearchVisible: search.getIsSearchVisible,
+    getCurrentViewMode: zoom.getCurrentViewMode,
+    getPages: renderer.getPages,
+    getCurrentPage: renderer.getCurrentPage,
+    goToPage: (p) => renderer.goToPage(p, contentEl),
+    handleDocumentClick: (e) => {
+      const recentDropdown = document.getElementById('recent-dropdown');
+      const btnRecent = document.getElementById('btn-recent');
+      if (!recentDropdown.contains(e.target) && !btnRecent.contains(e.target)) fileOps.hideRecentDropdown();
+      if (!helpDropdown.contains(e.target) && !btnHelp.contains(e.target)) helpDropdown.classList.add('hidden');
+      if (!e.target.closest('.toolbar-dropdown-wrapper') && !e.target.closest('.help-menu-wrapper')) closeAllToolbarDropdowns();
+    },
+  });
+
+  // Language
   languageSelect.value = currentLanguage;
+  languageSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
   updateUITexts();
 
-  setupDragDrop();
-  setupKeyboard();
+  // Home
+  document.getElementById('btn-home').addEventListener('click', () => { tabManager.switchToTab(tabManager.HOME_TAB_ID); clearToc(); });
 
-  // 에디터 초기화
-  markdownEditor.init();
-  // console.log(`[PERF] UI 초기화: ${(performance.now() - initStart).toFixed(1)}ms`);
+  // Print/PDF
+  const btnPrint = document.getElementById('btn-print');
+  const btnPdf = document.getElementById('btn-pdf');
+  if (btnPrint) btnPrint.addEventListener('click', () => printDocument({ getTabs: tabManager.getTabs }));
+  if (btnPdf) btnPdf.addEventListener('click', () => exportPdf({
+    tabs: tabManager.getTabs(), activeTabId: tabManager.getActiveTabId(),
+    HOME_TAB_ID: tabManager.HOME_TAB_ID, t
+  }));
 
-  // 플러그인 시스템 초기화
-  pluginManager.init().then(() => {
-    console.log('[Plugins] Plugin system initialized');
-    eventBus.emit(EVENTS.PLUGINS_LOADED, { plugins: pluginManager.getPluginList() });
-  }).catch(err => {
-    console.error('[Plugins] Failed to initialize plugin system:', err);
-  });
-
-  // 2. Tauri 초기화 (백그라운드)
-  initTauri().then(async () => {
-    // console.log(`[PERF] Tauri 완료: ${(performance.now() - initStart).toFixed(1)}ms`);
-    setupTauriEvents();
-    const args = tauriApi ? await tauriApi.invoke('get_cli_args').catch(() => []) : [];
-    if (args && args.length > 0) {
-      // CLI 인자가 있으면 세션 복원 대신 인자 파일 열기
-      await loadFile(args[0]);
-    } else {
-      // CLI 인자 없으면 이전 세션 복원
-      await restoreSession();
-    }
-  });
-
-  // Event listeners
-  btnHome.addEventListener('click', showHome);
-  btnOpen.addEventListener('click', openFile);
-  btnRecent.addEventListener('click', toggleRecentDropdown);
-  btnTheme.addEventListener('click', toggleTheme);
-  btnCustomize.addEventListener('click', openThemeEditor);
-
-  // Saved themes event listeners
-  if (saveCurrentThemeBtn) {
-    saveCurrentThemeBtn.addEventListener('click', saveCurrentTheme);
-  }
-  if (themeNameInput) {
-    themeNameInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        saveCurrentTheme();
-      }
-    });
-  }
-
-  if (btnPrint) {
-    btnPrint.addEventListener('click', printDocument);
-  }
-
+  // VMD exports
   const btnExportVmd = document.getElementById('btn-export-vmd');
-  if (btnExportVmd) {
-    btnExportVmd.addEventListener('click', exportVmd);
-  }
-
   const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
-  if (btnExportVmdToMd) {
-    btnExportVmdToMd.addEventListener('click', exportVmdToMd);
-  }
+  if (btnExportVmd) btnExportVmd.addEventListener('click', () => exportVmd(buildVmdCtx()));
+  if (btnExportVmdToMd) btnExportVmdToMd.addEventListener('click', () => exportVmdToMd(buildVmdCtx()));
 
-  if (btnPdf) {
-    btnPdf.addEventListener('click', exportPdf);
-  }
-
-  // View mode buttons
-  btnViewSingle.addEventListener('click', () => setViewMode('single'));
-  btnViewDouble.addEventListener('click', () => setViewMode('double'));
-  btnViewPaging.addEventListener('click', () => setViewMode('paging'));
-
-  // Zoom buttons
-  btnZoomIn.addEventListener('click', zoomIn);
-  btnZoomOut.addEventListener('click', zoomOut);
-  btnZoomReset.addEventListener('click', zoomReset);
-
-  // Pan event listeners (drag to scroll when zoomed in)
-  content.addEventListener('mousedown', onPanMouseDown);
-  content.addEventListener('mousemove', onPanMouseMove);
-  content.addEventListener('mouseup', onPanMouseUp);
-  content.addEventListener('mouseleave', onPanMouseLeave);
-
-  // Code copy button event listener (event delegation)
-  content.addEventListener('click', async (e) => {
-    const copyBtn = e.target.closest('.code-copy-btn');
-    if (!copyBtn) return;
-
-    const wrapper = copyBtn.closest('.code-block-wrapper');
-    const pre = wrapper?.querySelector('pre[data-code]');
-    if (!pre) return;
-
-    // HTML 엔티티 디코딩
-    const code = pre.dataset.code
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&amp;/g, '&');
-
-    try {
-      await navigator.clipboard.writeText(code);
-      copyBtn.classList.add('copied');
-      setTimeout(() => copyBtn.classList.remove('copied'), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+  // Toolbar dropdowns
+  btnFormat?.addEventListener('click', (e) => {
+    e?.stopPropagation();
+    const isOpen = !formatDropdown.classList.contains('hidden');
+    closeAllToolbarDropdowns();
+    if (!isOpen) formatDropdown.classList.remove('hidden');
+  });
+  btnTools?.addEventListener('click', (e) => {
+    e?.stopPropagation();
+    const isOpen = !toolsDropdown.classList.contains('hidden');
+    closeAllToolbarDropdowns();
+    if (!isOpen) toolsDropdown.classList.remove('hidden');
   });
 
-  // Search event listeners
-  let searchTimeout;
-  searchInput.addEventListener('input', (e) => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(() => {
-      performSearch(e.target.value);
-    }, 200);
+  // Help menu
+  btnHelp.addEventListener('click', (e) => {
+    e?.stopPropagation();
+    const isOpen = !helpDropdown.classList.contains('hidden');
+    closeAllToolbarDropdowns();
+    if (!isOpen) helpDropdown.classList.remove('hidden');
   });
+  document.getElementById('help-shortcuts').addEventListener('click', () => { helpDropdown.classList.add('hidden'); shortcutsModal.classList.remove('hidden'); });
+  document.getElementById('help-about').addEventListener('click', () => { helpDropdown.classList.add('hidden'); aboutModal.classList.remove('hidden'); });
+  document.getElementById('about-close').addEventListener('click', () => aboutModal.classList.add('hidden'));
+  document.getElementById('about-ok').addEventListener('click', () => aboutModal.classList.add('hidden'));
+  aboutModal.querySelector('.modal-backdrop').addEventListener('click', () => aboutModal.classList.add('hidden'));
+  document.getElementById('shortcuts-close').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
+  document.getElementById('shortcuts-ok').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
+  shortcutsModal.querySelector('.modal-backdrop').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
 
-  searchInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        searchPrevMatch();
-      } else {
-        searchNextMatch();
-      }
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      hideSearchBar();
-    }
-  });
-
-  searchPrev.addEventListener('click', searchPrevMatch);
-  searchNext.addEventListener('click', searchNextMatch);
-  searchClose.addEventListener('click', hideSearchBar);
-  btnSearch.addEventListener('click', toggleSearchBar);
-
-  clearRecent.addEventListener('click', clearRecentFiles);
-
-  colorTheme.addEventListener('change', (e) => {
-    applyColorTheme(e.target.value);
-  });
-
-  fontFamily.addEventListener('change', (e) => {
-    applyFontFamily(e.target.value);
-  });
-
-  fontSize.addEventListener('change', (e) => {
-    applyFontSize(e.target.value);
-  });
-
-  contentWidth.addEventListener('change', (e) => {
-    applyContentWidth(e.target.value);
-  });
-
-  languageSelect.addEventListener('change', (e) => {
-    applyLanguage(e.target.value);
-  });
-
-  importInput.addEventListener('change', (e) => {
-    if (e.target.files.length > 0) {
-      importTheme(e.target.files[0]);
-      e.target.value = ''; // Reset for same file selection
-    }
-  });
-
-  // Theme editor event listeners
-  themeEditorClose.addEventListener('click', closeThemeEditor);
-  themeEditorModal.querySelector('.modal-backdrop').addEventListener('click', closeThemeEditor);
-
-  editorTabs.forEach(tab => {
-    tab.addEventListener('click', () => switchEditorTab(tab.dataset.tab));
-  });
-
-  // Range inputs - update display value
-  document.querySelectorAll('.editor-field input[type="range"]').forEach(range => {
-    range.addEventListener('input', updateRangeDisplays);
-  });
-
-  themeReset.addEventListener('click', resetTheme);
-  themePreview.addEventListener('click', previewTheme);
-  themeImportBtn.addEventListener('click', handleThemeImport);
-  themeExportBtn.addEventListener('click', exportTheme);
-  themeCancel.addEventListener('click', cancelThemeEditor);
-  themeApply.addEventListener('click', applyAndSaveTheme);
-
-  // Presentation mode event listeners
-  btnPresentation.addEventListener('click', startPresentation);
-  presPrev.addEventListener('click', presentationPrev);
-  presNext.addEventListener('click', presentationNext);
-  presExit.addEventListener('click', exitPresentation);
-
-  // Plugin UI event listener
-  if (btnPlugins) {
-    pluginUI.init();
-    btnPlugins.addEventListener('click', () => pluginUI.open());
-  }
-
-  // Editor mode event listeners
+  // Editor mode buttons
   if (btnModeView) btnModeView.addEventListener('click', () => setEditorMode('view'));
   if (btnModeEdit) btnModeEdit.addEventListener('click', () => setEditorMode('edit'));
   if (btnModeSplit) btnModeSplit.addEventListener('click', () => setEditorMode('split'));
   if (btnSave) btnSave.addEventListener('click', saveCurrentFile);
   if (editorTextarea) editorTextarea.addEventListener('input', onEditorInput);
 
-  // Handle fullscreen change
-  document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement && isPresentationMode) {
-      exitPresentation();
-    }
-  });
+  // Editor
+  markdownEditor.init();
 
-  // Toolbar dropdown event listeners
-  btnCursorMode?.addEventListener('click', toggleCursorMode);
-  btnFormat?.addEventListener('click', toggleFormatDropdown);
-  btnTools?.addEventListener('click', toggleToolsDropdown);
-
-  // Close dropdowns when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.toolbar-dropdown-wrapper') && !e.target.closest('.help-menu-wrapper')) {
-      closeAllToolbarDropdowns();
-    }
-  });
-
-  // Link click handler: external links → browser, anchor links → scroll
-  document.addEventListener('click', (e) => {
-    const anchor = e.target.closest('a[href]');
-    if (!anchor) return;
-    const href = anchor.getAttribute('href');
-    if (!href) return;
-    // 외부 링크: 시스템 브라우저에서 열기
-    if (/^https?:\/\//.test(href)) {
-      e.preventDefault();
-      open(href);
-      return;
-    }
-    // 앵커 링크: #content 내에서 스크롤 이동
-    if (href.startsWith('#')) {
-      e.preventDefault();
-      const targetId = decodeURIComponent(href.slice(1));
-      const target = document.getElementById(targetId);
-      if (target) {
-        const containerRect = content.getBoundingClientRect();
-        const targetRect = target.getBoundingClientRect();
-        const scrollTop = content.scrollTop + (targetRect.top - containerRect.top);
-        content.scrollTo({ top: scrollTop, behavior: 'smooth' });
-      }
-    }
-  });
-
-  // Help menu event listeners
-  btnHelp.addEventListener('click', toggleHelpDropdown);
-  helpShortcuts.addEventListener('click', showShortcutsModal);
-  helpAbout.addEventListener('click', showAboutModal);
-  aboutClose.addEventListener('click', closeAboutModal);
-  aboutOk.addEventListener('click', closeAboutModal);
-  aboutModal.querySelector('.modal-backdrop').addEventListener('click', closeAboutModal);
-
-  // Shortcuts modal event listeners
-  shortcutsClose.addEventListener('click', closeShortcutsModal);
-  shortcutsOk.addEventListener('click', closeShortcutsModal);
-  shortcutsModal.querySelector('.modal-backdrop').addEventListener('click', closeShortcutsModal);
-
-  // Image modal event listeners
-  if (imageModal) {
-    imageModalClose?.addEventListener('click', closeImageModal);
-    imageModalBackdrop?.addEventListener('click', closeImageModal);
-    imageZoomIn?.addEventListener('click', () => imageModalZoomIn());
-    imageZoomOut?.addEventListener('click', () => imageModalZoomOut());
-    imageZoomReset?.addEventListener('click', resetImageModalZoom);
-
-    // Mouse wheel zoom on image modal
-    imageModalContent?.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      if (e.deltaY < 0) {
-        imageModalZoomIn(0.1);
-      } else {
-        imageModalZoomOut(0.1);
-      }
-    }, { passive: false });
-
-    // Drag to pan image
-    imageModalContent?.addEventListener('mousedown', onImageDragStart);
-    imageModalContent?.addEventListener('mousemove', onImageDrag);
-    imageModalContent?.addEventListener('mouseup', onImageDragEnd);
-    imageModalContent?.addEventListener('mouseleave', onImageDragEnd);
+  // Plugin system
+  const btnPlugins = document.getElementById('btn-plugins');
+  pluginManager.init().then(() => {
+    eventBus.emit(EVENTS.PLUGINS_LOADED, { plugins: pluginManager.getPluginList() });
+  }).catch(err => console.error('[Plugins] Failed to initialize:', err));
+  if (btnPlugins) {
+    pluginUI.init();
+    btnPlugins.addEventListener('click', () => pluginUI.open());
   }
 
+  // Tauri init (background)
+  fileOps.initTauri().then(async () => {
+    fileOps.setupTauriEvents();
+    const tauriApi = fileOps.getTauriApi();
+    const args = tauriApi ? await tauriApi.invoke('get_cli_args').catch(() => []) : [];
+    if (args && args.length > 0) {
+      await fileOps.loadFile(args[0]);
+    } else {
+      await restoreSession({
+        tauriApi,
+        generateTabId: () => 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+        pushTab: tabManager.pushTab,
+        getTabs: tabManager.getTabs,
+        renderTabs: tabManager.renderTabs,
+        updateTabBarVisibility: () => {},
+        switchToTab: tabManager.switchToTab,
+        startWatching: fileOps.startWatching,
+        addToRecentFiles: fileOps.addToRecentFiles,
+        HOME_TAB_ID: tabManager.HOME_TAB_ID,
+      });
+    }
+  });
+
+  // Render initial
+  tabManager.renderTabs();
+  fileOps.renderHomeRecentFiles();
 }
 
 // Add CSS animation
