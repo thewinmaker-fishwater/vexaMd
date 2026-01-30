@@ -284,8 +284,8 @@ function updateUITexts() {
   }
   const shortcutItems = document.querySelectorAll('.shortcut-item span');
   const shortcutTexts = [
-    lang.scOpenFile, lang.scCloseTab, lang.scPrint, lang.scHome,
-    lang.scToggleTheme, lang.scZoomIn, lang.scZoomOut, lang.scZoomReset,
+    lang.scOpenFile, lang.scSave, lang.scCloseTab, lang.scPrint, lang.scHome,
+    lang.scToggleTheme, lang.scExportTheme, lang.scZoomIn, lang.scZoomOut, lang.scZoomReset,
     lang.scSearch, lang.scToc, lang.scPageNav, lang.scNextTab, lang.scPresentation
   ];
   shortcutItems.forEach((item, idx) => {
