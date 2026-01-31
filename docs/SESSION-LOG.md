@@ -4,6 +4,55 @@
 
 ---
 
+## 세션 2026-01-31 (3차)
+
+### 작업 내용
+
+1. **VMD 암호화 키 관리 시스템 구현**
+   - Rust 백엔드: v2 파일 포맷(키 이름 헤더), `write_vmd`/`read_vmd` 키 파라미터 추가, `read_vmd_info`, `generate_random_key` 커맨드
+   - 키 선택 모달 (내보내기 시): 기본키/사용자키 선택
+   - 키 입력 모달 (열기 시): 미등록 키 파일에 대해 키 값 입력
+   - 키 관리 모달: 키 생성/편집/삭제/복사, 기본키 지정, 내보내기/가져오기
+   - 키 정보 표시: 탭 뱃지 + 뷰어 배너
+   - 세션 복원 시 키 자동 매칭
+   - i18n 번역 (ko/en/ja)
+
+2. **UX 개선**
+   - 키 생성 영역을 목록 상단으로 이동
+   - hex 입력 readonly + "키생성" 버튼으로만 변경
+   - 키 삭제 시 테마 적용된 커스텀 확인 다이얼로그
+   - 키 내보내기: Blob URL → Tauri dialogSave + write_file로 변경
+   - 키 가져오기 시 이름+키값 기준 중복 체크
+   - "내장키"로 용어 통일 (기본키/내장키 혼용 제거)
+   - 내보내기 모달에서 "랜덤 키 생성" 옵션 제거 (키 관리에서만 생성)
+   - 키 입력 시 hex 길이 유연화 (64자 미만 패딩, 초과 트림)
+
+### 수정/생성된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src-tauri/Cargo.toml` | `hex = "0.4"` 의존성 추가 |
+| `src-tauri/src/lib.rs` | v2 포맷 write_vmd/read_vmd, read_vmd_info, generate_random_key |
+| `src/modules/vmd/vmd-key-ui.js` | 신규 - 키 선택/입력/관리 모달 UI |
+| `src/modules/vmd/vmd-key-ui.css` | 신규 - 키 UI 스타일 + 커스텀 확인 다이얼로그 |
+| `src/modules/vmd/vmd.js` | 키 선택/입력 흐름 추가 |
+| `src/i18n.js` | VMD 키 관련 번역 30+ 키 추가 (ko/en/ja) |
+| `src/main.js` | 키 배너, 키 관리 버튼 연결 |
+| `src/modules/session/session.js` | VMD 복원 시 키 매칭 |
+| `src/modules/tabs/tab-manager.js` | 탭 키 뱃지 표시 |
+| `src/modules/tabs/tabs.css` | 탭 잠금 아이콘, 키 뱃지 스타일 |
+| `src/styles/index.css` | vmd-key-ui.css import |
+| `index.html` | 키 관리 메뉴 버튼 |
+| `docs/FEATURES.md` | VMD 암호화 키 관리 문서 추가 |
+
+### 커밋 정보
+- (아래 참조)
+
+### 다음 세션 참고사항
+- 디버그 콘솔 로그 제거 필요 (vmd.js, vmd-key-ui.js의 `[VMD]`, `[VMD-KEY]` 로그)
+
+---
+
 ## 세션 2026-01-31 (2차)
 
 ### 작업 내용

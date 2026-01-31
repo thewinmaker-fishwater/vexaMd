@@ -9,6 +9,11 @@ import { toggleToc, clearToc } from './modules/toc/toc.js';
 import { pluginManager } from './core/plugin-manager.js';
 import { eventBus, EVENTS } from './core/events.js';
 import { pluginUI } from './modules/plugins/plugin-ui.js';
+import { Plugin } from './core/plugin.js';
+import { toolbar } from './components/toolbar.js';
+
+// Expose SDK for external plugins (blob URL cannot use ES import)
+window.VexaMD = { Plugin, version: '1.5.0' };
 
 // Modules
 import * as imageModal from './modules/image-modal/image-modal.js';
@@ -21,6 +26,7 @@ import * as zoom from './modules/zoom/zoom-manager.js';
 import * as fileOps from './modules/files/file-ops.js';
 import { saveSession, restoreSession } from './modules/session/session.js';
 import { exportVmd, exportVmdToMd, loadVmdFile } from './modules/vmd/vmd.js';
+import { showKeyManagerModal } from './modules/vmd/vmd-key-ui.js';
 import * as themeSystem from './modules/theme/theme-system.js';
 import * as shortcuts from './modules/shortcuts/shortcuts.js';
 
@@ -59,6 +65,38 @@ function updateExportButtons() {
   const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
   if (btnExportVmd) btnExportVmd.disabled = !hasFile || isReadOnly;
   if (btnExportVmdToMd) btnExportVmdToMd.disabled = !hasFile || !isReadOnly;
+  updateVmdBanner(activeTab);
+}
+
+function updateVmdBanner(tab) {
+  const existing = document.getElementById('vmd-key-banner');
+  if (existing) existing.remove();
+
+  if (!tab?.readOnly || !tab.filePath?.toLowerCase().endsWith('.vmd')) return;
+
+  const t = i18n[currentLanguage] || i18n.ko;
+  const keyName = tab.vmdKeyName || 'default';
+  const isDefault = keyName === 'default';
+  const label = isDefault
+    ? (t.vmdKeyDefault || '내장키')
+    : keyName;
+
+  const banner = document.createElement('div');
+  banner.id = 'vmd-key-banner';
+  banner.className = 'vmd-key-banner';
+  banner.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <rect x="3" y="11" width="18" height="11" rx="2"/>
+      <path d="M7 11V7a5 5 0 0110 0v4"/>
+    </svg>
+    <span>${t.readOnly || '읽기전용'}</span>
+    <span class="vmd-banner-separator">·</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+    </svg>
+    <span>${label}</span>
+  `;
+  contentEl.prepend(banner);
 }
 
 // ========== Toolbar Dropdowns ==========
@@ -267,6 +305,8 @@ async function init() {
   const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
   if (btnExportVmd) btnExportVmd.addEventListener('click', () => exportVmd(buildVmdCtx()));
   if (btnExportVmdToMd) btnExportVmdToMd.addEventListener('click', () => exportVmdToMd(buildVmdCtx()));
+  const btnKeyManager = document.getElementById('btn-vmd-key-manager');
+  if (btnKeyManager) btnKeyManager.addEventListener('click', () => showKeyManagerModal(buildVmdCtx()));
 
   // Toolbar dropdowns
   btnFormat?.addEventListener('click', (e) => {
@@ -297,6 +337,10 @@ async function init() {
   document.getElementById('shortcuts-close').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
   document.getElementById('shortcuts-ok').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
   shortcutsModal.querySelector('.modal-backdrop').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
+
+  // Plugin toolbar (listen for plugin UI changes)
+  toolbar.setupPluginListeners();
+  toolbar.container = document.getElementById('toolbar');
 
   // Plugin system
   const btnPlugins = document.getElementById('btn-plugins');

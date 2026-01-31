@@ -247,13 +247,41 @@ export const i18n = {
     pluginErrorDetails: '에러 상세',
     noManifest: '선택한 폴더에 plugin.json이 없습니다',
     invalidManifest: '잘못된 plugin.json 매니페스트입니다',
+    pluginDevGuide: '개발 가이드',
+    openOnGithub: 'GitHub에서 보기',
 
     // VMD Export
     exportVmd: '읽기전용 파일로 내보냈습니다.',
     exportVmdBtn: '읽기전용 내보내기',
     exportVmdToMd: 'Markdown 파일로 내보냈습니다.',
     exportVmdToMdBtn: 'MD로 내보내기',
-    readOnly: '읽기전용'
+    readOnly: '읽기전용',
+
+    // VMD Key
+    vmdKeySelect: '암호화 키 선택',
+    vmdKeyDefault: '내장키',
+    vmdKeyRandom: '랜덤 키 생성',
+    vmdKeyCustom: '직접 입력',
+    vmdKeyName: '키 이름',
+    vmdKeyValue: '키 값 (hex)',
+    vmdKeyRequired: '암호화 키 필요',
+    vmdEncryptedWith: '이 파일은 <strong>{keyName}</strong> 키로 암호화되었습니다.',
+    vmdKeySave: '키 저장',
+    vmdKeyGenerating: '확인 시 자동 생성',
+    vmdKeyManager: '암호화 키 관리',
+    vmdKeyEmpty: '사용자 키가 없습니다.',
+    vmdKeyAddBtn: '키 추가',
+    vmdKeyBuiltin: '내장키',
+    vmdKeyBuiltinDesc: '앱에 내장된 암호화 키',
+    vmdKeyDefaultBadge: '기본',
+    vmdKeySetDefault: '기본키로 지정',
+    vmdKeyExport: '키 내보내기',
+    vmdKeyImport: '키 가져오기',
+    vmdKeyImportError: '유효한 키 파일이 아닙니다.',
+    vmdKeyEdit: '편집',
+    vmdKeyGenerate: '키생성',
+    vmdKeyGenHint: '키생성 버튼을 눌러주세요',
+    vmdKeyDeleteConfirm: '"{name}" 키를 삭제하시겠습니까?'
   },
 
   en: {
@@ -499,13 +527,41 @@ export const i18n = {
     pluginErrorDetails: 'Error Details',
     noManifest: 'No plugin.json found in selected folder',
     invalidManifest: 'Invalid plugin.json manifest',
+    pluginDevGuide: 'Dev Guide',
+    openOnGithub: 'View on GitHub',
 
     // VMD Export
     exportVmd: 'Exported as read-only file.',
     exportVmdBtn: 'Export Read-only',
     exportVmdToMd: 'Exported as Markdown file.',
     exportVmdToMdBtn: 'Export as MD',
-    readOnly: 'Read-only'
+    readOnly: 'Read-only',
+
+    // VMD Key
+    vmdKeySelect: 'Select Encryption Key',
+    vmdKeyDefault: 'Built-in Key',
+    vmdKeyRandom: 'Generate Random Key',
+    vmdKeyCustom: 'Enter Custom Key',
+    vmdKeyName: 'Key Name',
+    vmdKeyValue: 'Key Value (hex)',
+    vmdKeyRequired: 'Encryption Key Required',
+    vmdEncryptedWith: 'This file is encrypted with key <strong>{keyName}</strong>.',
+    vmdKeySave: 'Save Key',
+    vmdKeyGenerating: 'Auto-generated on confirm',
+    vmdKeyManager: 'Manage Encryption Keys',
+    vmdKeyEmpty: 'No user keys.',
+    vmdKeyAddBtn: 'Add Key',
+    vmdKeyBuiltin: 'Built-in Key',
+    vmdKeyBuiltinDesc: 'Built-in encryption key',
+    vmdKeyDefaultBadge: 'Default',
+    vmdKeySetDefault: 'Set as default',
+    vmdKeyExport: 'Export Keys',
+    vmdKeyImport: 'Import Keys',
+    vmdKeyImportError: 'Invalid key file.',
+    vmdKeyEdit: 'Edit',
+    vmdKeyGenerate: 'Generate',
+    vmdKeyGenHint: 'Press Generate button',
+    vmdKeyDeleteConfirm: 'Delete key "{name}"?'
   },
 
   ja: {
@@ -751,13 +807,41 @@ export const i18n = {
     pluginErrorDetails: 'エラー詳細',
     noManifest: '選択したフォルダにplugin.jsonがありません',
     invalidManifest: '無効なplugin.jsonマニフェストです',
+    pluginDevGuide: '開発ガイド',
+    openOnGithub: 'GitHubで見る',
 
     // VMD Export
     exportVmd: '読み取り専用ファイルとしてエクスポートしました。',
     exportVmdBtn: '読み取り専用エクスポート',
     exportVmdToMd: 'Markdownファイルとしてエクスポートしました。',
     exportVmdToMdBtn: 'MDでエクスポート',
-    readOnly: '読み取り専用'
+    readOnly: '読み取り専用',
+
+    // VMD Key
+    vmdKeySelect: '暗号化キーの選択',
+    vmdKeyDefault: '内蔵キー',
+    vmdKeyRandom: 'ランダムキー生成',
+    vmdKeyCustom: '直接入力',
+    vmdKeyName: 'キー名',
+    vmdKeyValue: 'キー値 (hex)',
+    vmdKeyRequired: '暗号化キーが必要です',
+    vmdEncryptedWith: 'このファイルは<strong>{keyName}</strong>キーで暗号化されています。',
+    vmdKeySave: 'キーを保存',
+    vmdKeyGenerating: '確認時に自動生成',
+    vmdKeyManager: '暗号化キー管理',
+    vmdKeyEmpty: 'ユーザーキーがありません。',
+    vmdKeyAddBtn: 'キーを追加',
+    vmdKeyBuiltin: '内蔵キー',
+    vmdKeyBuiltinDesc: 'アプリ内蔵の暗号化キー',
+    vmdKeyDefaultBadge: 'デフォルト',
+    vmdKeySetDefault: 'デフォルトキーに設定',
+    vmdKeyExport: 'キーをエクスポート',
+    vmdKeyImport: 'キーをインポート',
+    vmdKeyImportError: '無効なキーファイルです。',
+    vmdKeyEdit: '編集',
+    vmdKeyGenerate: 'キー生成',
+    vmdKeyGenHint: 'キー生成ボタンを押してください',
+    vmdKeyDeleteConfirm: '"{name}" キーを削除しますか？'
   }
 };
 

@@ -70,6 +70,26 @@
   white-space: nowrap;
 }
 
+.tab-lock-icon {
+  flex-shrink: 0;
+  opacity: 0.5;
+  margin-left: 2px;
+}
+
+.tab-key-badge {
+  flex-shrink: 0;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: var(--accent-light, rgba(99,102,241,0.15));
+  color: var(--accent);
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-left: 2px;
+}
+
 .tab-close {
   display: flex;
   align-items: center;

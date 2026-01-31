@@ -1,0 +1,497 @@
+/* ========== VMD Key Banner (viewer top) ========== */
+
+.vmd-key-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  width: fit-content;
+}
+
+.vmd-key-banner svg {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.vmd-banner-separator {
+  opacity: 0.4;
+}
+
+/* ========== VMD Key Modal ========== */
+
+.vmd-key-content {
+  width: 420px;
+  max-width: 95vw;
+}
+
+.vmd-key-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.vmd-key-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vmd-key-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+
+.vmd-key-option:hover {
+  background: var(--bg-secondary);
+}
+
+.vmd-key-option input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+.vmd-key-option span {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.vmd-key-delete-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.15s;
+}
+
+.vmd-key-option:hover .vmd-key-delete-btn,
+.vmd-key-manager-item:hover .vmd-key-delete-btn {
+  opacity: 1;
+}
+
+.vmd-key-delete-btn:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.vmd-key-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.vmd-key-input-area.hidden {
+  display: none;
+}
+
+.vmd-key-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vmd-key-field label {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.vmd-key-field input[type="text"] {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.vmd-key-field input[type="text"]:focus {
+  border-color: var(--accent);
+}
+
+.vmd-key-info {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.vmd-key-info strong {
+  color: var(--accent);
+}
+
+.vmd-key-save-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.vmd-key-save-check input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+/* ========== Key Manager Modal ========== */
+
+.vmd-key-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+  padding: 8px 0;
+}
+
+.vmd-key-manager-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vmd-key-manager-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  transition: border-color 0.15s;
+  border: 1px solid transparent;
+}
+
+.vmd-key-manager-item.is-default {
+  border-color: var(--accent);
+  background: var(--accent-light, rgba(99,102,241,0.08));
+}
+
+.vmd-key-manager-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vmd-key-manager-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vmd-key-default-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+.vmd-key-default-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vmd-key-default-btn:hover {
+  color: var(--accent);
+}
+
+.vmd-key-default-btn.active {
+  color: var(--accent);
+}
+
+.vmd-key-default-label {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.vmd-key-manager-hex {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.vmd-key-manager-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+/* ========== Inline Edit Form ========== */
+
+.vmd-key-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.vmd-key-edit-form.hidden {
+  display: none;
+}
+
+.vmd-key-view-mode.hidden {
+  display: none !important;
+}
+
+.vmd-key-edit-form input[type="text"] {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'Consolas', 'Monaco', monospace;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.vmd-key-edit-form input[type="text"]:focus {
+  border-color: var(--accent);
+}
+
+.vmd-key-edit-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.vmd-key-edit-save {
+  padding: 4px 12px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vmd-key-edit-save:hover {
+  filter: brightness(1.1);
+}
+
+.vmd-key-edit-cancel {
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vmd-key-edit-cancel:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.vmd-key-edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vmd-key-edit-btn:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.vmd-key-copy-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vmd-key-copy-btn:hover {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.vmd-key-add-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 12px;
+}
+
+.vmd-key-value-row {
+  display: flex;
+  gap: 6px;
+}
+
+.vmd-key-value-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.vmd-key-gen-btn {
+  padding: 8px 12px;
+  font-size: 12px;
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vmd-key-gen-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.vmd-key-add-btn {
+  align-self: flex-end;
+  padding: 8px 16px;
+  font-size: 13px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.15s;
+}
+
+.vmd-key-add-btn:hover {
+  filter: brightness(1.1);
+}
+
+/* ========== Key Manager Footer ========== */
+
+.vmd-key-modal .modal-footer {
+  justify-content: space-between;
+}
+
+.vmd-key-footer-left {
+  display: flex;
+  gap: 6px;
+}
+
+.vmd-key-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vmd-key-export-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.vmd-key-export-btn svg {
+  flex-shrink: 0;
+}
+
+/* ========== Themed Confirm Dialog ========== */
+
+.vmd-confirm-modal {
+  z-index: 10001;
+}
+
+.vmd-confirm-content {
+  width: 340px;
+  max-width: 90vw;
+}
+
+.vmd-confirm-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 20px 16px;
+  text-align: center;
+}
+
+.vmd-confirm-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-light, rgba(99,102,241,0.1));
+}
+
+.vmd-confirm-msg {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+  margin: 0;
+  word-break: break-word;
+}
+
+.vmd-confirm-danger {
+  background: #ef4444;
+}
+
+.vmd-confirm-danger:hover {
+  filter: brightness(1.1);
+}

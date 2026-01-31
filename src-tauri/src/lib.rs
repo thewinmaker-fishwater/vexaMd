@@ -62,13 +62,27 @@ const VMD_KEY: &[u8; 32] = b"VexaMD_2026_SecureKey_AES256!!!!";
 // VMD 파일 매직 헤더
 const VMD_MAGIC: &[u8; 4] = b"VXMD";
 
-/// VMD 파일 암호화 저장
+/// hex 문자열을 32바이트 키로 변환. 빈 문자열이면 내장키 사용.
+fn resolve_key(key_hex: &str) -> Result<[u8; 32], String> {
+    if key_hex.is_empty() {
+        return Ok(*VMD_KEY);
+    }
+    let bytes = hex::decode(key_hex).map_err(|e| format!("키 hex 디코딩 실패: {}", e))?;
+    if bytes.len() != 32 {
+        return Err(format!("키는 32바이트여야 합니다. (현재 {}바이트)", bytes.len()));
+    }
+    let mut arr = [0u8; 32];
+    arr.copy_from_slice(&bytes);
+    Ok(arr)
+}
+
+/// VMD 파일 암호화 저장 (v2 포맷: MAGIC + VERSION + KEY_NAME_LEN + KEY_NAME + NONCE + ENCRYPTED)
 #[tauri::command]
-fn write_vmd(path: String, json_content: String) -> Result<(), String> {
-    let key = aes_gcm::Key::<Aes256Gcm>::from_slice(VMD_KEY);
+fn write_vmd(path: String, json_content: String, key_hex: String, key_name: String) -> Result<(), String> {
+    let key_bytes = resolve_key(&key_hex)?;
+    let key = aes_gcm::Key::<Aes256Gcm>::from_slice(&key_bytes);
     let cipher = Aes256Gcm::new(key);
 
-    // 랜덤 nonce (12바이트)
     let mut nonce_bytes = [0u8; 12];
     rand::thread_rng().fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
@@ -77,33 +91,100 @@ fn write_vmd(path: String, json_content: String) -> Result<(), String> {
         .encrypt(nonce, json_content.as_bytes())
         .map_err(|e| format!("암호화 실패: {}", e))?;
 
-    // 파일 구조: MAGIC(4) + NONCE(12) + ENCRYPTED_DATA
-    let mut output = Vec::with_capacity(4 + 12 + encrypted.len());
+    let name_bytes = key_name.as_bytes();
+    if name_bytes.len() > 255 {
+        return Err("키 이름은 255바이트를 초과할 수 없습니다.".to_string());
+    }
+
+    // v2: MAGIC(4) + VERSION(1, 0x02) + KEY_NAME_LEN(1) + KEY_NAME(N) + NONCE(12) + ENCRYPTED
+    let mut output = Vec::with_capacity(4 + 1 + 1 + name_bytes.len() + 12 + encrypted.len());
     output.extend_from_slice(VMD_MAGIC);
+    output.push(0x02);
+    output.push(name_bytes.len() as u8);
+    output.extend_from_slice(name_bytes);
     output.extend_from_slice(&nonce_bytes);
     output.extend_from_slice(&encrypted);
 
     fs::write(&path, &output).map_err(|e| format!("VMD 파일 저장 실패: {}", e))
 }
 
-/// VMD 파일 복호화 읽기
+/// VMD 파일 복호화 읽기 (v1/v2 자동 감지)
 #[tauri::command]
-fn read_vmd(path: String) -> Result<String, String> {
+fn read_vmd(path: String, key_hex: String) -> Result<String, String> {
     let data = fs::read(&path).map_err(|e| format!("VMD 파일 읽기 실패: {}", e))?;
 
     if data.len() < 16 || &data[0..4] != VMD_MAGIC {
         return Err("유효한 VMD 파일이 아닙니다.".to_string());
     }
 
-    let nonce = Nonce::from_slice(&data[4..16]);
-    let key = aes_gcm::Key::<Aes256Gcm>::from_slice(VMD_KEY);
-    let cipher = Aes256Gcm::new(key);
+    // v2 감지: 5번째 바이트가 0x02
+    if data[4] == 0x02 {
+        if data.len() < 6 {
+            return Err("VMD v2 헤더가 손상되었습니다.".to_string());
+        }
+        let name_len = data[5] as usize;
+        let header_end = 6 + name_len;
+        if data.len() < header_end + 12 {
+            return Err("VMD v2 파일이 손상되었습니다.".to_string());
+        }
+        let key_name = String::from_utf8(data[6..header_end].to_vec())
+            .map_err(|_| "키 이름 UTF-8 변환 실패".to_string())?;
 
-    let decrypted = cipher
-        .decrypt(nonce, &data[16..])
-        .map_err(|_| "VMD 파일 복호화 실패. 손상되었거나 다른 버전의 파일입니다.".to_string())?;
+        let key_bytes = resolve_key(&key_hex)?;
+        let key = aes_gcm::Key::<Aes256Gcm>::from_slice(&key_bytes);
+        let cipher = Aes256Gcm::new(key);
+        let nonce = Nonce::from_slice(&data[header_end..header_end + 12]);
 
-    String::from_utf8(decrypted).map_err(|e| format!("UTF-8 변환 실패: {}", e))
+        let decrypted = cipher
+            .decrypt(nonce, &data[header_end + 12..])
+            .map_err(|_| format!("복호화 실패. 키가 올바르지 않습니다. (키 이름: {})", key_name))?;
+
+        String::from_utf8(decrypted).map_err(|e| format!("UTF-8 변환 실패: {}", e))
+    } else {
+        // v1: 내장키로 복호화
+        let nonce = Nonce::from_slice(&data[4..16]);
+        let key = aes_gcm::Key::<Aes256Gcm>::from_slice(VMD_KEY);
+        let cipher = Aes256Gcm::new(key);
+
+        let decrypted = cipher
+            .decrypt(nonce, &data[16..])
+            .map_err(|_| "VMD 파일 복호화 실패. 손상되었거나 다른 버전의 파일입니다.".to_string())?;
+
+        String::from_utf8(decrypted).map_err(|e| format!("UTF-8 변환 실패: {}", e))
+    }
+}
+
+/// VMD 파일 헤더 정보 읽기 (키 없이 version/keyName만 확인)
+#[tauri::command]
+fn read_vmd_info(path: String) -> Result<String, String> {
+    let data = fs::read(&path).map_err(|e| format!("VMD 파일 읽기 실패: {}", e))?;
+
+    if data.len() < 16 || &data[0..4] != VMD_MAGIC {
+        return Err("유효한 VMD 파일이 아닙니다.".to_string());
+    }
+
+    if data[4] == 0x02 {
+        if data.len() < 6 {
+            return Err("VMD v2 헤더가 손상되었습니다.".to_string());
+        }
+        let name_len = data[5] as usize;
+        if data.len() < 6 + name_len {
+            return Err("VMD v2 파일이 손상되었습니다.".to_string());
+        }
+        let key_name = String::from_utf8(data[6..6 + name_len].to_vec())
+            .map_err(|_| "키 이름 UTF-8 변환 실패".to_string())?;
+        Ok(format!("{{\"version\":2,\"keyName\":\"{}\"}}", key_name))
+    } else {
+        Ok("{\"version\":1,\"keyName\":\"default\"}".to_string())
+    }
+}
+
+/// 랜덤 32바이트 키 생성 (hex 문자열 반환)
+#[tauri::command]
+fn generate_random_key() -> String {
+    let mut key = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut key);
+    hex::encode(key)
 }
 
 /// 마크다운 파일 경로 필터링
@@ -224,7 +305,7 @@ pub fn run() {
                 save_window_state(window);
             }
         })
-        .invoke_handler(tauri::generate_handler![read_file, get_cli_args, write_file, write_vmd, read_vmd])
+        .invoke_handler(tauri::generate_handler![read_file, get_cli_args, write_file, write_vmd, read_vmd, read_vmd_info, generate_random_key])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -89,6 +89,7 @@ export function switchToTab(tabId) {
     ctx.setEditorMode?.('view');
     ctx.applyTabZoom?.(HOME_TAB_ID);
     ctx.updateExportButtons?.();
+    ctx.saveSession?.();
     return;
   }
 
@@ -169,13 +170,15 @@ export function renderTabs() {
   els.tabsContainer.appendChild(homeTabEl);
 
   // File tabs
+  const t = i18n[ctx.getCurrentLanguage?.() || 'ko'] || {};
   tabs.forEach(tab => {
     const dirtyIndicator = tab.isDirty ? ' •' : '';
-    const lockIcon = tab.readOnly ? ' 🔒' : '';
+    const lockIcon = tab.readOnly ? '<svg class="tab-lock-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>' : '';
+    const keyBadge = tab.vmdKeyName ? `<span class="tab-key-badge" title="${tab.vmdKeyName}">${tab.vmdKeyName === 'default' ? (t.vmdKeyBuiltin || '내장키') : tab.vmdKeyName}</span>` : '';
     const tabEl = document.createElement('div');
     tabEl.className = `tab ${tab.id === activeTabId ? 'active' : ''} ${tab.isDirty ? 'dirty' : ''}`;
     tabEl.innerHTML = `
-      <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}${lockIcon}${dirtyIndicator}</span>
+      <span class="tab-title" title="${tab.filePath || tab.name}">${tab.name}${dirtyIndicator}</span>${lockIcon}${keyBadge}
       <button class="tab-close" title="닫기">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <line x1="18" y1="6" x2="6" y2="18"></line>

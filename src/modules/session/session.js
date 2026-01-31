@@ -2,6 +2,8 @@
  * Session Save/Restore Module
  */
 
+import { findKeyByName } from '../vmd/vmd-key-ui.js';
+
 let isRestoringSession = false;
 
 export function getIsRestoringSession() {
@@ -40,7 +42,24 @@ export async function restoreSession(ctx) {
       if (tauriApi) {
         const isVmd = saved.filePath.toLowerCase().endsWith('.vmd');
         if (isVmd) {
-          const jsonStr = await tauriApi.invoke('read_vmd', { path: saved.filePath });
+          // Resolve key for VMD file
+          let keyHex = '';
+          try {
+            const infoStr = await tauriApi.invoke('read_vmd_info', { path: saved.filePath });
+            const info = JSON.parse(infoStr);
+            if (info.version === 2 && info.keyName !== 'default') {
+              const savedKey = findKeyByName(info.keyName);
+              if (!savedKey) {
+                console.log('Session restore: no saved key for VMD', saved.filePath, info.keyName);
+                continue;
+              }
+              keyHex = savedKey.hexKey;
+            }
+          } catch (e) {
+            console.log('Session restore: read_vmd_info failed', saved.filePath, e);
+            continue;
+          }
+          const jsonStr = await tauriApi.invoke('read_vmd', { path: saved.filePath, keyHex });
           const vmdData = JSON.parse(jsonStr);
           const displayName = vmdData.title || saved.filePath.split(/[/\\]/).pop();
           const tabId = generateTabId();
@@ -79,6 +98,6 @@ export async function restoreSession(ctx) {
   if (tabs.length > 0) {
     renderTabs();
     updateTabBarVisibility();
-    switchToTab(activeRestored || tabs[tabs.length - 1].id);
+    switchToTab(activeRestored || (activeTabPath === '' ? HOME_TAB_ID : tabs[tabs.length - 1].id));
   }
 }
