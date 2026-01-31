@@ -95,7 +95,7 @@ function showConfirmDialog(message, t) {
       <div class="modal-content vmd-confirm-content">
         <div class="vmd-confirm-body">
           <div class="vmd-confirm-icon">${SVG_WARN}</div>
-          <p class="vmd-confirm-msg">${message}</p>
+          <p class="vmd-confirm-msg">${message.replace(/\n/g, '<br>')}</p>
         </div>
         <div class="modal-footer">
           <button class="btn-secondary vmd-confirm-no">${t.cancel || '취소'}</button>
@@ -255,17 +255,17 @@ export function showKeyInputModal(keyName, ctx) {
     modal.querySelector('.vmd-key-cancel').addEventListener('click', () => close(null));
 
     modal.querySelector('.vmd-key-confirm').addEventListener('click', () => {
-      const hex = modal.querySelector('#vmd-key-open-input').value.trim();
-      if (!hex || !/^[0-9a-fA-F]+$/.test(hex)) {
+      // Remove all whitespace, 0x prefix, and non-hex chars for robust paste handling
+      const raw = modal.querySelector('#vmd-key-open-input').value;
+      const hex = raw.replace(/^0x/i, '').replace(/[^0-9a-fA-F]/g, '');
+      if (!hex || hex.length !== 64) {
         modal.querySelector('#vmd-key-open-input').style.borderColor = 'var(--accent)';
         return;
       }
-      // 64자 미만이면 앞에 0 패딩, 초과면 앞에서 64자만 사용
-      const normalizedHex = hex.length < 64 ? hex.padStart(64, '0') : hex.substring(0, 64);
       if (modal.querySelector('#vmd-key-save-cb').checked) {
-        addSavedKey(keyName, normalizedHex);
+        addSavedKey(keyName, hex);
       }
-      close(normalizedHex);
+      close(hex);
     });
   });
 }
@@ -274,7 +274,7 @@ export function showKeyInputModal(keyName, ctx) {
  * Show key manager modal (standalone key management UI).
  */
 export function showKeyManagerModal(ctx) {
-  const { currentLanguage, tauriApi, dialogSave } = ctx;
+  const { currentLanguage, tauriApi, dialogSave, closeTabsByKeyName } = ctx;
   const t = i18n[currentLanguage] || i18n.ko;
 
   function render() {
@@ -493,15 +493,16 @@ export function showKeyManagerModal(ctx) {
         const idx = parseInt(btn.dataset.index);
         const keys = loadSavedKeys();
         const keyName = keys[idx]?.name || '';
-        const confirmed = await showConfirmDialog(
-          (t.vmdKeyDeleteConfirm || '"{name}" 키를 삭제하시겠습니까?').replace('{name}', keyName), t
-        );
+        const confirmMsg = (t.vmdKeyDeleteConfirm || '"{name}" 키를 삭제하시겠습니까?\n이 키로 열린 문서도 닫힙니다.').replace('{name}', keyName);
+        const confirmed = await showConfirmDialog(confirmMsg, t);
         if (!confirmed) return;
         if (getDefaultKeyName() === keyName) {
           setDefaultKeyName(BUILTIN_KEY_ID);
         }
         keys.splice(idx, 1);
         saveKeys(keys);
+        // 해당 키로 열린 VMD 탭 즉시 닫기
+        if (closeTabsByKeyName) closeTabsByKeyName(keyName);
         reopen();
       });
     });

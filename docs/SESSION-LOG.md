@@ -4,6 +4,42 @@
 
 ---
 
+## 세션 2026-01-31 (4차)
+
+### 작업 내용
+
+1. **VMD 키 관리 보안 강화**
+   - 키 삭제 시 해당 키로 열린 VMD 탭 자동 닫기 (콘텐츠 보호)
+   - 삭제 확인 다이얼로그에 탭 닫힘 경고 메시지 추가
+   - `buildVmdCtx()`에 `closeTabsByKeyName` 콜백 추가
+
+2. **키 입력 안정성 개선**
+   - hex 입력 시 `0x` prefix, 공백, 보이지 않는 문자 자동 제거
+   - padStart/substring 제거 → 정확히 64자 hex만 허용
+   - 저장된 키로 복호화 실패 시 키 입력 모달로 폴백
+
+3. **키 관리 UI 개선**
+   - 키 목록에 스크롤 추가 (`max-height: 300px`)
+   - `.vmd-key-body` overflow 정리
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/main.js` | `closeTabsByKeyName` 콜백 추가 |
+| `src/modules/vmd/vmd-key-ui.js` | 키 삭제→탭 닫기, hex 입력 정규화, 삭제 경고 메시지 |
+| `src/modules/vmd/vmd-key-ui.css` | 키 목록 스크롤, body overflow 정리 |
+| `src/modules/vmd/vmd.js` | 복호화 실패 시 키 입력 모달 폴백 |
+| `src/i18n.js` | 삭제 확인 메시지에 탭 닫힘 경고 추가 |
+
+### 커밋 정보
+- (아래 참조)
+
+### 다음 세션 참고사항
+- 플러그인 시스템 Phase 2 변경사항 별도 커밋 필요
+
+---
+
 ## 세션 2026-01-31 (3차)
 
 ### 작업 내용

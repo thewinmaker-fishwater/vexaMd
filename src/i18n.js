@@ -281,7 +281,7 @@ export const i18n = {
     vmdKeyEdit: '편집',
     vmdKeyGenerate: '키생성',
     vmdKeyGenHint: '키생성 버튼을 눌러주세요',
-    vmdKeyDeleteConfirm: '"{name}" 키를 삭제하시겠습니까?'
+    vmdKeyDeleteConfirm: '"{name}" 키를 삭제하시겠습니까?\n이 키로 열린 문서도 닫힙니다.'
   },
 
   en: {
@@ -561,7 +561,7 @@ export const i18n = {
     vmdKeyEdit: 'Edit',
     vmdKeyGenerate: 'Generate',
     vmdKeyGenHint: 'Press Generate button',
-    vmdKeyDeleteConfirm: 'Delete key "{name}"?'
+    vmdKeyDeleteConfirm: 'Delete key "{name}"?\nDocuments opened with this key will be closed.'
   },
 
   ja: {
@@ -841,7 +841,7 @@ export const i18n = {
     vmdKeyEdit: '編集',
     vmdKeyGenerate: 'キー生成',
     vmdKeyGenHint: 'キー生成ボタンを押してください',
-    vmdKeyDeleteConfirm: '"{name}" キーを削除しますか？'
+    vmdKeyDeleteConfirm: '"{name}" キーを削除しますか？\nこのキーで開いたドキュメントも閉じられます。'
   }
 };
 

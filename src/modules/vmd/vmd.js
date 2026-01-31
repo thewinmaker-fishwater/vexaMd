@@ -100,10 +100,23 @@ async function resolveVmdKey(filePath, ctx) {
 export async function loadVmdFile(filePath, ctx) {
   const { tauriApi, generateTabId, pushTab, renderTabs, switchToTab, updateTabBarVisibility, addToRecentFiles, saveSession } = ctx;
   try {
-    const keyResult = await resolveVmdKey(filePath, ctx);
+    let keyResult = await resolveVmdKey(filePath, ctx);
     if (!keyResult) return; // user cancelled
 
-    const jsonStr = await tauriApi.invoke('read_vmd', { path: filePath, keyHex: keyResult.keyHex });
+    let jsonStr;
+    try {
+      jsonStr = await tauriApi.invoke('read_vmd', { path: filePath, keyHex: keyResult.keyHex });
+    } catch (decryptErr) {
+      // Saved key may be wrong — fallback to manual input
+      if (keyResult.keyName && keyResult.keyName !== 'default') {
+        const keyHex = await showKeyInputModal(keyResult.keyName, ctx);
+        if (keyHex === null) return;
+        keyResult = { keyHex, keyName: keyResult.keyName };
+        jsonStr = await tauriApi.invoke('read_vmd', { path: filePath, keyHex: keyResult.keyHex });
+      } else {
+        throw decryptErr;
+      }
+    }
     const vmdData = JSON.parse(jsonStr);
     if (vmdData.format !== 'vexa-md') {
       showError('VMD 오류', '유효한 VMD 파일이 아닙니다.');

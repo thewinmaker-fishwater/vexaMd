@@ -149,6 +149,11 @@ function buildVmdCtx() {
     updateTabBarVisibility: () => {},
     addToRecentFiles: fileOps.addToRecentFiles,
     saveSession: doSaveSession,
+    closeTabsByKeyName: (keyName) => {
+      const tabs = tabManager.getTabs();
+      const toClose = tabs.filter(t => t.readOnly && t.vmdKeyName === keyName);
+      toClose.forEach(t => tabManager.closeTab(t.id));
+    },
   };
 }
 
