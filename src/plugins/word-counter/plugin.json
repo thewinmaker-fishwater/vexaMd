@@ -1,0 +1,62 @@
+{
+  "id": "word-counter",
+  "name": "Word Counter",
+  "version": "1.0.0",
+  "description": "Displays word/character count in the toolbar. Test plugin for all settings types.",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": false,
+    "ui": true,
+    "toolbar": true,
+    "settings": true
+  },
+  "settings": {
+    "showOnToolbar": {
+      "type": "boolean",
+      "label": { "ko": "툴바에 표시", "en": "Show on Toolbar", "ja": "ツールバーに表示" },
+      "default": true,
+      "help": { "ko": "단어 수를 툴바에 표시합니다", "en": "Show word count on toolbar" }
+    },
+    "countMode": {
+      "type": "select",
+      "label": { "ko": "카운트 모드", "en": "Count Mode", "ja": "カウントモード" },
+      "default": "words",
+      "options": ["words", "characters", "both"],
+      "help": { "ko": "단어 수 또는 문자 수를 선택합니다", "en": "Choose word or character count" }
+    },
+    "separator": {
+      "type": "string",
+      "label": { "ko": "구분자", "en": "Separator", "ja": "区切り文字" },
+      "default": " | ",
+      "help": { "ko": "단어/문자 수 사이 구분자", "en": "Separator between word/char counts" }
+    },
+    "fontSize": {
+      "type": "number",
+      "label": { "ko": "글자 크기", "en": "Font Size", "ja": "フォントサイズ" },
+      "default": 12,
+      "help": { "ko": "표시 글자 크기 (px)", "en": "Display font size (px)" }
+    },
+    "badgeColor": {
+      "type": "color",
+      "label": { "ko": "배지 색상", "en": "Badge Color", "ja": "バッジ色" },
+      "default": "#4a9eff",
+      "help": { "ko": "카운터 배경 색상", "en": "Counter background color" }
+    },
+    "opacity": {
+      "type": "range",
+      "label": { "ko": "투명도", "en": "Opacity", "ja": "不透明度" },
+      "default": 80,
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "help": { "ko": "카운터 투명도 (10-100%)", "en": "Counter opacity (10-100%)" }
+    },
+    "customFormat": {
+      "type": "textarea",
+      "label": { "ko": "커스텀 형식", "en": "Custom Format", "ja": "カスタム書式" },
+      "default": "{words}W {chars}C",
+      "help": { "ko": "{words}=단어수, {chars}=문자수 로 형식 지정", "en": "Use {words} and {chars} placeholders" }
+    }
+  }
+}

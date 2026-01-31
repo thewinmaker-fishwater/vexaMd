@@ -220,6 +220,189 @@ input:focus + .toggle-slider {
   padding: 1rem;
 }
 
+/* Settings Field Help Text */
+.settings-field-help {
+  font-size: 0.75rem;
+  color: var(--accent);
+  margin: 0.25rem 0 0;
+  line-height: 1.4;
+}
+
+/* Color Picker */
+.settings-color-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.settings-field input[type="color"] {
+  width: 40px;
+  height: 32px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.settings-color-value {
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-family: monospace;
+}
+
+/* Textarea */
+.settings-field textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* Range Slider */
+.settings-range-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-field input[type="range"] {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--border);
+  border-radius: 2px;
+  outline: none;
+}
+
+.settings-field input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+}
+
+.settings-range-value {
+  font-size: 0.8rem;
+  color: var(--accent);
+  min-width: 2rem;
+  text-align: right;
+}
+
+/* Plugin Header Actions */
+.plugin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.plugin-install-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+/* User Installed Badge */
+.plugin-badge.user-installed {
+  background: #10b981;
+  color: white;
+}
+
+/* Uninstall Button */
+.btn-danger {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-danger:hover {
+  background: #ef4444;
+  color: white;
+}
+
+/* Plugin Error Card */
+.plugin-card.error {
+  border-color: #ef4444;
+  border-width: 2px;
+}
+
+.plugin-error-section {
+  margin: 0.5rem 0;
+}
+
+.plugin-error-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #ef4444;
+  line-height: 1.4;
+}
+
+.plugin-error-message svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  stroke: #ef4444;
+}
+
+.plugin-error-details {
+  margin-top: 0.5rem;
+}
+
+.plugin-error-details summary {
+  font-size: 0.75rem;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0.25rem 0;
+}
+
+.plugin-error-stack {
+  font-size: 0.7rem;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 150px;
+  margin: 0.25rem 0 0;
+  color: var(--accent);
+}
+
+/* Retry Button */
+.plugin-retry-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+}
+
 /* Plugin Toolbar Buttons */
 .plugin-buttons {
   display: flex;

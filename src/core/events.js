@@ -125,6 +125,9 @@ export const EVENTS = {
   PLUGIN_MARKDOWN_CHANGED: 'plugin:markdown-changed',
   PLUGIN_UI_CHANGED: 'plugin:ui-changed',
 
+  PLUGIN_INSTALLED: 'plugin:installed',
+  PLUGIN_SCAN_COMPLETE: 'plugin:scan-complete',
+
   // Toolbar events
   TOOLBAR_UPDATED: 'toolbar:updated'
 };

@@ -4,6 +4,47 @@
 
 ---
 
+## 세션 2026-01-31 (2차)
+
+### 작업 내용
+
+1. **플러그인 시스템 Phase 2 전체 구현**
+   - Step 1: plugin.json 매니페스트 지원 (`loadBuiltInManifest`, `validateManifest`, `mergeManifestMetadata`)
+   - Step 2: 고급 설정 폼 타입 (select, color, textarea, range + i18n label 해석)
+   - Step 3: 플러그인 설치/제거 UX (`scanPluginDirectory`, `installFromFolder`, Tauri dialog, 배지)
+   - Step 4: 플러그인 에러 UI (에러 저장, 재시도, 붉은 테두리 카드, 스택 트레이스 확장)
+   - Step 5: 문서 전면 보강 (plugin-development.md 재작성, plugin-user-guide.md 신규, template 플러그인, FEATURES.md/ARCHITECTURE.md 업데이트)
+
+### 수정/생성된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/core/plugin-manager.js` | 대폭 수정 - manifest 로딩/검증, 외부 플러그인 스캔/설치/제거, 에러 추적/재시도 |
+| `src/modules/plugins/plugin-ui.js` | 대폭 수정 - 스키마 기반 설정 폼, 설치/제거 UI, 에러 카드 |
+| `src/modules/plugins/plugin-ui.css` | 스타일 추가 - 컬러 피커, textarea, range, 에러 UI, 설치/제거 버튼 |
+| `src/core/events.js` | `PLUGIN_INSTALLED`, `PLUGIN_SCAN_COMPLETE` 이벤트 추가 |
+| `src/i18n.js` | 14개 번역 키 추가 (ko/en/ja) |
+| `src/plugins/mermaid/plugin.json` | settings 스키마 형식으로 업데이트 |
+| `src/plugins/template/plugin.json` | 신규 - 템플릿 매니페스트 (4가지 설정 타입 예시) |
+| `src/plugins/template/index.js` | 신규 - 주석 포함 템플릿 플러그인 클래스 |
+| `docs/plugin-development.md` | 전면 재작성 - 튜토리얼 스타일 개발 가이드 |
+| `docs/plugin-user-guide.md` | 신규 - 사용자 대상 설치/관리 가이드 |
+| `docs/FEATURES.md` | Phase 2 플러그인 기능 섹션 추가 |
+| `docs/ARCHITECTURE.md` | 플러그인 시스템 섹션 업데이트 |
+
+### 발생한 문제
+- 없음. `npm run build` 성공 확인 (13.59s).
+
+### 커밋 정보
+- 미커밋 (사용자 허가 대기)
+
+### 다음 세션 참고사항
+- `npm run tauri dev`로 수동 테스트 필요: 플러그인 설정 폼, 설치/제거 UX, 에러 UI, 재시도
+- 외부 플러그인 테스트: `{appDataDir}/plugins/`에 테스트 폴더 생성 후 스캔 확인
+- 의도적 에러 플러그인으로 에러 카드 렌더링 검증
+
+---
+
 ## 세션 2026-01-31
 
 ### 작업 내용
@@ -477,4 +518,4 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
-*마지막 업데이트: 2026-01-30*
+*마지막 업데이트: 2026-01-31*

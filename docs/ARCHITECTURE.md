@@ -101,8 +101,12 @@ workspace-mdView/
 │   │       └── plugin-ui.css     # 플러그인 스타일
 │   │
 │   ├── plugins/                  # 내장 플러그인
-│   │   └── mermaid/
-│   │       └── index.js          # Mermaid 다이어그램 플러그인
+│   │   ├── mermaid/
+│   │   │   ├── index.js          # Mermaid 다이어그램 플러그인
+│   │   │   └── plugin.json       # 매니페스트 (설정 스키마 포함)
+│   │   └── template/
+│   │       ├── index.js          # 템플릿 플러그인 (개발자 시작점)
+│   │       └── plugin.json       # 템플릿 매니페스트
 │   │
 │   ├── components/               # 재사용 컴포넌트
 │   │   ├── icons.js              # SVG 아이콘 모음
@@ -499,14 +503,18 @@ button.title = lang.openFile;
 src/
 ├── core/
 │   ├── plugin.js           # Plugin 기본 클래스
-│   ├── plugin-manager.js   # 플러그인 로딩/관리
+│   ├── plugin-manager.js   # 플러그인 로딩/관리/설치/제거
 │   └── plugin-api.js       # 플러그인에 노출되는 API
 ├── plugins/                # 내장 플러그인
-│   └── mermaid/
-│       └── index.js        # Mermaid 다이어그램 플러그인
+│   ├── mermaid/
+│   │   ├── index.js        # Mermaid 다이어그램 플러그인
+│   │   └── plugin.json     # 매니페스트 (설정 스키마 포함)
+│   └── template/
+│       ├── index.js        # 템플릿 플러그인 (개발자 시작점)
+│       └── plugin.json     # 템플릿 매니페스트
 └── modules/
     └── plugins/
-        ├── plugin-ui.js    # 플러그인 관리 UI
+        ├── plugin-ui.js    # 플러그인 관리 UI (설치/삭제/에러/설정 폼)
         └── plugin-ui.css   # 플러그인 스타일
 ```
 
@@ -518,13 +526,35 @@ const api = {
   store,      // 상태 관리
   markdown,   // 마크다운 확장 (addExtension, onAfterRender)
   ui,         // UI 확장 (addToolbarButton, showNotification)
-  dom         // DOM 유틸리티
+  dom,        // DOM 유틸리티
+  utils       // 헬퍼 (debounce, throttle, generateId)
 };
 ```
 
+### plugin.json 매니페스트
+
+플러그인은 `plugin.json` 매니페스트 파일로 메타데이터와 설정 스키마를 정의합니다.
+
+```json
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "1.0.0",
+  "main": "index.js",
+  "settings": {
+    "key": { "type": "select", "label": { "ko": "...", "en": "..." }, "default": "auto", "options": [...] }
+  }
+}
+```
+
+### 플러그인 설치 경로
+- **내장 플러그인**: `src/plugins/` (빌드 시 번들)
+- **외부 플러그인**: `{appDataDir}/plugins/` (런타임 스캔)
+
 ### 플러그인 개발
 
-자세한 내용은 [plugin-development.md](./plugin-development.md) 참조.
+- 개발자 가이드: [plugin-development.md](./plugin-development.md)
+- 사용자 가이드: [plugin-user-guide.md](./plugin-user-guide.md)
 
 ---
 
@@ -592,6 +622,7 @@ src-tauri/target/release/
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-01-31 | 플러그인 시스템 Phase 2 - 매니페스트, 설치/삭제, 에러 UI, 설정 스키마 |
 | 2026-01-31 | main.js 추가 축소 리팩토링 - 626줄→341줄 (ui-texts, editor-manager, welcome, animations 추출) |
 | 2026-01-30 | main.js 모듈 분리 리팩토링 - 13개 모듈 구조로 전면 재작성 |
 | 2026-01-25 | 플러그인 시스템 아키텍처 추가 |

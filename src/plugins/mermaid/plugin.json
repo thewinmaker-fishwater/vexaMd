@@ -5,14 +5,27 @@
   "description": "Render Mermaid diagrams in markdown code blocks",
   "author": "Vexa MD Team",
   "homepage": "https://mermaid.js.org",
+  "main": "index.js",
   "capabilities": {
     "markdown": true,
     "ui": false,
     "toolbar": false,
     "settings": true
   },
-  "defaultSettings": {
-    "theme": "auto",
-    "securityLevel": "loose"
+  "settings": {
+    "theme": {
+      "type": "select",
+      "label": { "ko": "테마", "en": "Theme", "ja": "テーマ" },
+      "default": "auto",
+      "options": ["auto", "default", "dark", "forest", "neutral"],
+      "help": { "ko": "Mermaid 다이어그램 테마", "en": "Mermaid diagram theme", "ja": "Mermaidダイアグラムのテーマ" }
+    },
+    "securityLevel": {
+      "type": "select",
+      "label": { "ko": "보안 수준", "en": "Security Level", "ja": "セキュリティレベル" },
+      "default": "loose",
+      "options": ["strict", "loose", "antiscript", "sandbox"],
+      "help": { "ko": "Mermaid 보안 수준 설정", "en": "Mermaid security level setting", "ja": "Mermaidセキュリティレベル設定" }
+    }
   }
 }

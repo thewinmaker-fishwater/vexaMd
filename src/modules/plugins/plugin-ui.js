@@ -1,7 +1,8 @@
 /**
  * Vexa MD - Plugin UI Module
  *
- * Provides UI for managing plugins: listing, enabling/disabling, settings
+ * Provides UI for managing plugins: listing, enabling/disabling, settings,
+ * installation, uninstallation, and error display.
  */
 
 import { pluginManager } from '../../core/plugin-manager.js';
@@ -21,6 +22,13 @@ class PluginUI {
    */
   get lang() {
     return i18n[store.get('language') || 'ko'];
+  }
+
+  /**
+   * Get current language code
+   */
+  get currentLang() {
+    return store.get('language') || 'ko';
   }
 
   /**
@@ -56,11 +64,19 @@ class PluginUI {
         <div class="modal-content plugin-settings-content">
           <div class="modal-header">
             <h2>${this.lang.pluginSettings || 'Plugins'}</h2>
-            <button class="modal-close" id="plugin-modal-close">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-                <path d="M18 6L6 18M6 6l12 12"/>
-              </svg>
-            </button>
+            <div class="plugin-header-actions">
+              <button class="btn-secondary plugin-install-btn" id="plugin-install-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                ${this.lang.installPlugin || 'Install Plugin'}
+              </button>
+              <button class="modal-close" id="plugin-modal-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
           </div>
           <div class="plugin-list-container">
             <div id="plugin-list" class="plugin-list"></div>
@@ -78,6 +94,7 @@ class PluginUI {
     this.modal.querySelector('.modal-backdrop').addEventListener('click', () => this.close());
     $id('plugin-modal-close')?.addEventListener('click', () => this.close());
     $id('plugin-modal-ok')?.addEventListener('click', () => this.close());
+    $id('plugin-install-btn')?.addEventListener('click', () => this.handleInstallPlugin());
   }
 
   /**
@@ -88,6 +105,9 @@ class PluginUI {
     eventBus.on(EVENTS.PLUGIN_ENABLED, () => this.updatePluginList());
     eventBus.on(EVENTS.PLUGIN_DISABLED, () => this.updatePluginList());
     eventBus.on(EVENTS.PLUGINS_LOADED, () => this.updatePluginList());
+    eventBus.on(EVENTS.PLUGIN_INSTALLED, () => this.updatePluginList());
+    eventBus.on(EVENTS.PLUGIN_UNINSTALLED, () => this.updatePluginList());
+    eventBus.on(EVENTS.PLUGIN_ERROR, () => this.updatePluginList());
 
     // Update texts on language change
     store.subscribe('language', () => {
@@ -129,6 +149,54 @@ class PluginUI {
   }
 
   /**
+   * Handle install plugin button click
+   */
+  async handleInstallPlugin() {
+    try {
+      if (!window.__TAURI__) {
+        console.warn('Plugin installation requires Tauri environment');
+        return;
+      }
+
+      const { open } = window.__TAURI__.dialog;
+      const selected = await open({
+        directory: true,
+        title: this.lang.installPlugin || 'Install Plugin',
+      });
+
+      if (selected) {
+        const success = await pluginManager.installFromFolder(selected);
+        if (success) {
+          this.updatePluginList();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to install plugin:', error);
+    }
+  }
+
+  /**
+   * Handle uninstall plugin
+   * @param {string} pluginId
+   */
+  async handleUninstallPlugin(pluginId) {
+    const confirmed = confirm(this.lang.uninstallConfirm || 'Are you sure you want to uninstall this plugin?');
+    if (!confirmed) return;
+
+    await pluginManager.uninstall(pluginId);
+    this.updatePluginList();
+  }
+
+  /**
+   * Handle retry plugin
+   * @param {string} pluginId
+   */
+  async handleRetryPlugin(pluginId) {
+    await pluginManager.retry(pluginId);
+    this.updatePluginList();
+  }
+
+  /**
    * Update the plugin list display
    */
   updatePluginList() {
@@ -167,6 +235,22 @@ class PluginUI {
         this.openPluginSettings(pluginId);
       });
     });
+
+    // Bind uninstall button events
+    listContainer.querySelectorAll('.plugin-uninstall-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pluginId = btn.dataset.pluginId;
+        this.handleUninstallPlugin(pluginId);
+      });
+    });
+
+    // Bind retry button events
+    listContainer.querySelectorAll('.plugin-retry-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pluginId = btn.dataset.pluginId;
+        this.handleRetryPlugin(pluginId);
+      });
+    });
   }
 
   /**
@@ -176,24 +260,39 @@ class PluginUI {
    */
   renderPluginCard(plugin) {
     const hasSettings = plugin.capabilities?.settings;
+    const hasError = !!plugin.error;
+    const cardClass = hasError ? 'error' : (plugin.enabled ? 'enabled' : 'disabled');
 
     return `
-      <div class="plugin-card ${plugin.enabled ? 'enabled' : 'disabled'}" data-plugin-id="${plugin.id}">
+      <div class="plugin-card ${cardClass}" data-plugin-id="${plugin.id}">
         <div class="plugin-card-header">
           <div class="plugin-info">
             <h3 class="plugin-name">${plugin.name}</h3>
             <span class="plugin-version">v${plugin.version}</span>
-            ${plugin.builtIn ? `<span class="plugin-badge built-in">${this.lang.builtIn || 'Built-in'}</span>` : ''}
+            ${plugin.builtIn
+              ? `<span class="plugin-badge built-in">${this.lang.builtIn || 'Built-in'}</span>`
+              : `<span class="plugin-badge user-installed">${this.lang.userInstalled || 'User Installed'}</span>`
+            }
           </div>
           <label class="plugin-toggle-switch">
-            <input type="checkbox" class="plugin-toggle" data-plugin-id="${plugin.id}" ${plugin.enabled ? 'checked' : ''}>
+            <input type="checkbox" class="plugin-toggle" data-plugin-id="${plugin.id}" ${plugin.enabled ? 'checked' : ''} ${hasError ? 'disabled' : ''}>
             <span class="toggle-slider"></span>
           </label>
         </div>
         <p class="plugin-description">${plugin.description || ''}</p>
         ${plugin.author ? `<p class="plugin-author">${this.lang.author || 'Author'}: ${plugin.author}</p>` : ''}
+        ${hasError ? this.renderPluginError(plugin) : ''}
         <div class="plugin-card-footer">
-          ${hasSettings ? `
+          ${hasError ? `
+            <button class="plugin-retry-btn btn-secondary" data-plugin-id="${plugin.id}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+              </svg>
+              ${this.lang.pluginRetry || 'Retry'}
+            </button>
+          ` : ''}
+          ${hasSettings && !hasError ? `
             <button class="plugin-settings-btn btn-secondary" data-plugin-id="${plugin.id}" ${!plugin.enabled ? 'disabled' : ''}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="12" cy="12" r="3"/>
@@ -202,9 +301,56 @@ class PluginUI {
               ${this.lang.settings || 'Settings'}
             </button>
           ` : ''}
+          ${!plugin.builtIn ? `
+            <button class="plugin-uninstall-btn btn-danger" data-plugin-id="${plugin.id}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+              </svg>
+              ${this.lang.uninstallPlugin || 'Uninstall'}
+            </button>
+          ` : ''}
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Render plugin error section
+   * @param {Object} plugin
+   * @returns {string}
+   */
+  renderPluginError(plugin) {
+    return `
+      <div class="plugin-error-section">
+        <div class="plugin-error-message">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>${this.lang.pluginLoadError || 'Plugin load failed'}: ${this.escapeHtml(plugin.error.message)}</span>
+        </div>
+        ${plugin.error.stack ? `
+          <details class="plugin-error-details">
+            <summary>${this.lang.pluginErrorDetails || 'Error Details'}</summary>
+            <pre class="plugin-error-stack">${this.escapeHtml(plugin.error.stack)}</pre>
+          </details>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  /**
+   * Escape HTML special characters
+   * @param {string} str
+   * @returns {string}
+   */
+  escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   }
 
   /**
@@ -217,6 +363,7 @@ class PluginUI {
 
     const settings = plugin.instance.getSettings();
     const defaultSettings = plugin.PluginClass.defaultSettings || {};
+    const settingsSchema = plugin.settingsSchema || null;
 
     // Create settings modal
     const settingsModal = createElement('div', {
@@ -234,7 +381,10 @@ class PluginUI {
             </button>
           </div>
           <div class="plugin-settings-form">
-            ${this.renderSettingsForm(settings, defaultSettings)}
+            ${settingsSchema
+              ? this.renderSchemaSettingsForm(settingsSchema, settings)
+              : this.renderSettingsForm(settings, defaultSettings)
+            }
           </div>
           <div class="modal-footer">
             <button class="btn-secondary plugin-settings-reset">${this.lang.reset || 'Reset'}</button>
@@ -255,8 +405,17 @@ class PluginUI {
     settingsModal.querySelector('.plugin-settings-close').addEventListener('click', closeSettings);
 
     settingsModal.querySelector('.plugin-settings-reset').addEventListener('click', () => {
-      plugin.instance.updateSettings(defaultSettings);
-      pluginManager.savePluginSettings(pluginId, defaultSettings);
+      // Reset to defaults from schema or defaultSettings
+      const resetSettings = {};
+      if (settingsSchema) {
+        for (const [key, schema] of Object.entries(settingsSchema)) {
+          resetSettings[key] = schema.default !== undefined ? schema.default : '';
+        }
+      } else {
+        Object.assign(resetSettings, defaultSettings);
+      }
+      plugin.instance.updateSettings(resetSettings);
+      pluginManager.savePluginSettings(pluginId, resetSettings);
       closeSettings();
     });
 
@@ -269,7 +428,137 @@ class PluginUI {
   }
 
   /**
-   * Render settings form fields
+   * Render schema-based settings form (from plugin.json settings)
+   * @param {Object} schema - Settings schema from plugin.json
+   * @param {Object} currentSettings - Current settings values
+   * @returns {string} HTML string
+   */
+  renderSchemaSettingsForm(schema, currentSettings) {
+    const fields = Object.entries(schema).map(([key, fieldSchema]) => {
+      const value = currentSettings[key] ?? fieldSchema.default ?? '';
+      return this.renderField(key, fieldSchema, value);
+    });
+
+    return fields.length > 0
+      ? fields.join('')
+      : `<p class="no-settings">${this.lang.noSettings || 'No settings available'}</p>`;
+  }
+
+  /**
+   * Render a single settings field based on its schema type
+   * @param {string} key - Setting key
+   * @param {Object} schema - Field schema
+   * @param {*} currentValue - Current value
+   * @returns {string} HTML string
+   */
+  renderField(key, schema, currentValue) {
+    const label = this.resolveI18nLabel(schema.label, key);
+    const help = this.resolveI18nLabel(schema.help, null);
+    const helpHtml = help ? `<p class="settings-field-help">${help}</p>` : '';
+    const type = schema.type || (typeof currentValue);
+
+    switch (type) {
+      case 'boolean':
+        return `
+          <div class="settings-field">
+            <label>
+              <input type="checkbox" name="${key}" ${currentValue ? 'checked' : ''}>
+              <span>${label}</span>
+            </label>
+            ${helpHtml}
+          </div>
+        `;
+
+      case 'number':
+        return `
+          <div class="settings-field">
+            <label>${label}</label>
+            <input type="number" name="${key}" value="${currentValue}"
+              ${schema.min !== undefined ? `min="${schema.min}"` : ''}
+              ${schema.max !== undefined ? `max="${schema.max}"` : ''}
+              ${schema.step !== undefined ? `step="${schema.step}"` : ''}>
+            ${helpHtml}
+          </div>
+        `;
+
+      case 'select':
+        return `
+          <div class="settings-field">
+            <label>${label}</label>
+            <select name="${key}">
+              ${(schema.options || []).map(opt => `
+                <option value="${opt}" ${currentValue === opt ? 'selected' : ''}>${opt}</option>
+              `).join('')}
+            </select>
+            ${helpHtml}
+          </div>
+        `;
+
+      case 'color':
+        return `
+          <div class="settings-field settings-field-color">
+            <label>${label}</label>
+            <div class="settings-color-wrapper">
+              <input type="color" name="${key}" value="${currentValue || '#000000'}">
+              <span class="settings-color-value">${currentValue || '#000000'}</span>
+            </div>
+            ${helpHtml}
+          </div>
+        `;
+
+      case 'textarea':
+        return `
+          <div class="settings-field">
+            <label>${label}</label>
+            <textarea name="${key}" rows="${schema.rows || 4}">${currentValue || ''}</textarea>
+            ${helpHtml}
+          </div>
+        `;
+
+      case 'range':
+        return `
+          <div class="settings-field settings-field-range">
+            <label>${label}</label>
+            <div class="settings-range-wrapper">
+              <input type="range" name="${key}" value="${currentValue}"
+                min="${schema.min ?? 0}" max="${schema.max ?? 100}" step="${schema.step ?? 1}">
+              <span class="settings-range-value">${currentValue}</span>
+            </div>
+            ${helpHtml}
+          </div>
+        `;
+
+      case 'string':
+      default:
+        return `
+          <div class="settings-field">
+            <label>${label}</label>
+            <input type="text" name="${key}" value="${currentValue || ''}">
+            ${helpHtml}
+          </div>
+        `;
+    }
+  }
+
+  /**
+   * Resolve an i18n label object or string
+   * @param {Object|string|undefined} label - Label value (i18n object, string, or undefined)
+   * @param {string|null} fallbackKey - Fallback: format key as label
+   * @returns {string}
+   */
+  resolveI18nLabel(label, fallbackKey) {
+    if (!label) {
+      return fallbackKey ? this.formatSettingLabel(fallbackKey) : '';
+    }
+    if (typeof label === 'string') return label;
+    if (typeof label === 'object') {
+      return label[this.currentLang] || label['en'] || label[Object.keys(label)[0]] || (fallbackKey ? this.formatSettingLabel(fallbackKey) : '');
+    }
+    return fallbackKey ? this.formatSettingLabel(fallbackKey) : '';
+  }
+
+  /**
+   * Render settings form fields (legacy: from defaultSettings object)
    * @param {Object} settings - Current settings
    * @param {Object} defaultSettings - Default settings schema
    * @returns {string} HTML string
@@ -312,22 +601,6 @@ class PluginUI {
         `;
       }
 
-      // String (check for predefined options)
-      if (key === 'theme') {
-        return `
-          <div class="settings-field">
-            <label>${this.formatSettingLabel(key)}</label>
-            <select name="${key}">
-              <option value="auto" ${value === 'auto' ? 'selected' : ''}>Auto</option>
-              <option value="default" ${value === 'default' ? 'selected' : ''}>Default</option>
-              <option value="dark" ${value === 'dark' ? 'selected' : ''}>Dark</option>
-              <option value="forest" ${value === 'forest' ? 'selected' : ''}>Forest</option>
-              <option value="neutral" ${value === 'neutral' ? 'selected' : ''}>Neutral</option>
-            </select>
-          </div>
-        `;
-      }
-
       return `
         <div class="settings-field">
           <label>${this.formatSettingLabel(key)}</label>
@@ -358,10 +631,10 @@ class PluginUI {
    */
   getSettingsFormData(form) {
     const data = {};
-    form.querySelectorAll('input, select').forEach(input => {
+    form.querySelectorAll('input, select, textarea').forEach(input => {
       if (input.type === 'checkbox') {
         data[input.name] = input.checked;
-      } else if (input.type === 'number') {
+      } else if (input.type === 'number' || input.type === 'range') {
         data[input.name] = parseFloat(input.value);
       } else {
         data[input.name] = input.value;
@@ -381,6 +654,12 @@ class PluginUI {
 
     const okBtn = $id('plugin-modal-ok');
     if (okBtn) okBtn.textContent = this.lang.confirm || 'OK';
+
+    const installBtn = $id('plugin-install-btn');
+    if (installBtn) {
+      const textNode = installBtn.childNodes[installBtn.childNodes.length - 1];
+      if (textNode) textNode.textContent = ` ${this.lang.installPlugin || 'Install Plugin'}`;
+    }
   }
 }
 
