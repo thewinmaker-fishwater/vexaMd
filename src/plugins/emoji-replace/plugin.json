@@ -1,0 +1,14 @@
+{
+  "id": "emoji-replace",
+  "name": "Emoji Replace",
+  "version": "1.0.0",
+  "description": "Converts :shortcodes: like :smile: to emoji characters",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": true,
+    "ui": false,
+    "toolbar": false,
+    "settings": false
+  }
+}

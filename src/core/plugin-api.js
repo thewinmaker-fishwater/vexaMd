@@ -301,12 +301,29 @@ export function createPluginAPI(pluginId) {
        * @param {number} [options.duration=3000] - Duration in ms
        */
       showNotification: (message, options = {}) => {
+        const type = options.type || 'info';
+        const duration = options.duration || 3000;
         eventBus.emit(EVENTS.NOTIFICATION_SHOWN, {
-          message,
-          type: options.type || 'info',
-          duration: options.duration || 3000,
-          pluginId,
+          message, type, duration, pluginId,
         });
+        // Render toast notification
+        const toast = document.createElement('div');
+        toast.className = `plugin-notification plugin-notification-${type}`;
+        toast.textContent = message;
+        Object.assign(toast.style, {
+          position: 'fixed', bottom: '20px', right: '20px', zIndex: '10000',
+          padding: '12px 20px', borderRadius: '8px', color: '#fff', fontSize: '14px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)', opacity: '0',
+          transition: 'opacity 0.3s ease', maxWidth: '360px',
+          background: type === 'success' ? '#22c55e' : type === 'error' ? '#ef4444'
+            : type === 'warning' ? '#f59e0b' : '#3b82f6',
+        });
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => { toast.style.opacity = '1'; });
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, duration);
       },
 
       /**

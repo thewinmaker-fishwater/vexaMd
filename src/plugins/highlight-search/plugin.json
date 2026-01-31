@@ -1,0 +1,32 @@
+{
+  "id": "highlight-search",
+  "name": "Highlight Search",
+  "version": "1.0.0",
+  "description": "Permanently highlight specific keywords in the viewer",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": false,
+    "ui": true,
+    "toolbar": true,
+    "settings": true
+  },
+  "settings": {
+    "keywords": {
+      "type": "textarea",
+      "label": { "ko": "하이라이트 키워드", "en": "Highlight Keywords", "ja": "ハイライトキーワード" },
+      "default": "",
+      "help": { "ko": "쉼표로 구분 (예: TODO, FIXME, NOTE)", "en": "Comma-separated (e.g. TODO, FIXME, NOTE)" }
+    },
+    "highlightColor": {
+      "type": "color",
+      "label": { "ko": "하이라이트 색상", "en": "Highlight Color", "ja": "ハイライト色" },
+      "default": "#fde047"
+    },
+    "caseSensitive": {
+      "type": "boolean",
+      "label": { "ko": "대소문자 구분", "en": "Case Sensitive", "ja": "大文字小文字区別" },
+      "default": false
+    }
+  }
+}

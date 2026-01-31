@@ -1,0 +1,45 @@
+{
+  "id": "reading-time",
+  "name": "Reading Time",
+  "version": "1.1.0",
+  "description": "Displays estimated reading time with language-aware speed calculation",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": false,
+    "ui": true,
+    "toolbar": true,
+    "settings": true
+  },
+  "settings": {
+    "showOnToolbar": {
+      "type": "boolean",
+      "label": { "ko": "툴바에 표시", "en": "Show on Toolbar", "ja": "ツールバーに表示" },
+      "default": true
+    },
+    "koCpm": {
+      "type": "number",
+      "label": { "ko": "한국어 CPM", "en": "Korean CPM", "ja": "韓国語 CPM" },
+      "default": 500,
+      "help": { "ko": "한국어 분당 글자 수 (기본 500)", "en": "Korean characters per minute (default 500)" }
+    },
+    "cjkCpm": {
+      "type": "number",
+      "label": { "ko": "중국어/일본어 CPM", "en": "CJK CPM", "ja": "中国語/日本語 CPM" },
+      "default": 400,
+      "help": { "ko": "중국어/일본어 분당 글자 수 (기본 400)", "en": "Chinese/Japanese characters per minute (default 400)" }
+    },
+    "wordWpm": {
+      "type": "number",
+      "label": { "ko": "영어/기타 WPM", "en": "Latin/Cyrillic WPM", "ja": "英語/その他 WPM" },
+      "default": 200,
+      "help": { "ko": "영어, 러시아어 등 분당 단어 수 (기본 200)", "en": "English, Russian, etc. words per minute (default 200)" }
+    },
+    "showSeconds": {
+      "type": "boolean",
+      "label": { "ko": "초 단위 표시", "en": "Show Seconds", "ja": "秒表示" },
+      "default": false,
+      "help": { "ko": "1분 미만일 때 초 단위 표시", "en": "Show seconds when under 1 minute" }
+    }
+  }
+}

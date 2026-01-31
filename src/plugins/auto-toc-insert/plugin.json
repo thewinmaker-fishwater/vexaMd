@@ -1,0 +1,35 @@
+{
+  "id": "auto-toc-insert",
+  "name": "Auto TOC Insert",
+  "version": "1.0.0",
+  "description": "Renders a table of contents at [TOC] marker position",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": true,
+    "ui": true,
+    "toolbar": false,
+    "settings": true
+  },
+  "settings": {
+    "maxDepth": {
+      "type": "select",
+      "label": { "ko": "최대 깊이", "en": "Max Depth", "ja": "最大深度" },
+      "default": "3",
+      "options": ["2", "3", "4", "5", "6"],
+      "help": { "ko": "목차에 표시할 최대 제목 레벨", "en": "Maximum heading level to include in TOC" }
+    },
+    "ordered": {
+      "type": "boolean",
+      "label": { "ko": "번호 목록", "en": "Ordered List", "ja": "番号付きリスト" },
+      "default": false,
+      "help": { "ko": "순서 있는 목록(1. 2. 3.)으로 표시", "en": "Use numbered list instead of bullets" }
+    },
+    "title": {
+      "type": "string",
+      "label": { "ko": "목차 제목", "en": "TOC Title", "ja": "目次タイトル" },
+      "default": "",
+      "help": { "ko": "비워두면 제목 없음", "en": "Leave empty for no title" }
+    }
+  }
+}

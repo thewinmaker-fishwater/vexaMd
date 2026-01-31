@@ -4,6 +4,58 @@
 
 ---
 
+## 세션 2026-02-01
+
+### 작업 내용
+
+1. **내장 플러그인 8종 구현**
+   - `reading-time` v1.1.0: 예상 읽기 시간 표시 (한국어 500CPM, CJK 400CPM, Latin/Cyrillic 200WPM 3그룹 언어 감지)
+   - `auto-toc-insert`: `[TOC]` 마커 위치에 목차 자동 생성, 설정 가능한 최대 깊이
+   - `image-zoom`: 이미지 클릭 시 라이트박스 확대, 배경 투명도 설정
+   - `footnote`: `[^id]` 각주 문법 렌더링, 백링크 지원
+   - `copy-as-html`: 렌더링된 마크다운을 HTML로 클립보드 복사 (툴바 버튼)
+   - `emoji-replace`: `:shortcode:` → 이모지 변환 (~150개 매핑)
+   - `external-link-icon`: 외부 링크에 SVG 아이콘 표시
+   - `highlight-search`: 키워드 영구 하이라이팅 (쉼표 구분, 색상/대소문자 설정)
+
+2. **플러그인 등록**
+   - `plugin-manager.js`에 8개 플러그인 lazy loader + manifest path 등록
+   - 각 플러그인 `plugin.json` 매니페스트 (i18n: ko/en/ja)
+
+### 수정/생성된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/plugins/reading-time/index.js` | 신규 - 읽기 시간 플러그인 (3그룹 언어 감지) |
+| `src/plugins/reading-time/plugin.json` | 신규 - 매니페스트 |
+| `src/plugins/auto-toc-insert/index.js` | 신규 - TOC 삽입 플러그인 |
+| `src/plugins/auto-toc-insert/plugin.json` | 신규 - 매니페스트 |
+| `src/plugins/image-zoom/index.js` | 신규 - 이미지 확대 플러그인 |
+| `src/plugins/image-zoom/plugin.json` | 신규 - 매니페스트 |
+| `src/plugins/footnote/index.js` | 신규 - 각주 플러그인 |
+| `src/plugins/footnote/plugin.json` | 신규 - 매니페스트 |
+| `src/plugins/copy-as-html/index.js` | 신규 - HTML 복사 플러그인 |
+| `src/plugins/copy-as-html/plugin.json` | 신규 - 매니페스트 |
+| `src/plugins/emoji-replace/index.js` | 신규 - 이모지 변환 플러그인 |
+| `src/plugins/emoji-replace/plugin.json` | 신규 - 매니페스트 |
+| `src/plugins/external-link-icon/index.js` | 신규 - 외부 링크 아이콘 플러그인 |
+| `src/plugins/external-link-icon/plugin.json` | 신규 - 매니페스트 |
+| `src/plugins/highlight-search/index.js` | 신규 - 키워드 하이라이팅 플러그인 |
+| `src/plugins/highlight-search/plugin.json` | 신규 - 매니페스트 |
+| `src/core/plugin-manager.js` | 8개 플러그인 등록 (builtInPlugins, builtInManifestPaths) |
+
+### 발생한 문제
+- 없음. `npm run build` 및 `npm run tauri dev` 성공 확인.
+
+### 커밋 정보
+- (아래 참조)
+
+### 다음 세션 참고사항
+- 각 플러그인 개별 수동 테스트 필요 (설정 변경, 활성화/비활성화)
+- reading-time 정확도 검증 (실제 문서로 비교)
+
+---
+
 ## 세션 2026-01-31 (4차)
 
 ### 작업 내용
@@ -603,4 +655,4 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
-*마지막 업데이트: 2026-01-31*
+*마지막 업데이트: 2026-02-01*

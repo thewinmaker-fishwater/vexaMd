@@ -45,6 +45,11 @@ class PluginManager {
     // Register built-in plugins
     this.registerBuiltIn();
 
+    // Load all built-in manifests first
+    for (const [id, path] of this.builtInManifestPaths) {
+      await this.loadBuiltInManifest(id, path);
+    }
+
     // Load enabled plugins from storage
     const enabledPlugins = this.getEnabledPluginIds();
 
@@ -102,12 +107,66 @@ class PluginManager {
       return module.default;
     });
 
-    // Load built-in manifests
-    this.builtInManifests.set('mermaid', null); // Will be loaded from plugin.json
-    this.loadBuiltInManifest('mermaid', '../plugins/mermaid/plugin.json');
+    // Reading Time plugin
+    this.builtInPlugins.set('reading-time', async () => {
+      const module = await import('../plugins/reading-time/index.js');
+      return module.default;
+    });
 
-    this.builtInManifests.set('word-counter', null);
-    this.loadBuiltInManifest('word-counter', '../plugins/word-counter/plugin.json');
+    // Auto TOC Insert plugin
+    this.builtInPlugins.set('auto-toc-insert', async () => {
+      const module = await import('../plugins/auto-toc-insert/index.js');
+      return module.default;
+    });
+
+    // Image Zoom plugin
+    this.builtInPlugins.set('image-zoom', async () => {
+      const module = await import('../plugins/image-zoom/index.js');
+      return module.default;
+    });
+
+    // Footnote plugin
+    this.builtInPlugins.set('footnote', async () => {
+      const module = await import('../plugins/footnote/index.js');
+      return module.default;
+    });
+
+    // Copy as HTML plugin
+    this.builtInPlugins.set('copy-as-html', async () => {
+      const module = await import('../plugins/copy-as-html/index.js');
+      return module.default;
+    });
+
+    // Emoji Replace plugin
+    this.builtInPlugins.set('emoji-replace', async () => {
+      const module = await import('../plugins/emoji-replace/index.js');
+      return module.default;
+    });
+
+    // External Link Icon plugin
+    this.builtInPlugins.set('external-link-icon', async () => {
+      const module = await import('../plugins/external-link-icon/index.js');
+      return module.default;
+    });
+
+    // Highlight Search plugin
+    this.builtInPlugins.set('highlight-search', async () => {
+      const module = await import('../plugins/highlight-search/index.js');
+      return module.default;
+    });
+
+    // Manifest paths for built-in plugins (loaded in init)
+    this.builtInManifestPaths = new Map();
+    this.builtInManifestPaths.set('mermaid', '../plugins/mermaid/plugin.json');
+    this.builtInManifestPaths.set('word-counter', '../plugins/word-counter/plugin.json');
+    this.builtInManifestPaths.set('reading-time', '../plugins/reading-time/plugin.json');
+    this.builtInManifestPaths.set('auto-toc-insert', '../plugins/auto-toc-insert/plugin.json');
+    this.builtInManifestPaths.set('image-zoom', '../plugins/image-zoom/plugin.json');
+    this.builtInManifestPaths.set('footnote', '../plugins/footnote/plugin.json');
+    this.builtInManifestPaths.set('copy-as-html', '../plugins/copy-as-html/plugin.json');
+    this.builtInManifestPaths.set('emoji-replace', '../plugins/emoji-replace/plugin.json');
+    this.builtInManifestPaths.set('external-link-icon', '../plugins/external-link-icon/plugin.json');
+    this.builtInManifestPaths.set('highlight-search', '../plugins/highlight-search/plugin.json');
   }
 
   /**
@@ -156,6 +215,12 @@ class PluginManager {
       return null;
     }
 
+    // Validate main field against path traversal
+    if (manifest.main.includes('..') || manifest.main.startsWith('/') || /^[a-zA-Z]:/.test(manifest.main)) {
+      console.warn(`Invalid manifest: main "${manifest.main}" contains invalid path`);
+      return null;
+    }
+
     return manifest;
   }
 
@@ -172,6 +237,7 @@ class PluginManager {
       description: manifest.description || entry.metadata.description,
       author: manifest.author || entry.metadata.author,
       homepage: manifest.homepage || entry.metadata.homepage,
+      help: manifest.help || entry.metadata.help,
       capabilities: manifest.capabilities || entry.metadata.capabilities,
     };
     if (manifest.settings) {
@@ -205,6 +271,7 @@ class PluginManager {
         description: PluginClass.description,
         author: PluginClass.author,
         homepage: PluginClass.homepage,
+        help: PluginClass.help || null,
         capabilities: PluginClass.capabilities,
         builtIn: this.builtInPlugins.has(id),
       },
@@ -359,8 +426,8 @@ class PluginManager {
     try {
       const pluginDir = await this.getPluginDirectory();
       if (pluginDir && window.__TAURI__) {
-        const { removeDir } = window.__TAURI__.fs;
-        await removeDir(`${pluginDir}/${pluginId}`, { recursive: true });
+        const { remove } = window.__TAURI__.fs;
+        await remove(`${pluginDir}/${pluginId}`, { recursive: true });
       }
     } catch (error) {
       console.warn(`Failed to remove plugin directory for "${pluginId}":`, error);
@@ -401,12 +468,12 @@ class PluginManager {
       const pluginDir = await this.getPluginDirectory();
       if (!pluginDir || !window.__TAURI__) return;
 
-      const { readDir, readTextFile, exists, createDir } = window.__TAURI__.fs;
+      const { readDir, readTextFile, exists, mkdir } = window.__TAURI__.fs;
 
       // Ensure plugin directory exists
       const dirExists = await exists(pluginDir);
       if (!dirExists) {
-        await createDir(pluginDir, { recursive: true });
+        await mkdir(pluginDir, { recursive: true });
         eventBus.emit(EVENTS.PLUGIN_SCAN_COMPLETE, { found: 0 });
         return;
       }
@@ -452,6 +519,7 @@ class PluginManager {
               description: validated.description || '',
               author: validated.author || '',
               homepage: validated.homepage || '',
+              help: validated.help || null,
               capabilities: validated.capabilities || {},
               builtIn: false,
             },
@@ -479,7 +547,10 @@ class PluginManager {
           } catch (loadError) {
             console.warn(`Failed to load plugin module for "${validated.id}":`, loadError);
             const pluginEntry = this.plugins.get(validated.id);
-            pluginEntry.error = { message: loadError.message, stack: loadError.stack, timestamp: Date.now() };
+            const hint = loadError.message.includes('import')
+              ? '\nHint: External plugins cannot use ES import. Use window.VexaMD.Plugin as base class instead.'
+              : '';
+            pluginEntry.error = { message: loadError.message + hint, stack: loadError.stack, timestamp: Date.now() };
           }
 
           found++;
@@ -506,7 +577,7 @@ class PluginManager {
         return false;
       }
 
-      const { readTextFile, readDir, copyFile, createDir, exists } = window.__TAURI__.fs;
+      const { readTextFile, readDir, copyFile, mkdir, exists } = window.__TAURI__.fs;
 
       // Read and validate manifest
       const manifestPath = `${sourcePath}/plugin.json`;
@@ -532,7 +603,7 @@ class PluginManager {
       if (!pluginDir) throw new Error('Plugin directory not available');
 
       const destPath = `${pluginDir}/${validated.id}`;
-      await createDir(destPath, { recursive: true });
+      await mkdir(destPath, { recursive: true });
 
       // Copy all files from source to destination
       const sourceEntries = await readDir(sourcePath);
@@ -588,6 +659,7 @@ class PluginManager {
       ...entry.metadata,
       enabled: entry.enabled,
       error: entry.error,
+      help: entry.metadata.help || null,
       settingsSchema: entry.settingsSchema,
     }));
   }

@@ -1,0 +1,30 @@
+{
+  "id": "image-zoom",
+  "name": "Image Zoom",
+  "version": "1.0.0",
+  "description": "Click images to view in a lightbox overlay",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": false,
+    "ui": true,
+    "toolbar": false,
+    "settings": true
+  },
+  "settings": {
+    "zoomOnClick": {
+      "type": "boolean",
+      "label": { "ko": "클릭으로 확대", "en": "Zoom on Click", "ja": "クリックで拡大" },
+      "default": true
+    },
+    "backdropOpacity": {
+      "type": "range",
+      "label": { "ko": "배경 투명도", "en": "Backdrop Opacity", "ja": "背景不透明度" },
+      "default": 85,
+      "min": 50,
+      "max": 100,
+      "step": 5,
+      "help": { "ko": "라이트박스 배경 투명도 (50~100%)", "en": "Lightbox backdrop opacity (50~100%)" }
+    }
+  }
+}

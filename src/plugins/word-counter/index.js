@@ -52,6 +52,10 @@ export default class WordCounterPlugin extends Plugin {
   createCounter() {
     if (!this.settings.showOnToolbar) return;
 
+    // Prevent duplicate
+    const existing = document.getElementById('word-counter-badge');
+    if (existing) existing.remove();
+
     // Inject CSS once
     this.injectStyles();
 

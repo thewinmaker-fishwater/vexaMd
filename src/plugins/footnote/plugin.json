@@ -1,0 +1,22 @@
+{
+  "id": "footnote",
+  "name": "Footnote",
+  "version": "1.0.0",
+  "description": "Renders [^1] footnote syntax with inline references and bottom notes",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": true,
+    "ui": true,
+    "toolbar": false,
+    "settings": true
+  },
+  "settings": {
+    "backToRef": {
+      "type": "boolean",
+      "label": { "ko": "참조로 돌아가기", "en": "Back to Reference", "ja": "参照に戻る" },
+      "default": true,
+      "help": { "ko": "각주에서 원문 참조 위치로 돌아가는 링크 표시", "en": "Show back-link from footnote to reference" }
+    }
+  }
+}

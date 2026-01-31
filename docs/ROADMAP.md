@@ -43,6 +43,7 @@
 | main.js 모듈 분리 리팩토링 | 2026-01-30 | 1.15.0 | 13개 모듈로 분리, main.js 3780→626줄 |
 | 플러그인 시스템 (Phase 1) | 2026-01-25 | 1.15.0 | Plugin 클래스, PluginManager, PluginAPI, Mermaid 플러그인, 설정 UI |
 | main.js 추가 축소 리팩토링 | 2026-01-31 | 1.16.0 | ui-texts, editor-manager, welcome, animations 추출 (626→341줄) |
+| 내장 플러그인 8종 | 2026-02-01 | 1.17.0 | reading-time, auto-toc-insert, image-zoom, footnote, copy-as-html, emoji-replace, external-link-icon, highlight-search |
 
 ---
 
@@ -58,6 +59,19 @@
 | 4 | 외부 플러그인 설치 | URL/파일에서 플러그인 로드, 매니페스트 검증 | ⭐⭐⭐ | Phase 3 |
 | 5 | 보안/샌드박싱 강화 | 이벤트 화이트리스트, DOM 접근 제한, 기능 검증 | ⭐⭐⭐ | Phase 3 |
 | 6 | 플러그인 레지스트리/마켓 | 플러그인 검색/설치 UI, 버전 관리 | ⭐⭐⭐ | Phase 3 |
+
+### 내장 플러그인 개발
+
+| # | 플러그인 | 설명 | 난이도 | 상태 |
+|:-:|----------|------|:------:|:----:|
+| 1 | reading-time | 예상 읽기 시간 표시 (한/CJK/Latin 3그룹 차등) | ⭐ | ✅ 완료 |
+| 2 | auto-toc-insert | `[TOC]` 마커 위치에 목차 자동 생성/렌더링 | ⭐⭐ | ✅ 완료 |
+| 3 | image-zoom | 이미지 클릭 시 라이트박스 확대 보기 | ⭐⭐ | ✅ 완료 |
+| 4 | footnote | 각주 `[^1]` 문법 렌더링 지원 | ⭐⭐ | ✅ 완료 |
+| 5 | copy-as-html | 렌더링된 마크다운을 HTML로 클립보드 복사 | ⭐ | ✅ 완료 |
+| 6 | emoji-replace | `:smile:` 숏코드를 이모지로 변환 | ⭐ | ✅ 완료 |
+| 7 | external-link-icon | 외부 링크에 아이콘 표시 + 새 탭 열기 | ⭐ | ✅ 완료 |
+| 8 | highlight-search | 뷰어에서 특정 키워드 영구 하이라이팅 (검색과 별도) | ⭐⭐ | ✅ 완료 |
 
 ### 기타
 
@@ -96,6 +110,7 @@
 | 1.14.0 | 2026-01-30 | 외부 링크, 앵커 링크, 커서/손끌기, 파일 삭제 감지 |
 | 1.15.0 | 2026-01-30 | main.js 모듈 분리 리팩토링 (13개 모듈), 플러그인 시스템 |
 | 1.16.0 | 2026-01-31 | main.js 추가 축소 (626→341줄, 4개 모듈 추출) |
+| 1.17.0 | 2026-02-01 | 내장 플러그인 8종 (reading-time, auto-toc-insert, image-zoom, footnote, copy-as-html, emoji-replace, external-link-icon, highlight-search) |
 
 ---
 
@@ -121,4 +136,4 @@
 | 2026-01-23 | 테마 프리셋 기능 추가 |
 | 2026-01-22 | TOC 사이드바 기능 추가 |
 
-*마지막 업데이트: 2026-01-31*
+*마지막 업데이트: 2026-02-01*

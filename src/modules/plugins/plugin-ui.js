@@ -10,6 +10,7 @@ import { eventBus, EVENTS } from '../../core/events.js';
 import { store } from '../../core/store.js';
 import { i18n } from '../../i18n.js';
 import { $id, createElement, show, hide } from '../../core/dom.js';
+import { marked } from 'marked';
 
 class PluginUI {
   constructor() {
@@ -65,6 +66,13 @@ class PluginUI {
           <div class="modal-header">
             <h2>${this.lang.pluginSettings || 'Plugins'}</h2>
             <div class="plugin-header-actions">
+              <button class="btn-secondary plugin-dev-guide-btn" id="plugin-dev-guide-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+                ${this.lang.pluginDevGuide || 'Dev Guide'}
+              </button>
               <button class="btn-secondary plugin-install-btn" id="plugin-install-btn">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                   <path d="M12 5v14M5 12h14"/>
@@ -94,6 +102,7 @@ class PluginUI {
     this.modal.querySelector('.modal-backdrop').addEventListener('click', () => this.close());
     $id('plugin-modal-close')?.addEventListener('click', () => this.close());
     $id('plugin-modal-ok')?.addEventListener('click', () => this.close());
+    $id('plugin-dev-guide-btn')?.addEventListener('click', () => this.openDevGuide());
     $id('plugin-install-btn')?.addEventListener('click', () => this.handleInstallPlugin());
   }
 
@@ -197,6 +206,134 @@ class PluginUI {
   }
 
   /**
+   * Open plugin help: show help text in modal, or open homepage in browser
+   * @param {string} pluginId
+   */
+  openPluginHelp(pluginId) {
+    const plugins = pluginManager.getPluginList();
+    const plugin = plugins.find(p => p.id === pluginId);
+    if (!plugin) return;
+
+    // If help field exists, show in modal
+    if (plugin.help) {
+      const helpText = this.resolveI18nLabel(plugin.help, null);
+      if (helpText) {
+        this.showHelpModal(plugin.name, helpText);
+        return;
+      }
+    }
+
+    // Otherwise open homepage URL
+    if (plugin.homepage) {
+      if (window.__TAURI__?.shell?.open) {
+        window.__TAURI__.shell.open(plugin.homepage);
+      } else {
+        window.open(plugin.homepage, '_blank');
+      }
+    }
+  }
+
+  /**
+   * Show a help text modal
+   * @param {string} title
+   * @param {string} content
+   */
+  showHelpModal(title, content) {
+    const helpModal = createElement('div', {
+      className: 'modal plugin-help-modal',
+      html: `
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>${this.escapeHtml(title)} - ${this.lang.help || 'Help'}</h2>
+            <button class="modal-close plugin-help-close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                <path d="M18 6L6 18M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="plugin-help-content" style="padding: 16px; white-space: pre-wrap;">${this.escapeHtml(content)}</div>
+          <div class="modal-footer">
+            <button class="btn-primary plugin-help-ok">${this.lang.confirm || 'OK'}</button>
+          </div>
+        </div>
+      `,
+    });
+
+    document.body.appendChild(helpModal);
+
+    const closeHelp = () => helpModal.remove();
+    helpModal.querySelector('.modal-backdrop').addEventListener('click', closeHelp);
+    helpModal.querySelector('.plugin-help-close').addEventListener('click', closeHelp);
+    helpModal.querySelector('.plugin-help-ok').addEventListener('click', closeHelp);
+  }
+
+  /**
+   * Open the plugin development guide modal
+   */
+  async openDevGuide() {
+    const GITHUB_URL = 'https://github.com/pinkpong/workspace-mdView/blob/main/docs/plugin-development.md';
+
+    try {
+      const res = await fetch('/plugin-development.md');
+      if (!res.ok) throw new Error('Failed to load guide');
+      const md = await res.text();
+      const html = marked.parse(md);
+
+      const guideModal = createElement('div', {
+        className: 'modal plugin-guide-modal',
+        html: `
+          <div class="modal-backdrop"></div>
+          <div class="modal-content plugin-guide-content">
+            <div class="modal-header">
+              <h2>${this.lang.pluginDevGuide || 'Dev Guide'}</h2>
+              <button class="modal-close plugin-guide-close">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            <div class="plugin-guide-body markdown-body">${html}</div>
+            <div class="modal-footer">
+              <button class="btn-secondary plugin-guide-github">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                ${this.lang.openOnGithub || 'View on GitHub'}
+              </button>
+              <button class="btn-primary plugin-guide-ok">${this.lang.confirm || 'OK'}</button>
+            </div>
+          </div>
+        `,
+      });
+
+      document.body.appendChild(guideModal);
+
+      const closeGuide = () => guideModal.remove();
+      guideModal.querySelector('.modal-backdrop').addEventListener('click', closeGuide);
+      guideModal.querySelector('.plugin-guide-close').addEventListener('click', closeGuide);
+      guideModal.querySelector('.plugin-guide-ok').addEventListener('click', closeGuide);
+      guideModal.querySelector('.plugin-guide-github').addEventListener('click', () => {
+        if (window.__TAURI__?.shell?.open) {
+          window.__TAURI__.shell.open(GITHUB_URL);
+        } else {
+          window.open(GITHUB_URL, '_blank');
+        }
+      });
+    } catch (err) {
+      console.error('Failed to open dev guide:', err);
+      // Fallback: open GitHub directly
+      if (window.__TAURI__?.shell?.open) {
+        window.__TAURI__.shell.open(GITHUB_URL);
+      } else {
+        window.open(GITHUB_URL, '_blank');
+      }
+    }
+  }
+
+  /**
    * Update the plugin list display
    */
   updatePluginList() {
@@ -244,6 +381,14 @@ class PluginUI {
       });
     });
 
+    // Bind help button events
+    listContainer.querySelectorAll('.plugin-help-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pluginId = btn.dataset.pluginId;
+        this.openPluginHelp(pluginId);
+      });
+    });
+
     // Bind retry button events
     listContainer.querySelectorAll('.plugin-retry-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -267,8 +412,8 @@ class PluginUI {
       <div class="plugin-card ${cardClass}" data-plugin-id="${plugin.id}">
         <div class="plugin-card-header">
           <div class="plugin-info">
-            <h3 class="plugin-name">${plugin.name}</h3>
-            <span class="plugin-version">v${plugin.version}</span>
+            <h3 class="plugin-name">${this.escapeHtml(plugin.name)}</h3>
+            <span class="plugin-version">v${this.escapeHtml(plugin.version)}</span>
             ${plugin.builtIn
               ? `<span class="plugin-badge built-in">${this.lang.builtIn || 'Built-in'}</span>`
               : `<span class="plugin-badge user-installed">${this.lang.userInstalled || 'User Installed'}</span>`
@@ -279,8 +424,8 @@ class PluginUI {
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <p class="plugin-description">${plugin.description || ''}</p>
-        ${plugin.author ? `<p class="plugin-author">${this.lang.author || 'Author'}: ${plugin.author}</p>` : ''}
+        <p class="plugin-description">${this.escapeHtml(plugin.description || '')}</p>
+        ${plugin.author ? `<p class="plugin-author">${this.lang.author || 'Author'}: ${this.escapeHtml(plugin.author)}</p>` : ''}
         ${hasError ? this.renderPluginError(plugin) : ''}
         <div class="plugin-card-footer">
           ${hasError ? `
@@ -290,6 +435,16 @@ class PluginUI {
                 <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
               </svg>
               ${this.lang.pluginRetry || 'Retry'}
+            </button>
+          ` : ''}
+          ${plugin.help || plugin.homepage ? `
+            <button class="plugin-help-btn btn-secondary" data-plugin-id="${plugin.id}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              ${this.lang.help || 'Help'}
             </button>
           ` : ''}
           ${hasSettings && !hasError ? `
