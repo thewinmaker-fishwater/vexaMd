@@ -13,6 +13,7 @@ let activeTabId = null;
 
 let els = {};
 let ctx = {};
+let homeScrollTop = 0;
 
 export function init(context) {
   els = {
@@ -22,6 +23,8 @@ export function init(context) {
   };
   ctx = context;
   activeTabId = HOME_TAB_ID;
+
+  initScrollButtons();
 }
 
 export function getTabs() {
@@ -52,6 +55,7 @@ export function createTab(name, filePath, content, options = {}) {
     editMode: 'view',
     tocVisible: false,
     zoom: 100,
+    scrollTop: 0,
     readOnly: options.readOnly || false
   };
   tabs.push(tab);
@@ -71,12 +75,15 @@ export function switchToTab(tabId) {
   // Hide search bar when switching tabs
   ctx.hideSearchBar?.();
 
-  // 현재 탭의 TOC 상태 저장
+  // 현재 탭의 상태 저장 (TOC, 스크롤 위치)
   if (activeTabId !== HOME_TAB_ID) {
     const currentTab = tabs.find(t => t.id === activeTabId);
     if (currentTab) {
       currentTab.tocVisible = getTocVisible();
+      currentTab.scrollTop = els.content.scrollTop;
     }
+  } else {
+    homeScrollTop = els.content.scrollTop;
   }
 
   if (tabId === HOME_TAB_ID) {
@@ -90,6 +97,7 @@ export function switchToTab(tabId) {
     ctx.applyTabZoom?.(HOME_TAB_ID);
     ctx.updateExportButtons?.();
     ctx.saveSession?.();
+    els.content.scrollTop = homeScrollTop;
     return;
   }
 
@@ -102,6 +110,12 @@ export function switchToTab(tabId) {
     els.content.classList.add('view-double');
   }
   renderTabs();
+
+  // Scroll active tab into view
+  const activeTabEl = els.tabsContainer.querySelector('.tab.active');
+  if (activeTabEl) {
+    activeTabEl.scrollIntoView({ inline: 'nearest', behavior: 'smooth' });
+  }
 
   setTocVisible(tab.tocVisible || false);
   ctx.loadEditorContent?.(tab.content);
@@ -117,6 +131,9 @@ export function switchToTab(tabId) {
   ctx.applyTabZoom?.(tabId);
   ctx.updateExportButtons?.();
   ctx.saveSession?.();
+
+  // 콘텐츠 스크롤 위치 복원
+  els.content.scrollTop = tab.scrollTop || 0;
 }
 
 export function closeTab(tabId, event) {
@@ -190,11 +207,64 @@ export function renderTabs() {
     tabEl.querySelector('.tab-close').addEventListener('click', (e) => closeTab(tab.id, e));
     els.tabsContainer.appendChild(tabEl);
   });
+
+  updateScrollButtons();
 }
 
 function updateTabBarVisibility() {
   els.tabBar.classList.remove('hidden');
   els.content.classList.remove('no-tabs');
+}
+
+function initScrollButtons() {
+  // Create left button
+  const leftBtn = document.createElement('button');
+  leftBtn.className = 'tab-scroll-btn hidden';
+  leftBtn.innerHTML = '‹';
+  leftBtn.title = 'Scroll left';
+  leftBtn.addEventListener('click', () => {
+    els.tabsContainer.scrollBy({ left: -200, behavior: 'smooth' });
+  });
+
+  // Create right button
+  const rightBtn = document.createElement('button');
+  rightBtn.className = 'tab-scroll-btn hidden';
+  rightBtn.innerHTML = '›';
+  rightBtn.title = 'Scroll right';
+  rightBtn.addEventListener('click', () => {
+    els.tabsContainer.scrollBy({ left: 200, behavior: 'smooth' });
+  });
+
+  // Insert: [leftBtn] [tabsContainer] [rightBtn] inside tabBar
+  els.tabBar.insertBefore(leftBtn, els.tabsContainer);
+  els.tabBar.appendChild(rightBtn);
+
+  els.scrollLeftBtn = leftBtn;
+  els.scrollRightBtn = rightBtn;
+
+  // Wheel event: convert vertical scroll to horizontal
+  els.tabsContainer.addEventListener('wheel', (e) => {
+    if (e.deltaY !== 0) {
+      e.preventDefault();
+      els.tabsContainer.scrollLeft += e.deltaY;
+    }
+  }, { passive: false });
+
+  // Scroll event: update button visibility
+  els.tabsContainer.addEventListener('scroll', updateScrollButtons);
+
+  // Resize observer
+  const ro = new ResizeObserver(() => updateScrollButtons());
+  ro.observe(els.tabsContainer);
+}
+
+function updateScrollButtons() {
+  if (!els.scrollLeftBtn || !els.scrollRightBtn) return;
+  const { scrollLeft, scrollWidth, clientWidth } = els.tabsContainer;
+  const needsScroll = scrollWidth > clientWidth + 1;
+
+  els.scrollLeftBtn.classList.toggle('hidden', !needsScroll || scrollLeft <= 0);
+  els.scrollRightBtn.classList.toggle('hidden', !needsScroll || scrollLeft + clientWidth >= scrollWidth - 1);
 }
 
 export function pushTab(tab) {

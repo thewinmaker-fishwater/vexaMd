@@ -4,6 +4,48 @@
 
 ---
 
+## 세션 2026-02-02
+
+### 작업 내용
+
+1. **탭 바 횡스크롤 및 방향 버튼 구현**
+   - `#tabs-container`에 `overflow-x: auto` + 스크롤바 숨김
+   - 좌우 방향 버튼(‹/›): 스크롤 가능 시 자동 표시, 클릭으로 200px 이동
+   - 마우스 휠 횡스크롤: deltaY를 scrollLeft로 변환
+   - ResizeObserver로 윈도우 크기 변경 시 버튼 상태 업데이트
+   - 탭 전환 시 활성 탭 scrollIntoView 자동 스크롤
+
+2. **탭별 콘텐츠 스크롤 위치 저장/복원**
+   - 탭 전환 시 현재 탭의 `scrollTop` 저장
+   - 새 탭 활성화 시 저장된 `scrollTop` 복원
+   - 홈 탭도 별도 변수로 스크롤 위치 관리
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/modules/tabs/tabs.css` | `#tabs-container` overflow/스크롤바 숨김, `.tab` flex-shrink:0, `.tab-scroll-btn` 스타일 |
+| `src/modules/tabs/tab-manager.js` | `initScrollButtons()`, `updateScrollButtons()`, 휠/스크롤 이벤트, 탭별 scrollTop 저장/복원 |
+
+### 발생한 문제
+
+| 문제 | 원인 | 해결 |
+|------|------|------|
+| 탭 전환 시 다른 탭도 같은 위치로 스크롤됨 | 모든 탭이 `#content` 하나를 공유하여 scrollTop 미저장 | 탭 객체에 `scrollTop` 속성 추가, 전환 시 저장/복원 |
+
+### 검증
+- `npm run tauri dev` ✅ 정상 동작 확인
+- 탭 10개 이상 열어 횡스크롤 확인
+- 좌우 버튼, 마우스 휠, 탭별 스크롤 위치 모두 정상
+
+### 커밋 정보
+- (아래 참조)
+
+### 다음 세션 참고사항
+- 없음
+
+---
+
 ## 세션 2026-02-01
 
 ### 작업 내용
@@ -655,4 +697,4 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
-*마지막 업데이트: 2026-02-01*
+*마지막 업데이트: 2026-02-02*
