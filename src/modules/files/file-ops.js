@@ -9,6 +9,9 @@ import { showNotification, showError } from '../notification/notification.js';
 const fileWatchers = new Map();
 const fileChangeDebounce = new Map();
 
+// 저장 중인 파일 추적 (워처 알림 억제용)
+const savingFiles = new Set();
+
 // Recent files state
 const MAX_RECENT_FILES = 10;
 let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
@@ -110,6 +113,13 @@ function handleFileChange(filePath, event) {
   }
   fileChangeDebounce.set(filePath, setTimeout(async () => {
     fileChangeDebounce.delete(filePath);
+
+    // 저장 중인 파일이면 알림 억제
+    if (savingFiles.has(filePath)) {
+      savingFiles.delete(filePath);
+      return;
+    }
+
     const eventType = event?.type;
     const isModify = eventType === 'modify' || eventType === 'any' ||
                      eventType?.modify || eventType?.Modify ||
@@ -393,4 +403,19 @@ function showRecentDropdown() {
 
 export function hideRecentDropdown() {
   els.recentDropdown.classList.add('hidden');
+}
+
+// 저장 시작/종료 마커 (워처 알림 억제용)
+export function markFileSaving(filePath) {
+  savingFiles.add(filePath);
+  // 1초 후 자동 해제 (안전장치)
+  setTimeout(() => savingFiles.delete(filePath), 1000);
+}
+
+export function unmarkFileSaving(filePath) {
+  savingFiles.delete(filePath);
+}
+
+export function isFileSaving(filePath) {
+  return savingFiles.has(filePath);
 }

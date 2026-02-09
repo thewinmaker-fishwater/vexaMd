@@ -188,6 +188,7 @@ async function init() {
     getCurrentViewMode: zoom.getCurrentViewMode,
     loadEditorContent: editorManager.loadEditorContent,
     updateEditModeButtonsDisabled: editorManager.updateEditModeButtonsDisabled,
+    getCurrentEditorMode: editorManager.getCurrentEditorMode,
     hideSearchBar: search.hideSearchBar,
     startWatching: fileOps.startWatching,
     stopWatching: fileOps.stopWatching,
@@ -357,32 +358,50 @@ async function init() {
     btnPlugins.addEventListener('click', () => pluginUI.open());
   }
 
-  // Tauri init (background)
+  // Tauri init - 세션 복원 후 윈도우 표시
   fileOps.initTauri().then(async () => {
     fileOps.setupTauriEvents();
     const tauriApi = fileOps.getTauriApi();
+
+    // 항상 세션 복원 먼저
+    await restoreSession({
+      tauriApi,
+      generateTabId: () => 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+      pushTab: tabManager.pushTab,
+      getTabs: tabManager.getTabs,
+      renderTabs: tabManager.renderTabs,
+      updateTabBarVisibility: () => {},
+      switchToTab: tabManager.switchToTab,
+      startWatching: fileOps.startWatching,
+      addToRecentFiles: fileOps.addToRecentFiles,
+      HOME_TAB_ID: tabManager.HOME_TAB_ID,
+    });
+
+    // CLI 인자로 전달된 파일도 열기 (더블클릭 등)
     const args = tauriApi ? await tauriApi.invoke('get_cli_args').catch(() => []) : [];
     if (args && args.length > 0) {
-      await fileOps.loadFile(args[0]);
-    } else {
-      await restoreSession({
-        tauriApi,
-        generateTabId: () => 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-        pushTab: tabManager.pushTab,
-        getTabs: tabManager.getTabs,
-        renderTabs: tabManager.renderTabs,
-        updateTabBarVisibility: () => {},
-        switchToTab: tabManager.switchToTab,
-        startWatching: fileOps.startWatching,
-        addToRecentFiles: fileOps.addToRecentFiles,
-        HOME_TAB_ID: tabManager.HOME_TAB_ID,
-      });
+      for (const filePath of args) {
+        await fileOps.loadFile(filePath);
+      }
     }
-  });
 
-  // Render initial
-  tabManager.renderTabs();
-  fileOps.renderHomeRecentFiles();
+    // 세션/CLI 모두 없으면 홈탭 표시
+    if (tabManager.getTabs().length === 0) {
+      tabManager.switchToTab(tabManager.HOME_TAB_ID);
+    }
+    fileOps.renderHomeRecentFiles();
+
+    // 모든 준비 완료 후 윈도우 표시
+    if (tauriApi) {
+      await tauriApi.invoke('show_window').catch(() => {});
+    }
+    document.body.style.opacity = '1';
+  }).catch(() => {
+    // Tauri 없는 환경 (웹) - 홈탭 표시
+    tabManager.switchToTab(tabManager.HOME_TAB_ID);
+    fileOps.renderHomeRecentFiles();
+    document.body.style.opacity = '1';
+  });
 }
 
 // Start

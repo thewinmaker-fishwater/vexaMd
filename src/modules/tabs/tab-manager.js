@@ -75,12 +75,13 @@ export function switchToTab(tabId) {
   // Hide search bar when switching tabs
   ctx.hideSearchBar?.();
 
-  // 현재 탭의 상태 저장 (TOC, 스크롤 위치)
+  // 현재 탭의 상태 저장 (TOC, 스크롤 위치, 에디트 모드)
   if (activeTabId !== HOME_TAB_ID) {
     const currentTab = tabs.find(t => t.id === activeTabId);
     if (currentTab) {
       currentTab.tocVisible = getTocVisible();
       currentTab.scrollTop = els.content.scrollTop;
+      currentTab.editMode = ctx.getCurrentEditorMode?.() || currentTab.editMode || 'view';
     }
   } else {
     homeScrollTop = els.content.scrollTop;

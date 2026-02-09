@@ -196,9 +196,10 @@ export default class MermaidPlugin extends Plugin {
           }
 
           // Set max dimensions to original size (never expand beyond original)
-          // Set width/height to 100% so it can shrink if container is smaller
+          // Set width to 100% so it can shrink if container is smaller
+          // Remove height attribute to let it scale proportionally via viewBox
           svgEl.setAttribute('width', '100%');
-          svgEl.setAttribute('height', 'auto');
+          svgEl.removeAttribute('height');
           svgEl.style.maxWidth = `${originalWidth}px`;
           svgEl.style.maxHeight = `${originalHeight}px`;
           svgEl.style.display = 'block';

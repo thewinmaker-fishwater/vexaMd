@@ -5,6 +5,7 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use tauri::{Emitter, Manager};
+use tauri_plugin_window_state::StateFlags;
 
 use aes_gcm::{
     aead::{Aead, KeyInit},
@@ -187,6 +188,12 @@ fn generate_random_key() -> String {
     hex::encode(key)
 }
 
+/// 윈도우 표시 (프론트엔드 준비 완료 후 호출)
+#[tauri::command]
+fn show_window(window: tauri::Window) {
+    let _ = window.show();
+}
+
 /// 마크다운 파일 경로 필터링
 fn filter_md_files(args: &[String]) -> Vec<String> {
     args.iter()
@@ -196,66 +203,6 @@ fn filter_md_files(args: &[String]) -> Vec<String> {
         })
         .cloned()
         .collect()
-}
-
-/// 윈도우 상태 파일 경로
-fn window_state_path() -> Option<PathBuf> {
-    dirs::config_dir().map(|p| p.join("com.vexa-md").join("window-state.json"))
-}
-
-/// 윈도우 상태 저장 (Window용 - on_window_event에서 사용)
-fn save_window_state(window: &tauri::Window) {
-    if let Some(path) = window_state_path() {
-        let is_maximized = window.is_maximized().unwrap_or(false);
-        let state = if is_maximized {
-            serde_json::json!({ "maximized": true })
-        } else {
-            let position = window.outer_position().ok();
-            let size = window.outer_size().ok();
-            serde_json::json!({
-                "maximized": false,
-                "x": position.as_ref().map(|p| p.x),
-                "y": position.as_ref().map(|p| p.y),
-                "width": size.as_ref().map(|s| s.width),
-                "height": size.as_ref().map(|s| s.height)
-            })
-        };
-        if let Some(parent) = path.parent() {
-            let _ = fs::create_dir_all(parent);
-        }
-        let _ = fs::write(&path, state.to_string());
-    }
-}
-
-/// 윈도우 상태 복원 (WebviewWindow용 - setup에서 사용)
-fn restore_window_state(window: &tauri::WebviewWindow) {
-    if let Some(path) = window_state_path() {
-        if let Ok(data) = fs::read_to_string(&path) {
-            if let Ok(state) = serde_json::from_str::<serde_json::Value>(&data) {
-                let maximized = state.get("maximized").and_then(|v| v.as_bool()).unwrap_or(false);
-                if maximized {
-                    let _ = window.maximize();
-                } else {
-                    if let (Some(x), Some(y)) = (
-                        state.get("x").and_then(|v| v.as_i64()),
-                        state.get("y").and_then(|v| v.as_i64()),
-                    ) {
-                        let _ = window.set_position(tauri::Position::Physical(
-                            tauri::PhysicalPosition::new(x as i32, y as i32),
-                        ));
-                    }
-                    if let (Some(w), Some(h)) = (
-                        state.get("width").and_then(|v| v.as_u64()),
-                        state.get("height").and_then(|v| v.as_u64()),
-                    ) {
-                        let _ = window.set_size(tauri::Size::Physical(
-                            tauri::PhysicalSize::new(w as u32, h as u32),
-                        ));
-                    }
-                }
-            }
-        }
-    }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -288,24 +235,10 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
-        .setup(move |app| {
-            // 윈도우 상태 복원 (깜빡임 최소화: 숨기기 → 복원 → 표시)
-            if let Some((_, window)) = app.webview_windows().iter().next() {
-                let _ = window.hide();
-                restore_window_state(window);
-                let _ = window.show();
-            }
-
-            // CLI 인자 처리는 JS 측에서 get_cli_args로 직접 처리
-
-            Ok(())
-        })
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
-                save_window_state(window);
-            }
-        })
-        .invoke_handler(tauri::generate_handler![read_file, get_cli_args, write_file, write_vmd, read_vmd, read_vmd_info, generate_random_key])
+        .plugin(tauri_plugin_window_state::Builder::default()
+            .with_state_flags(StateFlags::all() & !StateFlags::VISIBLE)
+            .build())
+        .invoke_handler(tauri::generate_handler![read_file, get_cli_args, write_file, write_vmd, read_vmd, read_vmd_info, generate_random_key, show_window])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

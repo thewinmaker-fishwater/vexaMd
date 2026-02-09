@@ -7,7 +7,7 @@
   <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="stylesheet" href="/src/styles/index.css">
 </head>
-<body>
+<body style="opacity: 0; transition: opacity 0.08s ease-in;">
   <div id="toolbar">
     <button id="btn-home" title="홈으로 (Esc)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -392,16 +392,7 @@
     </div>
 
     <main id="content" class="markdown-body">
-      <div class="welcome">
-        <h1>Vexa MD</h1>
-        <p class="subtitle">초경량 마크다운 뷰어</p>
-        <p>Markdown 파일을 열거나 이 영역에 드래그하세요.</p>
-        <p><kbd>Ctrl</kbd>+<kbd>O</kbd> 열기 &nbsp; <kbd>Ctrl</kbd>+<kbd>D</kbd> 테마 &nbsp; <kbd>Ctrl</kbd>+<kbd>P</kbd> 인쇄 &nbsp; <kbd>Ctrl</kbd>+<kbd>F</kbd> 검색 &nbsp; <kbd>Esc</kbd> 홈</p>
-        <div id="home-recent" class="home-recent">
-          <h3>최근 파일</h3>
-          <div id="home-recent-list"></div>
-        </div>
-      </div>
+      <!-- 초기 콘텐츠는 JS에서 동적으로 로드 -->
     </main>
   </div>
 

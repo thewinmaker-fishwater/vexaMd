@@ -21,6 +21,9 @@ marked.setOptions({
 
 const renderer = new marked.Renderer();
 
+// ========== GFM Task List (Checkbox) 스타일링 ==========
+// marked의 기본 GFM 체크박스 렌더링을 사용하고, CSS로 스타일링만 적용
+
 function githubSlug(text) {
   return text
     .toLowerCase()

@@ -4,6 +4,52 @@
 
 ---
 
+## 세션 2026-02-04
+
+### 작업 내용
+
+1. **세션 복원 시 CLI 파일도 열기**
+   - 이전: CLI 인자 있으면 세션 복원 건너뜀 → 이전 탭들 사라짐
+   - 수정: 항상 세션 복원 먼저 → CLI 파일도 추가로 열기
+
+2. **윈도우 상태 관리 플러그인 적용**
+   - 수동 코드 60줄 제거 → `tauri-plugin-window-state` 플러그인 1줄로 대체
+   - `dirs` 크레이트 의존성 제거
+
+3. **초기 홈 콘텐츠 제거**
+   - `index.html`에서 정적 welcome 콘텐츠 제거
+   - JS가 동적으로 콘텐츠 결정
+
+4. **프론트엔드 준비 완료 후 윈도우 표시 시도**
+   - `show_window` Tauri 커맨드 추가
+   - 세션 복원 완료 후 호출하여 윈도우 표시
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src-tauri/Cargo.toml` | `tauri-plugin-window-state = "2"` 추가, `dirs` 제거 |
+| `src-tauri/src/lib.rs` | 수동 윈도우 상태 코드 제거, 플러그인 등록, `show_window` 커맨드 추가 |
+| `src-tauri/tauri.conf.json` | `visible: false` |
+| `src/main.js` | 세션 복원 로직 수정, `show_window` 호출 |
+| `src/modules/session/session.js` | renderTabs 호출 제거, switchToTab만 호출 |
+| `index.html` | 초기 welcome 콘텐츠 제거 |
+
+### ✅ 해결된 문제
+
+**앱 시작 시 홈탭 깜빡임 문제 해결**
+
+- 원인: `tauri-plugin-window-state`가 이전 세션의 `VISIBLE` 상태를 복원하여 `visible: false` 설정을 덮어씀
+- 해결:
+  1. `StateFlags::VISIBLE` 제외 - 플러그인이 visible 상태를 복원하지 않도록 설정
+  2. CSS `opacity: 0` - body에 초기 투명 설정 (이중 안전장치)
+  3. JS에서 세션 복원 완료 후 `opacity: 1` + `show_window` 호출
+
+### 다음 세션 참고사항
+- 앱 업데이트/패치 시스템 설계 (보류 중)
+
+---
+
 ## 세션 2026-02-02
 
 ### 작업 내용
@@ -42,7 +88,8 @@
 - (아래 참조)
 
 ### 다음 세션 참고사항
-- 없음
+- 앱 업데이트/패치 시스템 설계 검토 예정 (Tauri updater 플러그인, 알림 방식 vs 자동 패치 등)
+- 현재 프로젝트의 빌드/번들 설정, 버전 관리 구조 파악 필요
 
 ---
 

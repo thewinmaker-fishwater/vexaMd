@@ -19,6 +19,8 @@ export function saveSession(ctx) {
       filePath: t.filePath,
       name: t.name,
       zoom: t.zoom || 100,
+      scrollTop: t.scrollTop || 0,
+      editMode: t.editMode || 'view',
       readOnly: t.readOnly || false
     }));
   localStorage.setItem('openTabs', JSON.stringify(sessionTabs));
@@ -67,7 +69,7 @@ export async function restoreSession(ctx) {
             id: tabId, name: displayName, filePath: saved.filePath,
             content: vmdData.content, originalContent: vmdData.content,
             isDirty: false, editMode: 'view', tocVisible: false,
-            zoom: saved.zoom || 100, readOnly: true
+            zoom: saved.zoom || 100, scrollTop: saved.scrollTop || 0, readOnly: true
           };
           pushTab(tab);
           if (saved.filePath === activeTabPath) activeRestored = tabId;
@@ -78,8 +80,8 @@ export async function restoreSession(ctx) {
           const tab = {
             id: tabId, name, filePath: saved.filePath,
             content: text, originalContent: text,
-            isDirty: false, editMode: 'view', tocVisible: false,
-            zoom: saved.zoom || 100, readOnly: false
+            isDirty: false, editMode: saved.editMode || 'view', tocVisible: false,
+            zoom: saved.zoom || 100, scrollTop: saved.scrollTop || 0, readOnly: false
           };
           pushTab(tab);
           if (saved.filePath && saved.filePath !== name) {
@@ -96,8 +98,10 @@ export async function restoreSession(ctx) {
   isRestoringSession = false;
 
   if (tabs.length > 0) {
-    renderTabs();
+    // 먼저 활성 탭 결정
+    const targetTabId = activeRestored || (activeTabPath === '' ? HOME_TAB_ID : tabs[tabs.length - 1].id);
+    // switchToTab이 렌더링과 콘텐츠 로드를 함께 처리
+    switchToTab(targetTabId);
     updateTabBarVisibility();
-    switchToTab(activeRestored || (activeTabPath === '' ? HOME_TAB_ID : tabs[tabs.length - 1].id));
   }
 }

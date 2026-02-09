@@ -225,12 +225,24 @@
   border: none;
 }
 
-/* ========== Task List ========== */
+/* ========== Task List (GFM Checkbox) ========== */
 .markdown-body input[type="checkbox"] {
   margin-right: 8px;
   accent-color: var(--accent);
   width: 16px;
   height: 16px;
+  vertical-align: middle;
+}
+
+.markdown-body li:has(> input[type="checkbox"]) {
+  list-style: none;
+  margin-left: -1.2em;
+}
+
+.markdown-body li:has(> input[type="checkbox"]:checked) {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  opacity: 0.7;
 }
 
 /* ========== View Modes ========== */

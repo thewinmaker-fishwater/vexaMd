@@ -9,6 +9,7 @@ import * as zoom from '../zoom/zoom-manager.js';
 import * as imageModal from '../image-modal/image-modal.js';
 import * as fileOps from '../files/file-ops.js';
 import { showNotification, showError } from '../notification/notification.js';
+import { markFileSaving } from '../files/file-ops.js';
 
 let editorPane, editorTextarea, mainContainer, btnModeView, btnModeEdit, btnModeSplit, btnSave, contentEl;
 let editorDebounceTimer = null;
@@ -32,7 +33,38 @@ export function init({ t, doRenderMarkdown }) {
   if (btnModeEdit) btnModeEdit.addEventListener('click', () => setEditorMode('edit'));
   if (btnModeSplit) btnModeSplit.addEventListener('click', () => setEditorMode('split'));
   if (btnSave) btnSave.addEventListener('click', saveCurrentFile);
-  if (editorTextarea) editorTextarea.addEventListener('input', onEditorInput);
+  if (editorTextarea) {
+    editorTextarea.addEventListener('input', onEditorInput);
+    editorTextarea.addEventListener('keydown', onEditorKeydown);
+  }
+}
+
+function onEditorKeydown(e) {
+  // Tab 키: 들여쓰기 (포커스 이동 방지)
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = editorTextarea.selectionStart;
+    const end = editorTextarea.selectionEnd;
+    const value = editorTextarea.value;
+
+    if (e.shiftKey) {
+      // Shift+Tab: 내어쓰기
+      const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+      const lineText = value.substring(lineStart, start);
+      if (lineText.startsWith('\t') || lineText.startsWith('  ')) {
+        const removeChars = lineText.startsWith('\t') ? 1 : 2;
+        editorTextarea.value = value.substring(0, lineStart) + value.substring(lineStart + removeChars);
+        editorTextarea.selectionStart = editorTextarea.selectionEnd = start - removeChars;
+      }
+    } else {
+      // Tab: 들여쓰기 (2 spaces)
+      editorTextarea.value = value.substring(0, start) + '  ' + value.substring(end);
+      editorTextarea.selectionStart = editorTextarea.selectionEnd = start + 2;
+    }
+
+    // input 이벤트 수동 트리거
+    editorTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+  }
 }
 
 export function loadEditorContent(content) {
@@ -65,6 +97,13 @@ export function updateEditModeButtonsDisabled(disabled) {
   if (btnModeSplit) btnModeSplit.disabled = disabled;
 }
 
+export function getCurrentEditorMode() {
+  if (!mainContainer) return 'view';
+  if (mainContainer.classList.contains('mode-split')) return 'split';
+  if (mainContainer.classList.contains('mode-edit')) return 'edit';
+  return 'view';
+}
+
 function onEditorInput() {
   const editorContent = editorTextarea?.value || '';
   const activeTab = tabManager.getTabs().find(t => t.id === tabManager.getActiveTabId());
@@ -94,6 +133,8 @@ export async function saveCurrentFile() {
   const fsWrite = fileOps.getFsWriteTextFile();
   if (activeTab.filePath && fsWrite) {
     try {
+      // 저장 시작 마킹 (파일 워처 알림 억제)
+      markFileSaving(activeTab.filePath);
       await fsWrite(activeTab.filePath, editorContent);
       activeTab.content = editorContent;
       activeTab.originalContent = editorContent;
