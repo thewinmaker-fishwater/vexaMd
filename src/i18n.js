@@ -128,6 +128,20 @@ export const i18n = {
     shortcuts: '단축키',
     about: '프로그램 정보',
 
+    // Update
+    checkUpdate: '업데이트 확인',
+    updateAvailable: '업데이트 사용 가능',
+    updateCurrentVersion: '현재 버전',
+    updateNewVersion: '새 버전',
+    updateNow: '지금 업데이트',
+    updateLater: '나중에',
+    updateDownloading: '다운로드 중...',
+    updateRestart: '재시작',
+    updateRestartMsg: '업데이트 설치를 위해 앱을 재시작합니다.',
+    updateLatest: '최신 버전입니다.',
+    updateFailed: '업데이트 확인 실패',
+    updateReleaseNotes: '변경 내역',
+
     // About Modal
     aboutTitle: '프로그램 정보',
     version: '버전',
@@ -408,6 +422,20 @@ export const i18n = {
     shortcuts: 'Shortcuts',
     about: 'About',
 
+    // Update
+    checkUpdate: 'Check for Updates',
+    updateAvailable: 'Update Available',
+    updateCurrentVersion: 'Current version',
+    updateNewVersion: 'New version',
+    updateNow: 'Update Now',
+    updateLater: 'Later',
+    updateDownloading: 'Downloading...',
+    updateRestart: 'Restart',
+    updateRestartMsg: 'Restarting app to install update.',
+    updateLatest: 'You are on the latest version.',
+    updateFailed: 'Update check failed',
+    updateReleaseNotes: 'Release Notes',
+
     // About Modal
     aboutTitle: 'About',
     version: 'Version',
@@ -687,6 +715,20 @@ export const i18n = {
     help: 'ヘルプ',
     shortcuts: 'ショートカット',
     about: 'プログラム情報',
+
+    // Update
+    checkUpdate: 'アップデート確認',
+    updateAvailable: 'アップデートがあります',
+    updateCurrentVersion: '現在のバージョン',
+    updateNewVersion: '新しいバージョン',
+    updateNow: '今すぐアップデート',
+    updateLater: '後で',
+    updateDownloading: 'ダウンロード中...',
+    updateRestart: '再起動',
+    updateRestartMsg: 'アップデートをインストールするためにアプリを再起動します。',
+    updateLatest: '最新バージョンです。',
+    updateFailed: 'アップデート確認に失敗しました',
+    updateReleaseNotes: 'リリースノート',
 
     // About Modal
     aboutTitle: 'プログラム情報',

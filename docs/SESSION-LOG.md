@@ -4,6 +4,59 @@
 
 ---
 
+## 세션 2026-02-12
+
+### 작업 내용
+
+1. **자동 업데이트 시스템 구현**
+   - Tauri 플러그인: `tauri-plugin-updater`, `tauri-plugin-process` 설치 및 등록
+   - `tauri.conf.json`: `createUpdaterArtifacts`, `plugins.updater` (pubkey + endpoint) 설정
+   - `capabilities/default.json`: `updater:default`, `process:allow-restart` 권한 추가
+   - 프론트엔드: `src/modules/updater/updater.js` + `updater.css` 모듈 구현
+   - 업데이트 모달 UI: 버전 정보, 릴리스 노트, 진행률 바, 업데이트/나중에/재시작 버튼
+   - 도움말 메뉴에 "업데이트 확인" 항목 추가
+   - 앱 시작 3초 후 자동 백그라운드 체크 (silent)
+   - i18n 번역 12키 추가 (ko/en/ja)
+
+2. **GitHub Actions 릴리스 워크플로우 업데이트**
+   - 서명 환경변수 (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) 추가
+
+3. **GitHub Secrets 등록**
+   - `TAURI_SIGNING_PRIVATE_KEY`: 서명 비밀키 등록
+   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: 빈 비밀번호 등록
+
+4. **에러 처리 개선**
+   - 릴리스가 없는 경우 (404) "업데이트 확인 실패" → "최신 버전입니다"로 개선
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src-tauri/Cargo.toml` | `tauri-plugin-updater`, `tauri-plugin-process` 추가 |
+| `src-tauri/src/lib.rs` | updater, process 플러그인 등록 |
+| `src-tauri/tauri.conf.json` | `createUpdaterArtifacts`, `plugins.updater` 설정 |
+| `src-tauri/capabilities/default.json` | updater, process 권한 추가 |
+| `package.json` | JS 플러그인 의존성 추가 |
+| `src/modules/updater/updater.js` | 신규 - 업데이트 확인/다운로드/UI 로직 |
+| `src/modules/updater/updater.css` | 신규 - 업데이트 모달 스타일 |
+| `src/styles/index.css` | updater.css import 추가 |
+| `index.html` | 업데이트 모달 HTML, 도움말 메뉴 항목 추가 |
+| `src/main.js` | updater 모듈 import, 시작 시 자동 체크, 메뉴 이벤트 |
+| `src/i18n.js` | 12개 번역 키 추가 (ko/en/ja) |
+| `.github/workflows/release.yml` | 서명 환경변수 추가 |
+
+### 검증
+- `npm run build` ✅ 성공
+- `cargo check` ✅ 성공
+- `npm run tauri dev` ✅ 앱 정상 실행
+- 도움말 > "업데이트 확인" ✅ "최신 버전입니다" 토스트 표시
+
+### 다음 세션 참고사항
+- v1.5.1 태그 푸시 후 GitHub Actions 릴리스 빌드 테스트
+- 실제 업데이트 감지/다운로드/설치 E2E 테스트
+
+---
+
 ## 세션 2026-02-09
 
 ### 작업 내용

@@ -316,6 +316,13 @@
           </svg>
           <span>단축키</span>
         </button>
+        <button class="help-menu-item" id="help-check-update">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9z"/>
+            <path d="M12 8v4l2 2"/>
+          </svg>
+          <span>업데이트 확인</span>
+        </button>
         <div class="help-menu-divider"></div>
         <button class="help-menu-item" id="help-about">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -740,6 +747,35 @@
       </div>
       <div class="modal-footer about-footer">
         <button id="about-ok" class="btn-primary">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Modal -->
+  <div id="update-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="update-body">
+        <h3 class="update-title">업데이트 사용 가능</h3>
+        <div class="update-version-info">
+          <span class="update-current">현재 버전: -</span>
+          <span class="update-new">새 버전: -</span>
+        </div>
+        <div class="update-notes-section hidden">
+          <div class="update-notes-label">변경 내역</div>
+          <div class="update-notes-content"></div>
+        </div>
+        <div class="update-progress-section hidden">
+          <div class="update-progress-track">
+            <div class="update-progress-bar"></div>
+          </div>
+          <div class="update-progress-text">0%</div>
+        </div>
+        <div class="update-buttons">
+          <button id="update-btn-later">나중에</button>
+          <button id="update-btn-now" class="btn-primary">지금 업데이트</button>
+          <button id="update-btn-restart" class="btn-primary hidden">재시작</button>
+        </div>
       </div>
     </div>
   </div>

@@ -41,3 +41,6 @@
 
 /* 13. Animations (알림 애니메이션) */
 @import './animations.css';
+
+/* 14. Updater (자동 업데이트) */
+@import '../modules/updater/updater.css';

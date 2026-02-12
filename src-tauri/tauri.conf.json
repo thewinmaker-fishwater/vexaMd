@@ -38,6 +38,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "createUpdaterArtifacts": true,
     "targets": ["nsis"],
     "windows": {
       "certificateThumbprint": null,
@@ -53,5 +54,12 @@
       }
     ]
   },
-  "plugins": {}
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY1MjE3NTA0NTMzNTVDNDYKUldSR1hEVlRCSFVoWlZFaThveW0xdkUxaEU1ejRVemtEelhCYXRaVEJRdXA2ZDl6WTl6ODN0ZHMK",
+      "endpoints": [
+        "https://github.com/thewinmaker-fishwater/vexaMd/releases/latest/download/latest.json"
+      ]
+    }
+  }
 }

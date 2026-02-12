@@ -29,6 +29,7 @@ import { exportVmd, exportVmdToMd, loadVmdFile } from './modules/vmd/vmd.js';
 import { showKeyManagerModal } from './modules/vmd/vmd-key-ui.js';
 import * as themeSystem from './modules/theme/theme-system.js';
 import * as shortcuts from './modules/shortcuts/shortcuts.js';
+import { initUpdater, checkForUpdate } from './modules/updater/updater.js';
 
 // Extracted modules
 import { getWelcomeHTML } from './modules/welcome/welcome.js';
@@ -336,6 +337,11 @@ async function init() {
     if (!isOpen) helpDropdown.classList.remove('hidden');
   });
   document.getElementById('help-shortcuts').addEventListener('click', () => { helpDropdown.classList.add('hidden'); shortcutsModal.classList.remove('hidden'); });
+  document.getElementById('help-check-update')?.addEventListener('click', () => {
+    helpDropdown.classList.add('hidden');
+    initUpdater({ getCurrentLanguage: () => currentLanguage });
+    checkForUpdate(false);
+  });
   document.getElementById('help-about').addEventListener('click', () => { helpDropdown.classList.add('hidden'); aboutModal.classList.remove('hidden'); });
   document.getElementById('about-close').addEventListener('click', () => aboutModal.classList.add('hidden'));
   document.getElementById('about-ok').addEventListener('click', () => aboutModal.classList.add('hidden'));
@@ -343,6 +349,10 @@ async function init() {
   document.getElementById('shortcuts-close').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
   document.getElementById('shortcuts-ok').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
   shortcutsModal.querySelector('.modal-backdrop').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
+
+  // Update modal backdrop
+  const updateModal = document.getElementById('update-modal');
+  updateModal?.querySelector('.modal-backdrop')?.addEventListener('click', () => updateModal.classList.add('hidden'));
 
   // Plugin toolbar (listen for plugin UI changes)
   toolbar.setupPluginListeners();
@@ -396,6 +406,14 @@ async function init() {
       await tauriApi.invoke('show_window').catch(() => {});
     }
     document.body.style.opacity = '1';
+
+    // 자동 업데이트 확인 (3초 후 백그라운드)
+    if (tauriApi) {
+      setTimeout(() => {
+        initUpdater({ getCurrentLanguage: () => currentLanguage });
+        checkForUpdate(true);
+      }, 3000);
+    }
   }).catch(() => {
     // Tauri 없는 환경 (웹) - 홈탭 표시
     tabManager.switchToTab(tabManager.HOME_TAB_ID);

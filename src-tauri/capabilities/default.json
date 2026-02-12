@@ -19,6 +19,8 @@
     "fs:allow-home-write",
     "shell:default",
     "shell:allow-open",
+    "updater:default",
+    "process:allow-restart",
     {
       "identifier": "fs:scope",
       "allow": [

@@ -260,6 +260,8 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::default()
             .with_state_flags(StateFlags::all() & !StateFlags::VISIBLE)
             .build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![read_file, get_cli_args, write_file, write_vmd, read_vmd, read_vmd_info, generate_random_key, show_window])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
