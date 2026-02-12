@@ -196,7 +196,7 @@ function showSimpleNotice(message) {
 }
 
 /** Cached app version */
-let appVersion = '1.5.1';
+let appVersion = '1.5.0';
 
 /**
  * Load app version from Tauri API
