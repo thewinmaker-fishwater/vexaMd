@@ -189,8 +189,30 @@ fn generate_random_key() -> String {
 }
 
 /// 윈도우 표시 (프론트엔드 준비 완료 후 호출)
+/// 화면 밖에 있으면 주 모니터 중앙으로 이동
 #[tauri::command]
 fn show_window(window: tauri::Window) {
+    // 윈도우 위치가 사용 가능한 모니터 영역 안에 있는지 확인
+    if let Ok(pos) = window.outer_position() {
+        let monitors = window.available_monitors().unwrap_or_default();
+        let is_visible = monitors.iter().any(|m| {
+            let mp = m.position();
+            let ms = m.size();
+            let mx = mp.x as f64;
+            let my = mp.y as f64;
+            let mw = ms.width as f64;
+            let mh = ms.height as f64;
+            let wx = pos.x as f64;
+            let wy = pos.y as f64;
+            // 윈도우 좌상단이 모니터 영역 안에 있는지 (여유 50px)
+            wx >= mx - 50.0 && wx < mx + mw && wy >= my - 50.0 && wy < my + mh
+        });
+
+        if !is_visible {
+            // 주 모니터 중앙으로 이동
+            let _ = window.center();
+        }
+    }
     let _ = window.show();
 }
 

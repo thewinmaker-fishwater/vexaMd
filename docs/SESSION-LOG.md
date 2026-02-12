@@ -4,6 +4,40 @@
 
 ---
 
+## 세션 2026-02-09
+
+### 작업 내용
+
+1. **홈탭 깜빡임 문제 해결**
+   - 원인: `tauri-plugin-window-state`가 VISIBLE 상태 복원하여 `visible: false` 덮어씀
+   - 해결: `StateFlags::VISIBLE` 제외 + CSS `opacity: 0` 안전장치 + `show_window` 커맨드
+   - 커밋: `f3292a5`
+
+2. **자동 업데이트 시스템 설계**
+   - 설계 문서 작성: `docs/design/auto-update.md`
+   - 서명 키 생성: `C:\Users\impeo\.tauri\vexa-md.key` (비밀번호 없음)
+   - GitHub Releases + tauri-plugin-updater 방식 선택
+   - 구현은 다음 세션에서 진행 예정
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src-tauri/src/lib.rs` | `StateFlags::VISIBLE` 제외, `show_window` 커맨드 |
+| `index.html` | body opacity:0 안전장치 |
+| `src/main.js` | 준비 완료 후 opacity:1 + show_window |
+| `docs/design/auto-update.md` | 자동 업데이트 설계 문서 (신규) |
+
+### 커밋 정보
+- `f3292a5` - feat: fix startup flicker and improve session restore
+
+### 다음 세션 참고사항
+- 자동 업데이트 구현 진행 (`docs/design/auto-update.md` 체크리스트 따라)
+- GitHub Secrets 등록 필요: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+- 서명 키 위치: `C:\Users\impeo\.tauri\vexa-md.key`
+
+---
+
 ## 세션 2026-02-04
 
 ### 작업 내용
