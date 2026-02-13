@@ -38,7 +38,7 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": "v2",
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "windows": {
       "certificateThumbprint": null,

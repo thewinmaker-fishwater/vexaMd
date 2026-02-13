@@ -83,6 +83,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npm run tauri build -- ${{ matrix.args }}
 
+      - name: List build artifacts (debug)
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Bundle directory ==="
+          find src-tauri/target -path "*/bundle/*" -type f 2>/dev/null || echo "No bundle files found"
+
       - name: Upload artifacts (Windows)
         if: matrix.platform == 'windows-latest'
         uses: softprops/action-gh-release@v2
