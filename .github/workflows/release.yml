@@ -81,7 +81,7 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-        run: npm run tauri build ${{ matrix.args }}
+        run: npm run tauri build -- ${{ matrix.args }}
 
       - name: Upload artifacts (Windows)
         if: matrix.platform == 'windows-latest'
@@ -120,6 +120,7 @@ jobs:
 
   update-json:
     needs: [create-release, build]
+    if: always() && needs.create-release.result == 'success'
     permissions:
       contents: write
     runs-on: ubuntu-latest

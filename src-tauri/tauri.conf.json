@@ -38,8 +38,8 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "createUpdaterArtifacts": true,
-    "targets": ["nsis"],
+    "createUpdaterArtifacts": "v2",
+    "targets": "all",
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
