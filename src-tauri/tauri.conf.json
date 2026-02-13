@@ -56,7 +56,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI4MUE4OUVBNTY0QTFBM0EKUldRNkdrcFc2b2thS0JaUVNRa0luYStXNk1icUVodUV6cnI4bFloV2Q5L0RnZkNEZTJSUzFNeXUK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJEM0ZCQTI0MTE4MTE5ODQKUldTRUdZRVJKTG8vTGZ4cERCY3BLV2RBWlJscGhySm40TEl5NEFSaXhoM2NkTExWUmpVa1loMmEK",
       "endpoints": [
         "https://github.com/thewinmaker-fishwater/vexaMd/releases/latest/download/latest.json"
       ]
