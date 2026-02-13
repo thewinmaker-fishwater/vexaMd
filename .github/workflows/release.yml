@@ -133,40 +133,80 @@ jobs:
           TAG="${{ github.ref_name }}"
           VERSION="${TAG#v}"
           REPO="${{ github.repository }}"
+          BASE_URL="https://github.com/${REPO}/releases/download/${TAG}"
 
-          # Get release assets using release ID (draft releases not accessible by tag)
-          ASSETS=$(gh api repos/${REPO}/releases/${RELEASE_ID} --jq '.assets[] | {name, url: .browser_download_url}')
+          # Get asset names from release (draft releases need ID-based access)
+          ASSET_NAMES=$(gh api repos/${REPO}/releases/${RELEASE_ID} --jq '.assets[].name')
 
           echo "=== Release assets ==="
-          echo "$ASSETS"
+          echo "$ASSET_NAMES"
 
-          # Find platform-specific updater artifacts
+          # Helper: download sig content from draft release asset via API
+          download_sig() {
+            local sig_name="$1"
+            gh api repos/${REPO}/releases/${RELEASE_ID} \
+              --jq ".assets[] | select(.name == \"${sig_name}\") | .url" \
+            | xargs -I{} curl -sL -H "Accept: application/octet-stream" \
+              -H "Authorization: token ${GITHUB_TOKEN}" "{}"
+          }
+
+          # Find platform-specific updater artifacts by name, construct tag-based URLs
           WIN_SIG=""
           WIN_URL=""
           LINUX_SIG=""
           LINUX_URL=""
-          MAC_SIG=""
-          MAC_URL=""
+          MAC_AARCH64_SIG=""
+          MAC_AARCH64_URL=""
+          MAC_X64_SIG=""
+          MAC_X64_URL=""
 
-          # Windows: use .exe installer directly (Tauri 2 updater runs it silently)
-          WIN_URL=$(echo "$ASSETS" | jq -r 'select(.name | endswith("-setup.exe")) | .url' | head -1)
-          WIN_SIG_FILE=$(echo "$ASSETS" | jq -r 'select(.name | endswith("-setup.exe.sig")) | .url' | head -1)
-          if [ -n "$WIN_SIG_FILE" ]; then
-            WIN_SIG=$(curl -sL "$WIN_SIG_FILE")
+          # Windows: .exe installer
+          WIN_NAME=$(echo "$ASSET_NAMES" | grep -E '\-setup\.exe$' | head -1)
+          WIN_SIG_NAME=$(echo "$ASSET_NAMES" | grep -E '\-setup\.exe\.sig$' | head -1)
+          if [ -n "$WIN_NAME" ]; then
+            WIN_URL="${BASE_URL}/${WIN_NAME}"
+            if [ -n "$WIN_SIG_NAME" ]; then
+              WIN_SIG=$(download_sig "$WIN_SIG_NAME")
+            fi
           fi
 
-          # Linux: use .AppImage directly
-          LINUX_URL=$(echo "$ASSETS" | jq -r 'select(.name | endswith(".AppImage")) | .url' | head -1)
-          LINUX_SIG_FILE=$(echo "$ASSETS" | jq -r 'select(.name | endswith(".AppImage.sig")) | .url' | head -1)
-          if [ -n "$LINUX_SIG_FILE" ]; then
-            LINUX_SIG=$(curl -sL "$LINUX_SIG_FILE")
+          # Linux: .AppImage
+          LINUX_NAME=$(echo "$ASSET_NAMES" | grep -E '\.AppImage$' | head -1)
+          LINUX_SIG_NAME=$(echo "$ASSET_NAMES" | grep -E '\.AppImage\.sig$' | head -1)
+          if [ -n "$LINUX_NAME" ]; then
+            LINUX_URL="${BASE_URL}/${LINUX_NAME}"
+            if [ -n "$LINUX_SIG_NAME" ]; then
+              LINUX_SIG=$(download_sig "$LINUX_SIG_NAME")
+            fi
           fi
 
-          # macOS: use .app.tar.gz (both arches share same name, so one URL for both)
-          MAC_URL=$(echo "$ASSETS" | jq -r 'select(.name | endswith(".app.tar.gz")) | .url' | head -1)
-          MAC_SIG_FILE=$(echo "$ASSETS" | jq -r 'select(.name | endswith(".app.tar.gz.sig")) | .url' | head -1)
-          if [ -n "$MAC_SIG_FILE" ]; then
-            MAC_SIG=$(curl -sL "$MAC_SIG_FILE")
+          # macOS: .app.tar.gz (may have aarch64 and x86_64 variants)
+          MAC_AARCH64_NAME=$(echo "$ASSET_NAMES" | grep -E 'aarch64.*\.app\.tar\.gz$' | head -1)
+          MAC_AARCH64_SIG_NAME=$(echo "$ASSET_NAMES" | grep -E 'aarch64.*\.app\.tar\.gz\.sig$' | head -1)
+          MAC_X64_NAME=$(echo "$ASSET_NAMES" | grep -E 'x64.*\.app\.tar\.gz$' | head -1)
+          MAC_X64_SIG_NAME=$(echo "$ASSET_NAMES" | grep -E 'x64.*\.app\.tar\.gz\.sig$' | head -1)
+
+          # Fallback: if no arch-specific names, use generic .app.tar.gz for both
+          if [ -z "$MAC_AARCH64_NAME" ] && [ -z "$MAC_X64_NAME" ]; then
+            MAC_GENERIC_NAME=$(echo "$ASSET_NAMES" | grep -E '\.app\.tar\.gz$' | head -1)
+            MAC_GENERIC_SIG_NAME=$(echo "$ASSET_NAMES" | grep -E '\.app\.tar\.gz\.sig$' | head -1)
+            MAC_AARCH64_NAME="$MAC_GENERIC_NAME"
+            MAC_AARCH64_SIG_NAME="$MAC_GENERIC_SIG_NAME"
+            MAC_X64_NAME="$MAC_GENERIC_NAME"
+            MAC_X64_SIG_NAME="$MAC_GENERIC_SIG_NAME"
+          fi
+
+          if [ -n "$MAC_AARCH64_NAME" ]; then
+            MAC_AARCH64_URL="${BASE_URL}/${MAC_AARCH64_NAME}"
+            if [ -n "$MAC_AARCH64_SIG_NAME" ]; then
+              MAC_AARCH64_SIG=$(download_sig "$MAC_AARCH64_SIG_NAME")
+            fi
+          fi
+          if [ -n "$MAC_X64_NAME" ]; then
+            MAC_X64_URL="${BASE_URL}/${MAC_X64_NAME}"
+            if [ -n "$MAC_X64_SIG_NAME" ]; then
+              MAC_X64_SIG=$(download_sig "$MAC_X64_SIG_NAME")
+            fi
           fi
 
           # Build latest.json
@@ -177,8 +217,11 @@ jobs:
           if [ -n "$LINUX_URL" ]; then
             PLATFORMS=$(echo "$PLATFORMS" | jq --arg url "$LINUX_URL" --arg sig "$LINUX_SIG" '. + {"linux-x86_64": {url: $url, signature: $sig}}')
           fi
-          if [ -n "$MAC_URL" ]; then
-            PLATFORMS=$(echo "$PLATFORMS" | jq --arg url "$MAC_URL" --arg sig "$MAC_SIG" '. + {"darwin-aarch64": {url: $url, signature: $sig}, "darwin-x86_64": {url: $url, signature: $sig}}')
+          if [ -n "$MAC_AARCH64_URL" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq --arg url "$MAC_AARCH64_URL" --arg sig "$MAC_AARCH64_SIG" '. + {"darwin-aarch64": {url: $url, signature: $sig}}')
+          fi
+          if [ -n "$MAC_X64_URL" ]; then
+            PLATFORMS=$(echo "$PLATFORMS" | jq --arg url "$MAC_X64_URL" --arg sig "$MAC_X64_SIG" '. + {"darwin-x86_64": {url: $url, signature: $sig}}')
           fi
 
           jq -n \

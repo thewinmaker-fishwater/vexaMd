@@ -1,6 +1,6 @@
 [package]
 name = "vexa-md"
-version = "1.5.1"
+version = "1.5.2"
 description = "Ultra-lightweight Markdown Viewer - Vexa MD"
 authors = ["Vexa MD"]
 edition = "2021"

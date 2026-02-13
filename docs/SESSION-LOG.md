@@ -4,6 +4,79 @@
 
 ---
 
+## 세션 2026-02-14
+
+### 작업 내용
+- Reading Time 플러그인 확인 (이전 세션에서 이미 구현됨, v1.1.0)
+- 버전 범프: 1.5.1 → 1.5.2 (package.json, tauri.conf.json, Cargo.toml)
+- CI 워크플로우 개선: `update-json` 잡에서 `browser_download_url` 대신 태그 기반 URL 직접 구성
+  - draft 릴리스에서도 올바른 public URL 생성
+  - macOS aarch64/x86_64 아키텍처별 분리 지원
+  - sig 파일 다운로드 시 API 인증 헤더 사용
+
+### 수정된 파일
+| 파일 | 변경 내용 |
+|------|----------|
+| `package.json` | 버전 1.5.1 → 1.5.2 |
+| `src-tauri/tauri.conf.json` | 버전 1.5.1 → 1.5.2 |
+| `src-tauri/Cargo.toml` | 버전 1.5.1 → 1.5.2 |
+| `.github/workflows/release.yml` | update-json URL 구성 방식 개선 |
+
+### 커밋 정보
+- (사용자 허가 대기)
+
+### 다음 세션 참고사항
+- v1.5.2 태그 푸시 후 CI 빌드 확인
+- 릴리스 퍼블리시 후 latest.json URL 검증
+- 로컬 v1.5.1 앱에서 v1.5.2 업데이트 감지 E2E 테스트
+- Reading Time 플러그인 툴바 뱃지 확인
+
+---
+
+## 세션 2026-02-13
+
+### 작업 내용
+- GitHub Actions 릴리스 빌드 CI/CD 수정 (전일 실패 이어서 작업)
+- 멀티플랫폼 빌드 완전 성공 (Windows, macOS ARM64/Intel, Linux)
+- `latest.json` 자동 생성 및 업로드 파이프라인 구현
+- GitHub 레포 public으로 전환 (자동 업데이트 에셋 다운로드 위해)
+
+### 수정된 파일
+- `.github/workflows/release.yml` - 전면 재작성
+  - `npm run tauri build --` 구분자 추가 (macOS `--target` 인자 전달)
+  - `targets: "all"` 설정으로 플랫폼별 번들 생성
+  - `.nsis.zip` 패턴 제거 (Tauri 2는 `.exe` 직접 사용)
+  - Linux: `.AppImage` + `.AppImage.sig` 패턴
+  - `update-json` 잡: release ID로 draft 릴리스 접근, 올바른 아티팩트 매칭
+  - `if: always()` 조건으로 일부 빌드 실패해도 `update-json` 실행
+- `src-tauri/tauri.conf.json` - `bundle.targets: "all"`, 서명 키 공개키 업데이트
+
+### 발생한 문제 및 해결
+1. **macOS 빌드 실패**: `npm run tauri build --target aarch64-apple-darwin`에서 `--target`이 cargo에 전달됨 → `npm run tauri build -- --target` 로 수정
+2. **Linux 아티팩트 미생성**: `targets: ["nsis"]`가 Linux에서 번들 생성 차단 → `targets: "all"` 로 수정
+3. **`createUpdaterArtifacts: "v2"` 오류**: Tauri 2 스키마에서 `"v2"` 문자열 미지원 → `true` (boolean)로 유지
+4. **`update-json` 404 오류**: draft 릴리스는 `releases/tags/{tag}` API로 접근 불가 → `releases/{id}` 로 수정
+5. **`latest.json` 잘못된 URL**: draft 상태에서 생성된 URL이 `untagged-xxx` 형식 → 수동으로 올바른 URL로 재생성 후 업로드
+6. **릴리스 에셋 다운로드 404**: 레포가 private이라 인증 없이 다운로드 불가 → 레포 public으로 전환
+
+### 커밋 정보
+- `fb7b776` fix: correct CI build for multi-platform release
+- `0035ba6` fix: revert createUpdaterArtifacts to boolean, add debug listing
+- `d65d452` fix: correct artifact patterns and update-json for Tauri 2
+
+### 릴리스 상태
+- v1.5.1 릴리스 퍼블리시 완료
+- 에셋: exe, dmg(ARM64/Intel), AppImage, deb, app.tar.gz, latest.json
+- `latest.json` 정상 접근 확인: `https://github.com/thewinmaker-fishwater/vexaMd/releases/latest/download/latest.json`
+
+### 다음 세션 참고사항
+- 로컬에서 자동 업데이트 테스트 필요: 버전 1.5.0으로 낮추고 → `npm run tauri dev` → 업데이트 감지 확인
+- macOS tar.gz 파일이 arch 구분 없이 동일 이름 (`Vexa MD.app.tar.gz`) → 양 아키텍처 구분 필요 (향후 개선)
+- `update-json` 스크립트의 URL 문제: draft 상태에서 생성된 URL이 publish 후 변경됨 → 워크플로우에서 URL 직접 구성하도록 개선 필요
+- GitHub Secrets: `TAURI_SIGNING_PRIVATE_KEY` (vexa-md-v2.key), `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` ("vexa2026")
+
+---
+
 ## 세션 2026-02-12
 
 ### 작업 내용
@@ -52,8 +125,27 @@
 - 도움말 > "업데이트 확인" ✅ "최신 버전입니다" 토스트 표시
 
 ### 다음 세션 참고사항
-- v1.5.1 태그 푸시 후 GitHub Actions 릴리스 빌드 테스트
-- 실제 업데이트 감지/다운로드/설치 E2E 테스트
+
+#### CI/CD 릴리스 빌드 미해결 이슈 (v1.5.1 테스트 실패)
+- **Windows**: `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` 시크릿 문제 - "Wrong password for that key"
+  - `printf ''`로 재설정했지만 여전히 실패. 키 생성 시 비밀번호 유무 재확인 필요
+  - 키 위치: `C:\Users\impeo\.tauri\vexa-md.key`
+- **macOS/Linux**: 빌드는 성공하나 `tauri-action@v0`이 "No artifacts were found" 에러
+  - productName에 공백("Vexa MD")이 원인일 수 있음
+  - `tauri-action` 버전 업그레이드 또는 productName 변경 검토
+- **워크플로우 수정 완료**: `dtolnay/rust-action` → `dtolnay/rust-toolchain`, NPM 버전 정렬 (2.9.x)
+- **GitHub Secrets 등록 완료**: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+- **GitHub CLI 인증 완료**: `gh auth login` + `workflow` 스코프
+
+#### 다음 단계
+1. 서명 키 비밀번호 확인 (`npx tauri signer generate` 시 입력한 값)
+2. CI/CD 빌드 문제 해결 후 릴리스 재시도
+3. 로컬에서 v1.5.0 앱 실행 → v1.5.1 릴리스 업데이트 감지 E2E 테스트
+4. 버전이 v1.5.0으로 원복된 상태 (로컬 커밋은 있으나 미푸시)
+
+#### 현재 git 상태
+- main 브랜치에 커밋됨 (미푸시): 자동 업데이트 구현 + 워크플로우 수정 + 버전 원복
+- v1.5.1 태그가 원격에 남아있을 수 있음 → 삭제 필요
 
 ---
 
@@ -831,4 +923,4 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
-*마지막 업데이트: 2026-02-02*
+*마지막 업데이트: 2026-02-14*
