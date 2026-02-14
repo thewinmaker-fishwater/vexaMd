@@ -253,6 +253,12 @@
           </svg>
           <span>목차</span>
         </button>
+        <!-- Status Bar Toggle -->
+        <label id="btn-toggle-statusbar" class="dropdown-toggle-item" title="상태바 표시/숨김 (Ctrl+/)">
+          <input type="checkbox" id="statusbar-checkbox" checked>
+          <span>상태바</span>
+          <kbd class="dropdown-shortcut">Ctrl+/</kbd>
+        </label>
         <div class="dropdown-divider"></div>
         <div class="dropdown-label">편집 모드</div>
         <!-- Edit Mode -->
@@ -401,6 +407,20 @@
     <main id="content" class="markdown-body">
       <!-- 초기 콘텐츠는 JS에서 동적으로 로드 -->
     </main>
+  </div>
+
+  <!-- Status Bar -->
+  <div id="status-bar">
+    <div class="status-bar-left">
+      <span id="status-file-name"></span>
+    </div>
+    <div class="status-bar-center">
+      <span id="status-stats"></span>
+    </div>
+    <div class="status-bar-right">
+      <span id="status-zoom"></span>
+      <span id="status-cursor"></span>
+    </div>
   </div>
 
   <div id="drop-overlay">

@@ -39,8 +39,11 @@
 /* 12. VMD Key UI */
 @import '../modules/vmd/vmd-key-ui.css';
 
-/* 13. Animations (알림 애니메이션) */
+/* 13. Status Bar (하단 상태바) */
+@import './status-bar.css';
+
+/* 14. Animations (알림 애니메이션) */
 @import './animations.css';
 
-/* 14. Updater (자동 업데이트) */
+/* 15. Updater (자동 업데이트) */
 @import '../modules/updater/updater.css';

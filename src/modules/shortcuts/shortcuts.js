@@ -65,6 +65,10 @@ function setupKeyboard() {
       e.preventDefault();
       ctx.closeCurrentTab();
     }
+    if (e.ctrlKey && e.key === '/') {
+      e.preventDefault();
+      ctx.toggleStatusBar?.();
+    }
     if (e.key === 'Escape') {
       e.preventDefault();
       ctx.handleEscape();

@@ -42,6 +42,7 @@ export default class ReadingTimePlugin extends Plugin {
 
     this._on('content:rendered', () => this.update());
     this._on('file:loaded', () => this.update());
+    this._on('tab:switched', () => this.update());
 
     setTimeout(() => this.update(), 500);
   }

@@ -574,6 +574,14 @@ class PluginUI {
       closeSettings();
     });
 
+    // Range slider 값 실시간 표시
+    settingsModal.querySelectorAll('input[type="range"]').forEach(range => {
+      const valueSpan = range.nextElementSibling;
+      if (valueSpan?.classList.contains('settings-range-value')) {
+        range.addEventListener('input', () => { valueSpan.textContent = range.value; });
+      }
+    });
+
     settingsModal.querySelector('.plugin-settings-save').addEventListener('click', () => {
       const formData = this.getSettingsFormData(settingsModal.querySelector('.plugin-settings-form'));
       plugin.instance.updateSettings(formData);

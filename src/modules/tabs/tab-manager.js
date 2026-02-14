@@ -5,6 +5,7 @@
 import { i18n } from '../../i18n.js';
 import { getTocVisible, clearToc, setTocVisible } from '../toc/toc.js';
 import { showNotification } from '../notification/notification.js';
+import { eventBus, EVENTS } from '../../core/events.js';
 
 export const HOME_TAB_ID = 'home';
 
@@ -99,6 +100,7 @@ export function switchToTab(tabId) {
     ctx.updateExportButtons?.();
     ctx.saveSession?.();
     els.content.scrollTop = homeScrollTop;
+    eventBus.emit(EVENTS.TAB_SWITCHED, { tabId: HOME_TAB_ID });
     return;
   }
 
@@ -135,6 +137,8 @@ export function switchToTab(tabId) {
 
   // 콘텐츠 스크롤 위치 복원
   els.content.scrollTop = tab.scrollTop || 0;
+
+  eventBus.emit(EVENTS.TAB_SWITCHED, { tabId });
 }
 
 export function closeTab(tabId, event) {

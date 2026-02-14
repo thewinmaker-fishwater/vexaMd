@@ -61,32 +61,33 @@
   flex-shrink: 0;
 }
 
-/* ========== View Mode Group ========== */
+/* ========== View Mode Group (Segmented Toggle) ========== */
 .view-mode-group {
   display: flex;
-  gap: 2px;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  padding: 2px;
+  gap: 0;
+  border-radius: 8px;
+  padding: 3px;
   flex-shrink: 0;
+  background: var(--bg-secondary);
 }
 
-.view-btn {
-  padding: 4px 8px;
-  border-radius: 4px;
+#toolbar .view-mode-group .view-btn {
+  padding: 5px 10px;
+  border-radius: 6px;
   color: var(--text-secondary);
-  transition: all 0.15s;
+  transition: all 0.2s ease;
 }
 
-.view-btn:hover {
+#toolbar .view-mode-group .view-btn:hover:not(.active) {
   color: var(--text);
   background: var(--accent-light);
 }
 
-.view-btn.active {
-  color: var(--accent);
-  background: var(--bg);
-  box-shadow: 0 1px 3px var(--shadow);
+#toolbar .view-mode-group .view-btn.active {
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 /* ========== Zoom Group ========== */
@@ -300,9 +301,9 @@
 .toolbar-dropdown-panel .edit-mode-group {
   display: flex;
   gap: 0;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  padding: 2px;
+  background: var(--border);
+  border-radius: 8px;
+  padding: 3px;
 }
 
 .toolbar-dropdown-panel .edit-mode-group button {
@@ -311,16 +312,20 @@
   padding: 6px 8px;
   border: none;
   background: transparent;
-  border-radius: 4px;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
 }
 
-.toolbar-dropdown-panel .edit-mode-group button:hover {
-  background: var(--bg);
+.toolbar-dropdown-panel .edit-mode-group button:hover:not(.active) {
+  color: var(--text);
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
 }
 
 .toolbar-dropdown-panel .edit-mode-group button.active {
-  background: var(--bg);
-  box-shadow: 0 1px 3px var(--shadow);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 /* ========== Modal ========== */

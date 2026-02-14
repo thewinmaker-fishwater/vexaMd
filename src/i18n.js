@@ -295,7 +295,14 @@ export const i18n = {
     vmdKeyEdit: '편집',
     vmdKeyGenerate: '키생성',
     vmdKeyGenHint: '키생성 버튼을 눌러주세요',
-    vmdKeyDeleteConfirm: '"{name}" 키를 삭제하시겠습니까?\n이 키로 열린 문서도 닫힙니다.'
+    vmdKeyDeleteConfirm: '"{name}" 키를 삭제하시겠습니까?\n이 키로 열린 문서도 닫힙니다.',
+
+    // Status Bar
+    statusBar: '상태바',
+    statusBarToggle: '상태바 표시/숨김 (Ctrl+/)',
+    statusChars: '자',
+    statusWords: '단어',
+    statusReadTime: '분',
   },
 
   en: {
@@ -589,7 +596,14 @@ export const i18n = {
     vmdKeyEdit: 'Edit',
     vmdKeyGenerate: 'Generate',
     vmdKeyGenHint: 'Press Generate button',
-    vmdKeyDeleteConfirm: 'Delete key "{name}"?\nDocuments opened with this key will be closed.'
+    vmdKeyDeleteConfirm: 'Delete key "{name}"?\nDocuments opened with this key will be closed.',
+
+    // Status Bar
+    statusBar: 'Status Bar',
+    statusBarToggle: 'Toggle Status Bar (Ctrl+/)',
+    statusChars: ' chars',
+    statusWords: ' words',
+    statusReadTime: ' min',
   },
 
   ja: {
@@ -883,7 +897,14 @@ export const i18n = {
     vmdKeyEdit: '編集',
     vmdKeyGenerate: 'キー生成',
     vmdKeyGenHint: 'キー生成ボタンを押してください',
-    vmdKeyDeleteConfirm: '"{name}" キーを削除しますか？\nこのキーで開いたドキュメントも閉じられます。'
+    vmdKeyDeleteConfirm: '"{name}" キーを削除しますか？\nこのキーで開いたドキュメントも閉じられます。',
+
+    // Status Bar
+    statusBar: 'ステータスバー',
+    statusBarToggle: 'ステータスバー表示/非表示 (Ctrl+/)',
+    statusChars: '文字',
+    statusWords: '語',
+    statusReadTime: '分',
   }
 };
 

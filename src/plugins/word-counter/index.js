@@ -1,15 +1,17 @@
 /**
  * Word Counter Plugin for Vexa MD
  *
- * Displays word/character count. Tests all 7 settings types.
+ * Displays word/character count in the toolbar.
+ * Uses shared text-utils for consistent counting with status bar.
  */
 
 import { Plugin } from '../../core/plugin.js';
+import { countWords, countChars } from '../../core/text-utils.js';
 
 export default class WordCounterPlugin extends Plugin {
   static id = 'word-counter';
   static name = 'Word Counter';
-  static version = '1.0.0';
+  static version = '1.1.0';
   static description = 'Displays word/character count in the toolbar';
   static author = 'Vexa MD Team';
 
@@ -22,7 +24,7 @@ export default class WordCounterPlugin extends Plugin {
 
   static defaultSettings = {
     showOnToolbar: true,
-    countMode: 'words',
+    countMode: 'both',
     separator: ' | ',
     fontSize: 12,
     badgeColor: '#4a9eff',
@@ -36,30 +38,24 @@ export default class WordCounterPlugin extends Plugin {
   }
 
   async init() {
-    console.log(`[WordCounter] Initialized with settings:`, this.settings);
-
-    // Create counter element in toolbar
     this.createCounter();
 
-    // Listen for content changes to update count
     this._on('content:rendered', () => this.updateCount());
     this._on('file:loaded', () => this.updateCount());
+    this._on('tab:switched', () => this.updateCount());
+    this._on('editor:content-changed', () => this.updateCount());
 
-    // Initial count
     setTimeout(() => this.updateCount(), 500);
   }
 
   createCounter() {
     if (!this.settings.showOnToolbar) return;
 
-    // Prevent duplicate
     const existing = document.getElementById('word-counter-badge');
     if (existing) existing.remove();
 
-    // Inject CSS once
     this.injectStyles();
 
-    // Create wrapper with icon + text
     this.counterEl = document.createElement('div');
     this.counterEl.id = 'word-counter-badge';
     this.counterEl.className = 'wc-badge';
@@ -69,13 +65,12 @@ export default class WordCounterPlugin extends Plugin {
         <path d="M9 20h6"/>
         <path d="M12 4v16"/>
       </svg>
-      <span class="wc-text">0</span>
+      <span class="wc-text">--</span>
     `;
     this.textEl = this.counterEl.querySelector('.wc-text');
 
     this.applyDynamicStyles();
 
-    // Insert before the plugin button divider
     const toolbar = document.getElementById('toolbar');
     const pluginDivider = toolbar?.querySelector('#btn-plugins')?.previousElementSibling;
     if (pluginDivider && pluginDivider.classList.contains('toolbar-divider')) {
@@ -143,15 +138,23 @@ export default class WordCounterPlugin extends Plugin {
     }
   }
 
+  isHomeTab() {
+    const mainContainer = document.getElementById('main-container');
+    return mainContainer?.querySelector('.home-tab.active') !== null
+      || document.querySelector('.tab.home-tab.active') !== null;
+  }
+
   updateCount() {
-    if (!this.counterEl) return;
+    if (!this.counterEl || !this.textEl) return;
 
     const content = document.querySelector('#content');
-    if (!content) return;
+    if (!content) { this.textEl.textContent = '--'; return; }
 
     const text = content.innerText || '';
-    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
-    const chars = text.length;
+    if (!text.trim()) { this.textEl.textContent = '--'; return; }
+
+    const words = countWords(text);
+    const chars = countChars(text);
 
     const s = this.settings;
     let display = '';
@@ -160,27 +163,26 @@ export default class WordCounterPlugin extends Plugin {
       display = `${words.toLocaleString()} words`;
     } else if (s.countMode === 'characters') {
       display = `${chars.toLocaleString()} chars`;
+    } else if (s.countMode === 'both') {
+      display = `${chars.toLocaleString()}C ${s.separator} ${words.toLocaleString()}W`;
     } else {
       display = s.customFormat
         .replace('{words}', words.toLocaleString())
         .replace('{chars}', chars.toLocaleString());
     }
 
-    if (this.textEl) this.textEl.textContent = display;
+    this.textEl.textContent = display;
   }
 
   onSettingsChange(settings) {
-    console.log(`[WordCounter] Settings changed:`, settings);
-
-    // Recreate counter if visibility changed
     if (this.counterEl && !settings.showOnToolbar) {
       this.counterEl.remove();
       this.counterEl = null;
+      this.textEl = null;
     } else if (!this.counterEl && settings.showOnToolbar) {
       this.createCounter();
     }
 
-    // Update styles
     this.applyDynamicStyles();
     this.updateCount();
   }
@@ -189,8 +191,8 @@ export default class WordCounterPlugin extends Plugin {
     if (this.counterEl) {
       this.counterEl.remove();
       this.counterEl = null;
+      this.textEl = null;
     }
     await super.destroy();
-    console.log(`[WordCounter] Destroyed`);
   }
 }

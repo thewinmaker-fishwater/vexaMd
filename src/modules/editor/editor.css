@@ -7,7 +7,7 @@
   position: absolute;
   top: 116px; /* 80px toolbar + 36px tab bar */
   left: 0;
-  bottom: 0;
+  bottom: 28px; /* status bar height */
   display: flex;
   flex-direction: column;
   background: var(--bg);

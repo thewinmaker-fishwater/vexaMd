@@ -10,6 +10,7 @@ import * as imageModal from '../image-modal/image-modal.js';
 import * as fileOps from '../files/file-ops.js';
 import { showNotification, showError } from '../notification/notification.js';
 import { markFileSaving } from '../files/file-ops.js';
+import { eventBus, EVENTS } from '../../core/events.js';
 
 let editorPane, editorTextarea, mainContainer, btnModeView, btnModeEdit, btnModeSplit, btnSave, contentEl;
 let editorDebounceTimer = null;
@@ -32,7 +33,10 @@ export function init({ t, doRenderMarkdown }) {
   if (btnModeView) btnModeView.addEventListener('click', () => setEditorMode('view'));
   if (btnModeEdit) btnModeEdit.addEventListener('click', () => setEditorMode('edit'));
   if (btnModeSplit) btnModeSplit.addEventListener('click', () => setEditorMode('split'));
-  if (btnSave) btnSave.addEventListener('click', saveCurrentFile);
+  if (btnSave) {
+    btnSave.addEventListener('click', saveCurrentFile);
+    btnSave.style.display = 'none';
+  }
   if (editorTextarea) {
     editorTextarea.addEventListener('input', onEditorInput);
     editorTextarea.addEventListener('keydown', onEditorKeydown);
@@ -83,7 +87,9 @@ export function setEditorMode(mode) {
     if (mode === 'view') editorPane.classList.add('hidden');
     else editorPane.classList.remove('hidden');
   }
+  if (btnSave) btnSave.style.display = mode === 'view' ? 'none' : '';
   if (mode === 'split') updateEditorPreview();
+  eventBus.emit(EVENTS.EDITOR_MODE_CHANGED, { mode });
 }
 
 export function updateEditorModeButtons(mode) {

@@ -198,6 +198,9 @@ input:focus + .toggle-slider {
 
 .plugin-settings-form {
   padding: 1rem;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .settings-field {

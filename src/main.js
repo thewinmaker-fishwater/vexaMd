@@ -35,6 +35,7 @@ import { initUpdater, checkForUpdate } from './modules/updater/updater.js';
 import { getWelcomeHTML } from './modules/welcome/welcome.js';
 import { initUITexts, updateUITexts as _updateUITexts } from './modules/ui/ui-texts.js';
 import * as editorManager from './modules/editor/editor-manager.js';
+import * as statusBar from './modules/status-bar/status-bar.js';
 
 // ========== State ==========
 let currentLanguage = localStorage.getItem('language') || 'ko';
@@ -259,6 +260,7 @@ async function init() {
     zoomReset: zoom.zoomReset,
     toggleSearchBar: () => search.toggleSearchBar(tabManager.getTabs().length),
     toggleToc,
+    toggleStatusBar: statusBar.toggle,
     closeCurrentTab: () => { if (tabManager.getActiveTabId()) tabManager.closeTab(tabManager.getActiveTabId()); },
     handleEscape: () => {
       const hasOpenDropdown = !formatDropdown?.classList.contains('hidden') ||
@@ -288,6 +290,15 @@ async function init() {
       if (!helpDropdown.contains(e.target) && !btnHelp.contains(e.target)) helpDropdown.classList.add('hidden');
       if (!e.target.closest('.toolbar-dropdown-wrapper') && !e.target.closest('.help-menu-wrapper')) closeAllToolbarDropdowns();
     },
+  });
+
+  // Status bar init
+  statusBar.init({
+    getActiveTabId: tabManager.getActiveTabId,
+    getTabs: tabManager.getTabs,
+    HOME_TAB_ID: tabManager.HOME_TAB_ID,
+    getCurrentLanguage: () => currentLanguage,
+    getCurrentEditorMode: editorManager.getCurrentEditorMode,
   });
 
   // Language

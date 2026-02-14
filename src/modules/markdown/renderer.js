@@ -122,6 +122,7 @@ ${contentText}
 // ========== State ==========
 let pages = [];
 let currentPage = 0;
+let lastCtx = null;
 
 export function getPages() {
   return pages;
@@ -174,7 +175,9 @@ export function renderMarkdown(text, isNewFile, ctx) {
 }
 
 export function renderPages(contentEl, ctx) {
-  if (!ctx) return;
+  if (ctx) lastCtx = ctx;
+  else if (lastCtx) ctx = lastCtx;
+  else return;
   const { currentViewMode, currentLanguage, attachImageClickListeners } = ctx;
 
   contentEl.classList.add('markdown-body');

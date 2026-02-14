@@ -715,7 +715,8 @@
   .page-nav,
   .presentation-overlay,
   .modal,
-  #toc-sidebar {
+  #toc-sidebar,
+  #status-bar {
     display: none !important;
   }
 
