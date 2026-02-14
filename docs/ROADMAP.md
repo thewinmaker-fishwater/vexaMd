@@ -74,7 +74,7 @@
 |:-:|------|------|:------:|
 | 1 | Windows 코드 서명 | SmartScreen 경고 제거, 인증서 도입 | ⭐⭐ |
 | ~~2~~ | ~~`create-release` 액션 deprecated 경고 수정~~ | ~~`set-output` → `$GITHUB_OUTPUT` 마이그레이션~~ | ✅ |
-| 3 | ARCHITECTURE.md / DEVELOPMENT_GUIDE.md 문서 동기화 | 현재 프로젝트 상태 반영 | ⭐ |
+| ~~3~~ | ~~ARCHITECTURE.md / DEVELOPMENT_GUIDE.md 문서 동기화~~ | ~~현재 프로젝트 상태 반영~~ | ✅ |
 
 ### 기타
 
