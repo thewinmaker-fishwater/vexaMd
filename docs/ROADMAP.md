@@ -68,6 +68,14 @@
 | 1 | 보안/샌드박싱 강화 | 이벤트 화이트리스트, DOM 접근 제한, 기능 검증 | ⭐⭐⭐ |
 | 2 | 플러그인 레지스트리/마켓 | 플러그인 검색/설치 UI, 버전 관리 | ⭐⭐⭐ |
 
+### 배포/인프라
+
+| # | 기능 | 설명 | 난이도 |
+|:-:|------|------|:------:|
+| 1 | Windows 코드 서명 | SmartScreen 경고 제거, 인증서 도입 | ⭐⭐ |
+| ~~2~~ | ~~`create-release` 액션 deprecated 경고 수정~~ | ~~`set-output` → `$GITHUB_OUTPUT` 마이그레이션~~ | ✅ |
+| 3 | ARCHITECTURE.md / DEVELOPMENT_GUIDE.md 문서 동기화 | 현재 프로젝트 상태 반영 | ⭐ |
+
 ### 기타
 
 | # | 기능 | 설명 | 난이도 |
@@ -83,7 +91,7 @@
 | ✅ | ~~파일 더블클릭으로 열 때 최대화 창 크기 유지 안됨~~ | 2026-01-22 싱글 인스턴스 버그 수정으로 해결 |
 | ✅ | ~~홈탭 깜빡임 (윈도우 상태 복원 시 VISIBLE 상태 충돌)~~ | 2026-02-09 StateFlags::VISIBLE 제외로 해결 |
 | ✅ | ~~latest.json URL이 draft 릴리스에서 잘못 생성~~ | 2026-02-14 태그 기반 URL 직접 구성으로 해결 |
-| ⚠️ | `create-release` 액션 `set-output` deprecated 경고 | 기능에는 문제 없음, 향후 수정 |
+| ✅ | ~~`create-release` 액션 `set-output` deprecated 경고~~ | `actions/create-release@v1` → `gh api` + `$GITHUB_OUTPUT`로 마이그레이션 |
 
 ---
 

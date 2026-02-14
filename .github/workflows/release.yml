@@ -11,26 +11,27 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     outputs:
-      release_id: ${{ steps.create.outputs.id }}
-      release_upload_url: ${{ steps.create.outputs.upload_url }}
+      release_id: ${{ steps.create.outputs.release_id }}
     steps:
       - name: Create Release
         id: create
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref_name }}
-          release_name: 'Vexa MD ${{ github.ref_name }}'
-          body: |
-            ## Vexa MD ${{ github.ref_name }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          REPO="${{ github.repository }}"
+          RELEASE_ID=$(gh api repos/${REPO}/releases \
+            -f tag_name="${TAG}" \
+            -f name="Vexa MD ${TAG}" \
+            -f body="## Vexa MD ${TAG}
 
-            ### Downloads
-            - **Windows**: `.exe` installer (NSIS)
-            - **macOS**: `.dmg` (ARM64 for M1/M2, Intel for older Macs)
-            - **Linux**: `.deb` or `.AppImage`
-          draft: true
-          prerelease: false
+          ### Downloads
+          - **Windows**: \`.exe\` installer (NSIS)
+          - **macOS**: \`.dmg\` (ARM64 for M1/M2, Intel for older Macs)
+          - **Linux**: \`.deb\` or \`.AppImage\`" \
+            -F draft=true \
+            --jq '.id')
+          echo "release_id=${RELEASE_ID}" >> "$GITHUB_OUTPUT"
 
   build:
     needs: create-release
