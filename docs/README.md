@@ -1,16 +1,14 @@
-# SP MD Viewer - 개발 문서
+# Vexa MD - 개발 문서
 
 ## 프로젝트 개요
 
-**SP MD Viewer**는 Tauri 2.x + Vanilla JavaScript로 개발된 초경량 마크다운 뷰어입니다.
+**Vexa MD**는 Tauri 2.x + Vanilla JavaScript로 개발된 초경량 마크다운 뷰어입니다.
 
 ### 주요 특징
 - 1초 미만의 빠른 렌더링 속도
-- 1.1MB 크기의 초경량 설치 파일
 - 다양한 컬러 테마 (6종) + 커스텀 테마 저장
 - 다크/라이트 모드 지원
-- 탭 기능으로 여러 파일 동시 열기
-- 최근 파일 목록 관리
+- 탭 기능으로 여러 파일 동시 열기 (세션 복원)
 - 확대/축소 및 뷰 모드 (한 페이지/여러 페이지)
 - 프레젠테이션 모드 (F5)
 - 다국어 지원 (한국어/영어/일본어)
@@ -19,7 +17,11 @@
 - TOC 사이드바 (목차)
 - 파일 자동 리로드 (외부 편집 감지)
 - GitHub 스타일 Alert Box
-- **마크다운 편집 기능** (View/Edit/Split 모드)
+- 마크다운 편집 기능 (View/Edit/Split 모드)
+- 읽기전용 암호화 포맷 (.vmd, AES-256-GCM)
+- 플러그인 시스템 (내장 9종 + 외부 설치)
+- 자동 업데이트 (GitHub Releases 기반)
+- 멀티플랫폼 (Windows, macOS, Linux)
 
 ---
 
@@ -31,6 +33,8 @@
 | 백엔드 | Rust | latest |
 | 프론트엔드 빌드 | Vite | 5.4.x |
 | 마크다운 파서 | marked.js | 12.x |
+| 다이어그램 | Mermaid.js | 11.x |
+| 코드 하이라이트 | highlight.js | 11.x |
 | 언어 | JavaScript (ES6+) | - |
 | 스타일링 | CSS3 (Custom Properties) | - |
 
@@ -39,26 +43,74 @@
 ## 프로젝트 구조
 
 ```
-mdView/
-├── docs/                    # 문서
-├── dist/                    # 빌드 결과물 (Vite)
-├── public/                  # 정적 파일
-│   └── logo.jpg            # Seven Peaks 로고
-├── src/                     # 프론트엔드 소스
-│   ├── main.js             # 메인 JavaScript
-│   ├── style.css           # 스타일시트
-│   └── i18n.js             # 다국어 번역
-├── src-tauri/              # Tauri/Rust 소스
+workspace-mdView/
+├── src/                        # 프론트엔드 소스
+│   ├── main.js                # 메인 오케스트레이터 (~341줄)
+│   ├── i18n.js                # 다국어 번역 (ko/en/ja)
+│   ├── core/                  # 핵심 시스템
+│   │   ├── events.js          # 이벤트 버스
+│   │   ├── store.js           # 상태 관리
+│   │   ├── plugin.js          # Plugin 기본 클래스
+│   │   ├── plugin-manager.js  # 플러그인 매니저
+│   │   └── plugin-api.js      # 플러그인 API 팩토리
+│   ├── modules/               # UI 모듈
+│   │   ├── tabs/              # 탭 관리
+│   │   ├── files/             # 파일 열기/드래그/워처
+│   │   ├── markdown/          # 마크다운 렌더링
+│   │   ├── editor/            # 에디터 모드
+│   │   ├── search/            # 검색
+│   │   ├── theme/             # 테마 시스템
+│   │   ├── toc/               # 목차 사이드바
+│   │   ├── zoom/              # 줌/뷰모드
+│   │   ├── presentation/      # 프레젠테이션
+│   │   ├── print/             # 인쇄/PDF
+│   │   ├── vmd/               # VMD 암호화 파일
+│   │   ├── session/           # 세션 저장/복원
+│   │   ├── updater/           # 자동 업데이트
+│   │   ├── plugins/           # 플러그인 설정 UI
+│   │   ├── shortcuts/         # 키보드 단축키
+│   │   ├── notification/      # 알림/에러 표시
+│   │   ├── image-modal/       # 이미지 모달
+│   │   ├── welcome/           # 웰컴 화면
+│   │   └── ui/                # UI 텍스트, 공통 UI
+│   ├── plugins/               # 내장 플러그인
+│   │   ├── mermaid/           # Mermaid 다이어그램
+│   │   ├── word-counter/      # 단어 수 카운터
+│   │   ├── reading-time/      # 읽기 시간 추정
+│   │   ├── auto-toc-insert/   # [TOC] 목차 삽입
+│   │   ├── image-zoom/        # 이미지 확대
+│   │   ├── footnote/          # 각주
+│   │   ├── copy-as-html/      # HTML 복사
+│   │   ├── emoji-replace/     # 이모지 변환
+│   │   ├── external-link-icon/ # 외부 링크 아이콘
+│   │   ├── highlight-search/  # 키워드 하이라이팅
+│   │   └── template/          # 개발자 템플릿
+│   └── styles/                # CSS 모듈
+│       ├── index.css          # CSS 통합 import
+│       ├── theme.css          # 테마 변수
+│       ├── base.css           # 기본 레이아웃
+│       ├── ui.css             # UI 컴포넌트
+│       ├── tabs.css           # 탭 바
+│       ├── viewer.css         # 마크다운 뷰어
+│       ├── syntax.css         # 코드 하이라이트
+│       ├── editor.css         # 에디터
+│       └── ...                # 기타 모듈별 CSS
+├── src-tauri/                 # Tauri 백엔드 (Rust)
 │   ├── src/
-│   │   ├── main.rs         # Rust 메인 (Windows)
-│   │   └── lib.rs          # Rust 라이브러리
-│   ├── icons/              # 앱 아이콘
-│   ├── capabilities/       # 권한 설정
-│   ├── Cargo.toml          # Rust 의존성
-│   └── tauri.conf.json     # Tauri 설정
-├── index.html              # 메인 HTML
-├── package.json            # npm 설정
-└── vite.config.js          # Vite 설정
+│   │   ├── main.rs            # Rust 메인 (Windows)
+│   │   └── lib.rs             # 커맨드, VMD 암호화, 윈도우 관리
+│   ├── icons/                 # 앱 아이콘
+│   ├── capabilities/          # 권한 설정
+│   ├── Cargo.toml             # Rust 의존성
+│   └── tauri.conf.json        # Tauri 설정 + 업데이터 설정
+├── docs/                      # 문서
+│   ├── troubleshooting/       # 트러블슈팅
+│   └── design/                # 설계 문서
+├── .github/workflows/         # CI/CD
+│   └── release.yml            # 멀티플랫폼 릴리스 빌드
+├── index.html                 # 메인 HTML
+├── package.json               # npm 설정
+└── vite.config.js             # Vite 설정
 ```
 
 ---
@@ -68,178 +120,56 @@ mdView/
 ### 1. 파일 관리
 - **파일 열기**: `Ctrl+O` 또는 툴바 버튼
 - **드래그 앤 드롭**: 파일을 창에 드래그하여 열기
-- **CLI 인자**: `md-viewer.exe file.md`로 직접 열기
+- **CLI 인자**: `vexa-md.exe file.md`로 직접 열기
 - **최근 파일**: 최대 10개 저장, 홈 화면에서 빠른 접근
+- **파일 감시**: 외부 수정 시 자동 리로드
 
 ### 2. 탭 시스템
 - 여러 파일을 탭으로 관리
 - 홈 탭은 항상 첫 번째에 위치 (닫기 불가)
-- `Ctrl+W`: 현재 탭 닫기
-- `Ctrl+Tab`: 다음 탭으로 이동
+- `Ctrl+W`: 현재 탭 닫기, `Ctrl+Tab`: 다음 탭 이동
+- 탭 횡스크롤 (좌우 방향 버튼, 마우스 휠)
+- 탭별 콘텐츠 스크롤 위치 독립 저장/복원
+- 세션 복원: 앱 재시작 시 이전 탭 자동 복원
 
 ### 3. 테마 시스템
 - **라이트/다크 모드**: `Ctrl+D`로 전환
-- **컬러 테마 6종**:
-  - 기본 (그레이)
-  - 퍼플
-  - 오션
-  - 선셋
-  - 포레스트
-  - 로즈
-- **테마 내보내기/가져오기**: JSON 파일로 저장/복원
+- **컬러 테마 6종**: 기본, 퍼플, 오션, 선셋, 포레스트, 로즈
+- **커스텀 테마**: 테마 커스터마이저에서 세밀 조정
+- **테마 프리셋**: 여러 커스텀 테마 이름 붙여 저장
+- **내보내기/가져오기**: JSON 파일로 테마 공유
 
-### 4. 뷰 옵션
-- **글씨 크기**: 작게 / 보통 / 크게 / 아주 크게
-- **콘텐츠 너비**: 좁게(900px) / 보통(1200px) / 넓게(1600px) / 전체
-- **뷰 모드**:
-  - 한 페이지 보기: 전체 내용 연속 스크롤
-  - 여러 페이지로 보기: `---` 기준 페이징
-- **확대/축소**: 50% ~ 200% (Ctrl+마우스 휠 지원)
+### 4. 마크다운 편집기
+- **3가지 모드**: View (보기), Edit (편집), Split (분할 미리보기)
+- **실시간 미리보기**: Split 모드에서 300ms 디바운스 즉시 반영
+- **변경 감지**: 미저장 탭에 (dot) 표시, 닫기 시 확인 다이얼로그
+- **`Ctrl+S`**: 저장
 
-### 5. 프레젠테이션 모드
-- `F5` 키로 시작
-- 전체 화면 슬라이드쇼
-- 키보드 네비게이션 (←/→/Space)
-- `ESC`로 종료
+### 5. 읽기전용 포맷 (.vmd)
+- **AES-256-GCM 암호화**: 마크다운을 암호화된 읽기전용 파일로 내보내기
+- **암호화 키 관리**: 내장키 + 사용자 키 생성/편집/삭제/내보내기/가져오기
+- **MD 변환**: VMD → MD 역변환 지원
+- **키 자동 매칭**: 파일 헤더의 키 이름으로 저장된 키 자동 검색
 
-#### 페이지 나누기
-마크다운 파일에서 `---` (수평선)을 사용하여 슬라이드/페이지를 구분합니다:
+### 6. 플러그인 시스템
+- **내장 플러그인 9종**: Mermaid, 읽기 시간, 단어 수, 목차 삽입, 이미지 확대, 각주, HTML 복사, 이모지, 외부 링크 아이콘, 키워드 하이라이팅
+- **외부 플러그인 설치**: 폴더 선택으로 설치, `{appDataDir}/plugins/` 자동 스캔
+- **설정 UI**: 플러그인별 설정 폼 (매니페스트 기반)
+- **개발자 템플릿**: `src/plugins/template/`
 
-```markdown
-# 첫 번째 슬라이드
+### 7. 자동 업데이트
+- 앱 시작 시 자동 확인 (3초 후 백그라운드)
+- 도움말 > "업데이트 확인"으로 수동 확인
+- 다운로드 진행률 + 재시작 버튼
+- minisign 서명 검증
 
-이것은 첫 번째 페이지 내용입니다.
-
----
-
-# 두 번째 슬라이드
-
-이것은 두 번째 페이지 내용입니다.
-
-- 목록 항목 1
-- 목록 항목 2
-
----
-
-# 세 번째 슬라이드
-
-마지막 페이지입니다.
-```
-
-**참고사항:**
-- `---`는 3개 이상의 대시(`-`)로 작성 가능 (`----`, `-----` 등)
-- `---` 앞뒤로 빈 줄이 있어야 페이지가 분리됨
-- 프레젠테이션 모드뿐만 아니라 "여러 페이지로 보기" 모드에서도 동일하게 적용
-
-### 6. 다국어 지원
-- 한국어 / English 지원
-- 툴바에서 언어 선택
-- 모든 UI 요소 동적 번역
-
-### 7. 인쇄 및 PDF 내보내기
-- `Ctrl+P`로 인쇄
-- 인쇄 시 UI 요소 자동 숨김
-- 깔끔한 흑백 인쇄 스타일
-- **PDF 내보내기**: 툴바의 PDF 버튼으로 PDF 파일 저장
-
-### 8. 코드 문법 하이라이트
-- **highlight.js** 기반 180+ 언어 지원
-- GitHub 스타일 색상 적용
-- 라이트/다크 테마 모두 지원
-
-지원 언어 예시:
-```markdown
-```javascript
-const hello = "world";
-```
-
-```python
-print("Hello, World!")
-```
-
-```css
-.container { display: flex; }
-```
-```
-
-### 9. TOC 사이드바 (목차)
-- `Ctrl+Shift+T` 또는 툴바 버튼으로 토글
-- 마크다운 헤딩(h1~h6) 기반 자동 생성
-- 클릭 시 해당 섹션으로 스크롤
-- 현재 보는 섹션 하이라이트 (스크롤 스파이)
-
-### 10. GitHub 스타일 Alert Box
-5가지 타입의 알림 박스 지원:
-
-```markdown
-> [!NOTE]
-> 참고 사항입니다.
-
-> [!TIP]
-> 유용한 팁입니다.
-
-> [!IMPORTANT]
-> 중요한 내용입니다.
-
-> [!WARNING]
-> 경고 메시지입니다.
-
-> [!CAUTION]
-> 주의가 필요한 내용입니다.
-```
-
-### 11. 파일 자동 리로드
-- 열린 파일이 외부에서 수정되면 자동으로 새로고침
-- 실시간 파일 감시 (Tauri watchImmediate API)
-
-### 12. 플러그인 시스템
-
-확장 가능한 플러그인 시스템으로 기능을 추가할 수 있습니다.
-
-#### 내장 플러그인: Mermaid 다이어그램
-
-마크다운 코드 블록에서 Mermaid 다이어그램을 렌더링합니다:
-
-````markdown
-```mermaid
-flowchart TD
-    A[시작] --> B{조건}
-    B -->|Yes| C[처리 1]
-    B -->|No| D[처리 2]
-```
-````
-
-지원 다이어그램:
-- Flowchart (흐름도)
-- Sequence Diagram (시퀀스 다이어그램)
-- Class Diagram (클래스 다이어그램)
-- State Diagram (상태 다이어그램)
-- 그 외 Mermaid.js 지원 다이어그램
-
-플러그인 개발 가이드: [plugin-development.md](./plugin-development.md)
-
-### 13. 마크다운 편집기
-앱 내에서 직접 마크다운 파일을 편집할 수 있습니다.
-
-#### 편집 모드
-툴바에서 3가지 모드를 선택할 수 있습니다:
-
-| 모드 | 아이콘 | 설명 |
-|------|--------|------|
-| **View** | 👁️ | 보기 전용 (기본값) |
-| **Edit** | ✏️ | 편집 전용 - 에디터만 표시 |
-| **Split** | ⫼ | 분할 모드 - 좌측 에디터, 우측 실시간 미리보기 |
-
-#### 사용 방법
-1. 마크다운 파일을 엽니다
-2. 툴바에서 원하는 모드 버튼을 클릭합니다
-3. 편집 후 `Ctrl+S`로 저장합니다
-
-#### 주요 기능
-- **실시간 미리보기**: Split 모드에서 편집 시 300ms 디바운스로 즉시 미리보기 반영
-- **변경 감지**: 변경된 탭에 • 표시로 미저장 상태 알림
-- **저장 확인**: 미저장 탭 닫기 시 확인 다이얼로그
-- **탭별 모드 유지**: 각 탭의 편집 모드가 독립적으로 유지됨
+### 8. 기타 기능
+- **프레젠테이션**: F5로 슬라이드쇼 (`---` 기준 분할)
+- **인쇄/PDF 내보내기**: Ctrl+P, A4 자동 맞춤
+- **코드 하이라이트**: highlight.js 180+ 언어
+- **TOC 사이드바**: Ctrl+Shift+T, 스크롤 스파이
+- **GitHub Alert Box**: NOTE, TIP, IMPORTANT, WARNING, CAUTION
+- **줌**: 50~200%, Pan 기능, 커서/손끌기 토글
 
 ---
 
@@ -255,13 +185,9 @@ flowchart TD
 | `Ctrl+W` | 현재 탭 닫기 |
 | `Ctrl+Tab` | 다음 탭 |
 | `Ctrl+Shift+T` | TOC 사이드바 토글 |
-| `Ctrl++` | 확대 |
-| `Ctrl+-` | 축소 |
-| `Ctrl+0` | 원래 크기 |
+| `Ctrl++/-/0` | 확대/축소/리셋 |
 | `F5` | 프레젠테이션 시작 |
-| `←/→` | 페이지/슬라이드 이동 |
-| `Space` | 다음 슬라이드 (프레젠테이션 모드) |
-| `Esc` | 홈으로 / 프레젠테이션 종료 |
+| `Esc` | 프레젠테이션 종료 / 드롭다운 닫기 |
 
 ---
 
@@ -270,7 +196,7 @@ flowchart TD
 ### 사전 요구사항
 - Node.js 18+
 - Rust (rustup)
-- Windows 10/11
+- Windows 10/11, macOS, 또는 Linux
 
 ### 개발 모드
 ```bash
@@ -283,27 +209,8 @@ npm run tauri dev
 npm run tauri build
 ```
 
-빌드 결과물:
-- `src-tauri/target/release/md-viewer.exe` (실행 파일)
-- `src-tauri/target/release/bundle/nsis/SP MD Viewer_1.0.0_x64-setup.exe` (설치 파일)
-
----
-
-## 설정 저장
-
-모든 설정은 `localStorage`에 저장됩니다:
-
-| 키 | 설명 | 기본값 |
-|----|------|--------|
-| `theme` | 라이트/다크 | `light` |
-| `colorTheme` | 컬러 테마 | `default` |
-| `fontSize` | 글씨 크기 | `medium` |
-| `fontFamily` | 글꼴 | `system` |
-| `contentWidth` | 콘텐츠 너비 | `narrow` |
-| `viewMode` | 뷰 모드 | `single` |
-| `zoom` | 확대/축소 | `100` |
-| `language` | 언어 | `ko` |
-| `recentFiles` | 최근 파일 목록 | `[]` |
+### 릴리스
+[RELEASE_GUIDE.md](./RELEASE_GUIDE.md) 참조.
 
 ---
 
@@ -316,21 +223,11 @@ npm run tauri build
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | 기술 아키텍처 |
 | [DEVELOPMENT_GUIDE.md](./DEVELOPMENT_GUIDE.md) | 개발 가이드 |
 | [ROADMAP.md](./ROADMAP.md) | 로드맵 |
+| [RELEASE_GUIDE.md](./RELEASE_GUIDE.md) | 릴리스 가이드 |
 | [plugin-development.md](./plugin-development.md) | 플러그인 개발 가이드 |
+| [plugin-user-guide.md](./plugin-user-guide.md) | 플러그인 사용자 가이드 |
 | [troubleshooting/](./troubleshooting/) | 트러블슈팅 문서 |
 | [SESSION-LOG.md](./SESSION-LOG.md) | 세션 로그 및 개발 이력 |
-
----
-
-## 라이선스
-
-Apache 2.0 License
-
----
-
-## 개발사
-
-**Seven Peaks Software**
 
 ---
 
@@ -338,12 +235,10 @@ Apache 2.0 License
 
 | 날짜 | 변경 내용 |
 |------|----------|
-| 2026-01-25 | 플러그인 시스템 섹션 추가 (Mermaid 다이어그램) |
-| 2026-01-25 | 문서 구조 섹션 추가 |
-| 2026-01-24 | 마크다운 편집기 섹션 추가 (View/Edit/Split 모드) |
-| 2026-01-24 | PDF 내보내기, 코드 하이라이트, 복사 버튼 추가 |
+| 2026-02-14 | 전면 재작성: Vexa MD로 제품명 통일, 전체 기능 동기화 |
+| 2026-01-25 | 플러그인 시스템 섹션 추가 |
+| 2026-01-24 | 마크다운 편집기 섹션 추가 |
 | 2026-01-22 | TOC 사이드바 섹션 추가 |
-| 2026-01-09 | 파일 자동 리로드 섹션 추가 |
 | 2025-12-26 | 초기 문서 작성 |
 
-*마지막 업데이트: 2026-01-25*
+*마지막 업데이트: 2026-02-14*
