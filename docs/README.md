@@ -19,7 +19,8 @@
 - GitHub 스타일 Alert Box
 - 마크다운 편집 기능 (View/Edit/Split 모드)
 - 읽기전용 암호화 포맷 (.vmd, AES-256-GCM)
-- 플러그인 시스템 (내장 9종 + 외부 설치)
+- 상태바 (글자 수, 단어 수, 읽기 시간, 줌 비율)
+- 플러그인 시스템 (내장 11종 + 외부 설치)
 - 자동 업데이트 (GitHub Releases 기반)
 - 멀티플랫폼 (Windows, macOS, Linux)
 
@@ -50,6 +51,7 @@ workspace-mdView/
 │   ├── core/                  # 핵심 시스템
 │   │   ├── events.js          # 이벤트 버스
 │   │   ├── store.js           # 상태 관리
+│   │   ├── text-utils.js      # 텍스트 유틸리티 (카운팅)
 │   │   ├── plugin.js          # Plugin 기본 클래스
 │   │   ├── plugin-manager.js  # 플러그인 매니저
 │   │   └── plugin-api.js      # 플러그인 API 팩토리
@@ -67,6 +69,7 @@ workspace-mdView/
 │   │   ├── vmd/               # VMD 암호화 파일
 │   │   ├── session/           # 세션 저장/복원
 │   │   ├── updater/           # 자동 업데이트
+│   │   ├── status-bar/        # 하단 상태바
 │   │   ├── plugins/           # 플러그인 설정 UI
 │   │   ├── shortcuts/         # 키보드 단축키
 │   │   ├── notification/      # 알림/에러 표시
@@ -152,7 +155,7 @@ workspace-mdView/
 - **키 자동 매칭**: 파일 헤더의 키 이름으로 저장된 키 자동 검색
 
 ### 6. 플러그인 시스템
-- **내장 플러그인 9종**: Mermaid, 읽기 시간, 단어 수, 목차 삽입, 이미지 확대, 각주, HTML 복사, 이모지, 외부 링크 아이콘, 키워드 하이라이팅
+- **내장 플러그인 11종**: Mermaid, 읽기 시간, 단어 수 (v1.1.0, CJK 인식), 목차 삽입, 이미지 확대, 각주, HTML 복사, 이모지, 외부 링크 아이콘, 키워드 하이라이팅, 개발자 템플릿
 - **외부 플러그인 설치**: 폴더 선택으로 설치, `{appDataDir}/plugins/` 자동 스캔
 - **설정 UI**: 플러그인별 설정 폼 (매니페스트 기반)
 - **개발자 템플릿**: `src/plugins/template/`
@@ -169,6 +172,7 @@ workspace-mdView/
 - **코드 하이라이트**: highlight.js 180+ 언어
 - **TOC 사이드바**: Ctrl+Shift+T, 스크롤 스파이
 - **GitHub Alert Box**: NOTE, TIP, IMPORTANT, WARNING, CAUTION
+- **상태바**: Ctrl+/로 토글, 글자 수/단어 수/읽기 시간/줌 비율 표시
 - **줌**: 50~200%, Pan 기능, 커서/손끌기 토글
 
 ---
@@ -185,6 +189,7 @@ workspace-mdView/
 | `Ctrl+W` | 현재 탭 닫기 |
 | `Ctrl+Tab` | 다음 탭 |
 | `Ctrl+Shift+T` | TOC 사이드바 토글 |
+| `Ctrl+/` | 상태바 토글 |
 | `Ctrl++/-/0` | 확대/축소/리셋 |
 | `F5` | 프레젠테이션 시작 |
 | `Esc` | 프레젠테이션 종료 / 드롭다운 닫기 |
@@ -235,10 +240,11 @@ npm run tauri build
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-02-20 | 상태바 기능, Word Counter v1.1.0, Ctrl+/ 단축키, text-utils.js 추가 |
 | 2026-02-14 | 전면 재작성: Vexa MD로 제품명 통일, 전체 기능 동기화 |
 | 2026-01-25 | 플러그인 시스템 섹션 추가 |
 | 2026-01-24 | 마크다운 편집기 섹션 추가 |
 | 2026-01-22 | TOC 사이드바 섹션 추가 |
 | 2025-12-26 | 초기 문서 작성 |
 
-*마지막 업데이트: 2026-02-14*
+*마지막 업데이트: 2026-02-20*

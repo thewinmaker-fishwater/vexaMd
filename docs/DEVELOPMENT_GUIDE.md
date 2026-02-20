@@ -294,7 +294,7 @@ pub fn run() {
 
 ### 5.1 모듈 시스템
 
-프론트엔드는 `main.js` 오케스트레이터가 19개 모듈을 조립하는 구조입니다.
+프론트엔드는 `main.js` 오케스트레이터가 20개 모듈을 조립하는 구조입니다.
 
 ```javascript
 // main.js (~341줄) - 모듈 import 및 초기화
@@ -313,12 +313,12 @@ async function init() {
 
 ### 5.2 CSS 모듈 구조
 
-CSS는 14개 모듈로 분리되어 `src/styles/index.css`에서 순서대로 import합니다:
+CSS는 15개 모듈로 분리되어 `src/styles/index.css`에서 순서대로 import합니다:
 
 ```
 theme.css → base.css → ui.css → tabs.css → files.css →
 search.css → viewer.css → syntax.css → toc.css → editor.css →
-plugin-ui.css → vmd-key-ui.css → animations.css → updater.css
+plugin-ui.css → vmd-key-ui.css → status-bar.css → animations.css → updater.css
 ```
 
 각 모듈별 CSS는 해당 모듈 디렉토리에 위치합니다 (예: `modules/tabs/tabs.css`).
@@ -454,8 +454,9 @@ npm run tauri build
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-02-20 | CSS 15개 모듈, 20개 UI 모듈로 업데이트 |
 | 2026-02-14 | 전면 재작성: Vexa MD 통일, 현재 설정/구조/커맨드 반영, 릴리스 가이드 분리 |
 | 2026-01-24 | 마크다운 편집 기능, CSS 모듈화 구조 추가 |
 | 2025-12-26 | 초기 문서 작성 |
 
-*마지막 업데이트: 2026-02-14*
+*마지막 업데이트: 2026-02-20*

@@ -30,7 +30,7 @@ workspace-mdView/
 │   ├── i18n.js                   # 다국어 지원 (한국어/영어/일본어)
 │   │
 │   ├── styles/                   # CSS 모듈 시스템
-│   │   ├── index.css             # CSS 진입점 (@import 14개 모듈)
+│   │   ├── index.css             # CSS 진입점 (@import 15개 모듈)
 │   │   ├── base.css              # 전역 리셋, 기본 레이아웃
 │   │   └── animations.css        # 알림 애니메이션 (slideIn/slideOut)
 │   │
@@ -38,11 +38,12 @@ workspace-mdView/
 │   │   ├── store.js              # 중앙 상태 관리 (Observer 패턴)
 │   │   ├── events.js             # 이벤트 버스 (모듈 간 통신)
 │   │   ├── dom.js                # DOM 유틸리티
+│   │   ├── text-utils.js         # 텍스트 유틸리티 (단어/글자/읽기시간 카운팅)
 │   │   ├── plugin.js             # Plugin 기본 클래스
 │   │   ├── plugin-manager.js     # 플러그인 로딩/관리/설치/제거
 │   │   └── plugin-api.js         # 플러그인에 노출되는 API
 │   │
-│   ├── modules/                  # 기능별 모듈 (19개)
+│   ├── modules/                  # 기능별 모듈 (20개)
 │   │   ├── notification/         # 알림 시스템
 │   │   │   └── notification.js   # showNotification, showError
 │   │   ├── image-modal/          # 이미지 확대 모달
@@ -92,6 +93,8 @@ workspace-mdView/
 │   │   ├── updater/              # 자동 업데이트
 │   │   │   ├── updater.js        # 버전 확인, 다운로드, 재시작
 │   │   │   └── updater.css
+│   │   ├── status-bar/           # 상태바
+│   │   │   └── status-bar.js     # 글자수/단어수/읽기시간/줌 표시
 │   │   └── viewer/               # 뷰어 공통
 │   │       ├── viewer.css        # 마크다운 뷰어 스타일
 │   │       └── syntax.css        # 코드 하이라이트 스타일
@@ -178,6 +181,7 @@ tabs.init({
 | ui-texts | ui-texts.js | i18n 기반 전체 UI 텍스트 업데이트 |
 | plugin-ui | plugin-ui.js | 플러그인 관리 UI (설치/삭제/에러/설정 폼) |
 | updater | updater.js | 자동 업데이트 확인/다운로드/재시작 |
+| status-bar | status-bar.js | 하단 상태바 (글자수/단어수/읽기시간/파일명/줌) |
 
 ### main.js (오케스트레이터)에 남은 것
 
@@ -205,10 +209,17 @@ tabs.init({
 
 ### src/main.js (~341줄)
 - 앱 오케스트레이터 (진입점)
-- 19개 모듈 import 및 context 전달로 초기화
+- 20개 모듈 import 및 context 전달로 초기화
 - 툴바 이벤트 연결
 
 ### src/core/ (핵심 인프라)
+
+#### text-utils.js - 텍스트 분석 유틸리티
+```javascript
+// CJK 인식 단어/글자/읽기시간 카운팅 (상태바, Word Counter 플러그인에서 공유)
+import { countWords, countChars, calcReadingTime } from './text-utils.js';
+countWords('Hello 안녕하세요');  // CJK 문자는 개별 단어로 카운팅
+```
 
 #### store.js - 중앙 상태 관리
 ```javascript
@@ -449,8 +460,9 @@ const api = {
 | 10 | editor | editor.css | 에디터 |
 | 11 | plugins | plugin-ui.css | 플러그인 UI |
 | 12 | vmd-key | vmd-key-ui.css | VMD 키 관리 UI |
-| 13 | animations | animations.css | 알림 애니메이션 |
-| 14 | updater | updater.css | 자동 업데이트 모달 |
+| 13 | status-bar | status-bar.css | 하단 상태바 |
+| 14 | animations | animations.css | 알림 애니메이션 |
+| 15 | updater | updater.css | 자동 업데이트 모달 |
 
 ---
 
@@ -543,10 +555,11 @@ src-tauri/target/release/
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-02-20 | status-bar 모듈, text-utils.js 추가, CSS 15개 모듈로 업데이트 |
 | 2026-02-14 | 전면 동기화: Vexa MD 통일, 모듈/플러그인/Tauri 플러그인 목록 현행화, 자동 업데이트/CI 섹션 추가 |
 | 2026-01-31 | 플러그인 시스템 Phase 2, main.js 추가 축소 리팩토링 |
 | 2026-01-30 | main.js 모듈 분리 리팩토링 - 13개 모듈 구조로 전면 재작성 |
 | 2026-01-25 | 플러그인 시스템 아키텍처 추가, CSS 모듈 로딩 순서 문서화 |
 | 2025-12-29 | 모듈화 아키텍처 문서화 |
 
-*마지막 업데이트: 2026-02-14*
+*마지막 업데이트: 2026-02-20*

@@ -4,6 +4,102 @@
 
 ---
 
+## 세션 2026-02-20
+
+### 작업 내용
+
+1. **상태바 (Status Bar) 구현**
+   - VS Code 스타일 하단 상태바 (높이 28px, flex 레이아웃)
+   - 좌측: 파일명, 중앙: 글자 수·단어 수·읽기 시간, 우측: 줌 비율
+   - `Ctrl+/` 단축키로 상태바 표시/숨기기 토글 (iOS 스타일 토글 스위치)
+   - 홈탭에서는 "Vexa MD v1.5.2" 표시
+   - 인쇄/프레젠테이션 모드에서 자동 숨김
+   - 다크/라이트 테마 자동 대응 (CSS 변수)
+   - i18n 지원 (자/chars/文字, 단어/words/語, 분/min/分)
+
+2. **공유 텍스트 유틸리티 (text-utils.js)**
+   - `src/core/text-utils.js` 신규 생성
+   - `countWords()`, `countChars()`, `calcReadingTime()` 공유 함수
+   - CJK 인식 카운팅: 한국어/중국어/일본어 문자를 개별 단어로 카운팅
+   - 상태바와 Word Counter 플러그인에서 동일 로직 사용
+
+3. **Word Counter 플러그인 v1.1.0 전면 개선**
+   - CJK 인식 카운팅 (text-utils.js 공유)
+   - 기본 표시 모드 `'words'` → `'both'` (글자 수 + 단어 수)
+   - `editor:content-changed`, `tab:switched` 이벤트 구독 추가
+   - 빈 문서에서 '--' 표시
+
+4. **플러그인 UI 수정**
+   - 플러그인 설정 팝업 스크롤 추가 (`flex: 1; overflow-y: auto; min-height: 0`)
+   - range 슬라이더 드래그 시 실시간 값 표시 (input 이벤트 리스너)
+
+5. **저장 버튼 에디터 모드 전용**
+   - 도구 드롭다운의 저장 버튼을 에디터 모드(edit/split)에서만 표시
+   - 보기 모드(view)에서는 숨김
+
+6. **뷰 모드/에디터 모드 토글 스타일 개선**
+   - `#toolbar .view-mode-group .view-btn.active`: accent 배경 + 흰색 텍스트 + box-shadow
+   - CSS 특이성 문제 해결 (`#toolbar button` ID 셀렉터 오버라이드)
+   - 에디터 모드 드롭다운 버튼도 동일한 액센트 스타일 적용
+
+7. **Reading Time 플러그인 탭 전환 수정**
+   - `tab:switched` 이벤트 구독 추가
+
+8. **렌더러 페이징 수정**
+   - `renderer.js`에 `lastCtx` 모듈 변수 추가
+   - 페이지 네비게이션 시 ctx 없이 호출되는 문제 해결
+
+9. **문서 현행화**
+   - FEATURES.md: 상태바(#29), Word Counter v1.1.0, Ctrl+/ 단축키 추가
+   - ARCHITECTURE.md: status-bar 모듈, text-utils.js, CSS 15개 모듈 업데이트
+   - ROADMAP.md: 상태바 완료 반영, 신규 완료 항목 추가
+   - README.md: 상태바, Ctrl+/, 내장 플러그인 11종 업데이트
+   - DEVELOPMENT_GUIDE.md: CSS 15개, 모듈 20개 업데이트
+
+### 수정된 파일
+
+| 파일 | 변경 내용 |
+|------|----------|
+| `src/modules/status-bar/status-bar.js` | **신규** - 상태바 모듈 |
+| `src/styles/status-bar.css` | **신규** - 상태바 CSS (토글 스위치 포함) |
+| `src/core/text-utils.js` | **신규** - 공유 텍스트 유틸리티 |
+| `index.html` | 상태바 HTML, 토글 체크박스 추가 |
+| `src/main.js` | status-bar 모듈 import + init |
+| `src/i18n.js` | 상태바 관련 번역 키 추가 |
+| `src/styles/index.css` | status-bar.css import 추가 |
+| `src/styles/base.css` | #content bottom: 28px 조정 |
+| `src/modules/toc/toc.css` | bottom: 28px 조정 |
+| `src/modules/editor/editor.css` | bottom: 28px 조정 |
+| `src/modules/viewer/viewer.css` | 인쇄 시 상태바 숨김 |
+| `src/modules/editor/editor-manager.js` | 저장 버튼 에디터 모드 전용 |
+| `src/plugins/word-counter/index.js` | v1.1.0 전면 개선 |
+| `src/plugins/word-counter/plugin.json` | 버전 1.1.0, countMode 기본값 변경 |
+| `src/plugins/reading-time/index.js` | tab:switched 이벤트 추가 |
+| `src/modules/plugins/plugin-ui.css` | 설정 폼 스크롤 수정 |
+| `src/modules/plugins/plugin-ui.js` | range 슬라이더 실시간 값 표시 |
+| `src/modules/markdown/renderer.js` | lastCtx 캐싱으로 페이징 수정 |
+| `src/modules/ui/ui.css` | 뷰 모드/에디터 모드 토글 스타일 |
+| `src/modules/tabs/tab-manager.js` | TAB_SWITCHED 이벤트 emit |
+| `src/modules/shortcuts/shortcuts.js` | Ctrl+/ 상태바 토글 단축키 |
+
+### 발생한 문제 및 해결
+
+| 문제 | 원인 | 해결 |
+|------|------|------|
+| 뷰 모드 활성화 스타일 미적용 | `#toolbar button` (ID 셀렉터)가 `.view-btn.active` 오버라이드 | `#toolbar .view-mode-group .view-btn.active` 사용 |
+| 상태바와 Word Counter 카운팅 불일치 | 각각 독립적 카운팅 로직 | `text-utils.js` 공유 유틸리티 생성 |
+| 페이지 네비게이션 실패 | `goToPage()`→`renderPages(contentEl)` 호출 시 ctx 누락 | `lastCtx` 모듈 변수로 ctx 캐싱 |
+| 플러그인 설정 팝업 스크롤 안됨 | flex 컨테이너 내 overflow 미설정 | `flex: 1; overflow-y: auto; min-height: 0` |
+
+### 커밋 정보
+- `fa74776` feat: add status bar, fix plugins, improve UI toggle indicators
+
+### 다음 세션 참고사항
+- 문서 현행화 완료 상태
+- 프로덕션 빌드 완료 (MSI + NSIS 인스톨러)
+
+---
+
 ## 세션 2026-02-14
 
 ### 작업 내용
@@ -923,4 +1019,4 @@ feat: add toolbar dropdown grouping for Format and Tools
 
 ---
 
-*마지막 업데이트: 2026-02-14*
+*마지막 업데이트: 2026-02-20*
