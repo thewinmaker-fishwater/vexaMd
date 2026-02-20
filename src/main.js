@@ -183,6 +183,7 @@ async function init() {
   tabManager.init({
     getWelcomeHTML: welcomeGetter,
     renderHomeRecentFiles: fileOps.renderHomeRecentFiles,
+    renderHomeFavorites: fileOps.renderHomeFavorites,
     setEditorMode: editorManager.setEditorMode,
     applyTabZoom: zoom.applyTabZoom,
     updateExportButtons,
@@ -261,6 +262,13 @@ async function init() {
     toggleSearchBar: () => search.toggleSearchBar(tabManager.getTabs().length),
     toggleToc,
     toggleStatusBar: statusBar.toggle,
+    toggleFavorite: () => {
+      const activeTab = tabManager.getTabs().find(t => t.id === tabManager.getActiveTabId());
+      if (activeTab) {
+        fileOps.toggleFavorite(activeTab.name, activeTab.filePath);
+        fileOps.updateFavoriteButton(activeTab.filePath);
+      }
+    },
     closeCurrentTab: () => { if (tabManager.getActiveTabId()) tabManager.closeTab(tabManager.getActiveTabId()); },
     handleEscape: () => {
       const hasOpenDropdown = !formatDropdown?.classList.contains('hidden') ||
@@ -272,6 +280,7 @@ async function init() {
       else if (!shortcutsModal.classList.contains('hidden')) { shortcutsModal.classList.add('hidden'); }
       else if (search.getIsSearchVisible()) { search.hideSearchBar(); }
       fileOps.hideRecentDropdown();
+      fileOps.hideFavoritesDropdown();
     },
     nextTab: () => {
       const allTabs = [tabManager.HOME_TAB_ID, ...tabManager.getTabs().map(t => t.id)];
@@ -287,6 +296,9 @@ async function init() {
       const recentDropdown = document.getElementById('recent-dropdown');
       const btnRecent = document.getElementById('btn-recent');
       if (!recentDropdown.contains(e.target) && !btnRecent.contains(e.target)) fileOps.hideRecentDropdown();
+      const favoritesDropdown = document.getElementById('favorites-dropdown');
+      const btnFavorites = document.getElementById('btn-favorites');
+      if (!favoritesDropdown.contains(e.target) && !btnFavorites.contains(e.target)) fileOps.hideFavoritesDropdown();
       if (!helpDropdown.contains(e.target) && !btnHelp.contains(e.target)) helpDropdown.classList.add('hidden');
       if (!e.target.closest('.toolbar-dropdown-wrapper') && !e.target.closest('.help-menu-wrapper')) closeAllToolbarDropdowns();
     },
@@ -299,6 +311,16 @@ async function init() {
     HOME_TAB_ID: tabManager.HOME_TAB_ID,
     getCurrentLanguage: () => currentLanguage,
     getCurrentEditorMode: editorManager.getCurrentEditorMode,
+  });
+
+  // Update favorite button on tab switch
+  eventBus.on(EVENTS.TAB_SWITCHED, ({ tabId }) => {
+    if (tabId === tabManager.HOME_TAB_ID) {
+      fileOps.updateFavoriteButton(null);
+    } else {
+      const tab = tabManager.getTabs().find(t => t.id === tabId);
+      fileOps.updateFavoriteButton(tab?.filePath);
+    }
   });
 
   // Language
@@ -411,6 +433,7 @@ async function init() {
       tabManager.switchToTab(tabManager.HOME_TAB_ID);
     }
     fileOps.renderHomeRecentFiles();
+    fileOps.renderHomeFavorites();
 
     // 모든 준비 완료 후 윈도우 표시
     if (tauriApi) {
@@ -429,6 +452,7 @@ async function init() {
     // Tauri 없는 환경 (웹) - 홈탭 표시
     tabManager.switchToTab(tabManager.HOME_TAB_ID);
     fileOps.renderHomeRecentFiles();
+    fileOps.renderHomeFavorites();
     document.body.style.opacity = '1';
   });
 }

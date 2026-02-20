@@ -61,6 +61,10 @@ function setupKeyboard() {
       e.preventDefault();
       ctx.toggleToc();
     }
+    if (e.ctrlKey && e.key === 'b') {
+      e.preventDefault();
+      ctx.toggleFavorite?.();
+    }
     if (e.ctrlKey && e.key === 'w') {
       e.preventDefault();
       ctx.closeCurrentTab();

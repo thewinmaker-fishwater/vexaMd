@@ -4,6 +4,44 @@
 
 ---
 
+## 세션 2026-02-20 (2)
+
+### 작업 내용
+
+1. **즐겨찾기 (Favorites) 기능 구현**
+   - 자주 여는 파일을 별표(★)로 고정하여 빠르게 접근
+   - 툴바에 별 토글 버튼(`btn-favorite-toggle`) + 즐겨찾기 목록 버튼(`btn-favorites`) 추가
+   - 즐겨찾기 드롭다운: 최근 파일 드롭다운과 동일 패턴 (클릭 열기, X 제거, 지우기)
+   - 홈 화면에 즐겨찾기 섹션 추가 (최근 파일 위, 별 아이콘)
+   - `Ctrl+B` 단축키로 현재 파일 즐겨찾기 토글
+   - 탭 전환 시 별표 버튼 상태 자동 동기화
+   - localStorage `favorites` 키에 최대 20개 저장
+   - i18n 지원 (ko/en/ja)
+   - 단축키 모달에 `Ctrl+B 즐겨찾기` 항목 추가
+
+### 수정된 파일
+- `src/modules/files/file-ops.js` - 즐겨찾기 CRUD, 드롭다운/홈 렌더링
+- `src/modules/files/files.css` - 즐겨찾기 스타일, 별 활성화 색상
+- `index.html` - 별표 토글/목록 버튼, 즐겨찾기 드롭다운
+- `src/modules/welcome/welcome.js` - 홈 화면 즐겨찾기 섹션
+- `src/i18n.js` - 즐겨찾기 번역 키 (ko/en/ja)
+- `src/main.js` - 이벤트 연결, context 전달
+- `src/modules/tabs/tab-manager.js` - 홈탭 전환 시 renderHomeFavorites 호출
+- `src/modules/ui/ui-texts.js` - 즐겨찾기 UI 텍스트 업데이트
+- `src/modules/shortcuts/shortcuts.js` - Ctrl+B 단축키 추가
+
+### 발생한 문제
+- 없음
+
+### 커밋 정보
+- (아래 참조)
+
+### 다음 세션 참고사항
+- 즐겨찾기 드래그 앤 드롭 정렬 기능 고려
+- 즐겨찾기 폴더/그룹 기능 확장 가능
+
+---
+
 ## 세션 2026-02-20
 
 ### 작업 내용

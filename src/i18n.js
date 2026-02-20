@@ -78,6 +78,13 @@ export const i18n = {
     recentEmpty: '최근 파일이 없습니다',
     clearList: '목록 지우기',
 
+    // Favorites
+    favorites: '즐겨찾기',
+    favoritesEmpty: '즐겨찾기가 없습니다',
+    addFavorite: '즐겨찾기 추가',
+    removeFavorite: '즐겨찾기 제거',
+    clearFavorites: '지우기',
+
     // Welcome Screen
     welcomeSubtitle: '초경량 마크다운 뷰어',
     welcomeInstruction: 'Markdown 파일을 열거나 이 영역에 드래그하세요.',
@@ -156,6 +163,7 @@ export const i18n = {
     shortcutNav: '탐색',
     scOpenFile: '파일 열기',
     scSave: '저장',
+    scFavorite: '즐겨찾기',
     scCloseTab: '탭 닫기',
     scPrint: '인쇄',
     scHome: '홈으로',
@@ -379,6 +387,13 @@ export const i18n = {
     recentEmpty: 'No recent files',
     clearList: 'Clear List',
 
+    // Favorites
+    favorites: 'Favorites',
+    favoritesEmpty: 'No favorites',
+    addFavorite: 'Add to Favorites',
+    removeFavorite: 'Remove from Favorites',
+    clearFavorites: 'Clear',
+
     // Welcome Screen
     welcomeSubtitle: 'Ultra-lightweight Markdown Viewer',
     welcomeInstruction: 'Open or drag a Markdown file here.',
@@ -457,6 +472,7 @@ export const i18n = {
     shortcutNav: 'Navigation',
     scOpenFile: 'Open File',
     scSave: 'Save',
+    scFavorite: 'Favorite',
     scCloseTab: 'Close Tab',
     scPrint: 'Print',
     scHome: 'Go Home',
@@ -680,6 +696,13 @@ export const i18n = {
     recentEmpty: '最近のファイルはありません',
     clearList: 'リストをクリア',
 
+    // Favorites
+    favorites: 'お気に入り',
+    favoritesEmpty: 'お気に入りはありません',
+    addFavorite: 'お気に入りに追加',
+    removeFavorite: 'お気に入りから削除',
+    clearFavorites: 'クリア',
+
     // Welcome Screen
     welcomeSubtitle: '超軽量マークダウンビューア',
     welcomeInstruction: 'Markdownファイルを開くか、ここにドラッグしてください。',
@@ -758,6 +781,7 @@ export const i18n = {
     shortcutNav: 'ナビゲーション',
     scOpenFile: 'ファイルを開く',
     scSave: '保存',
+    scFavorite: 'お気に入り',
     scCloseTab: 'タブを閉じる',
     scPrint: '印刷',
     scHome: 'ホームへ',

@@ -16,6 +16,10 @@ const savingFiles = new Set();
 const MAX_RECENT_FILES = 10;
 let recentFiles = JSON.parse(localStorage.getItem('recentFiles') || '[]');
 
+// Favorites state
+const MAX_FAVORITES = 20;
+let favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+
 let tauriApi = null;
 let dialogOpen = null;
 let dialogSave = null;
@@ -57,12 +61,21 @@ export function init(context) {
     clearRecent: document.getElementById('clear-recent'),
     dropOverlay: document.getElementById('drop-overlay'),
     importInput: document.getElementById('import-input'),
+    btnFavoriteToggle: document.getElementById('btn-favorite-toggle'),
+    btnFavorites: document.getElementById('btn-favorites'),
+    favoritesDropdown: document.getElementById('favorites-dropdown'),
+    favoritesList: document.getElementById('favorites-list'),
+    favoritesEmpty: document.getElementById('favorites-empty'),
+    clearFavorites: document.getElementById('clear-favorites'),
   };
   ctx = context;
 
   els.btnOpen.addEventListener('click', openFile);
   els.btnRecent.addEventListener('click', toggleRecentDropdown);
   els.clearRecent.addEventListener('click', clearRecentFiles);
+  els.btnFavoriteToggle.addEventListener('click', handleFavoriteToggle);
+  els.btnFavorites.addEventListener('click', toggleFavoritesDropdown);
+  els.clearFavorites.addEventListener('click', clearFavorites);
 
   els.importInput.addEventListener('change', (e) => {
     if (e.target.files.length > 0) {
@@ -403,6 +416,155 @@ function showRecentDropdown() {
 
 export function hideRecentDropdown() {
   els.recentDropdown.classList.add('hidden');
+}
+
+// ========== Favorites ==========
+export function addToFavorites(name, filePath) {
+  favorites = favorites.filter(f => f.path !== filePath);
+  favorites.unshift({ name, path: filePath, addedAt: Date.now() });
+  if (favorites.length > MAX_FAVORITES) favorites = favorites.slice(0, MAX_FAVORITES);
+  saveFavorites();
+  renderFavoritesDropdown();
+  renderHomeFavorites();
+}
+
+export function removeFromFavorites(filePath) {
+  favorites = favorites.filter(f => f.path !== filePath);
+  saveFavorites();
+  renderFavoritesDropdown();
+  renderHomeFavorites();
+}
+
+export function isFavorite(filePath) {
+  return favorites.some(f => f.path === filePath);
+}
+
+export function toggleFavorite(name, filePath) {
+  if (isFavorite(filePath)) {
+    removeFromFavorites(filePath);
+  } else {
+    addToFavorites(name, filePath);
+  }
+}
+
+export function getFavorites() {
+  return favorites;
+}
+
+function clearFavorites() {
+  favorites = [];
+  saveFavorites();
+  renderFavoritesDropdown();
+  renderHomeFavorites();
+  hideFavoritesDropdown();
+}
+
+function saveFavorites() {
+  localStorage.setItem('favorites', JSON.stringify(favorites));
+}
+
+function handleFavoriteToggle() {
+  const activeTab = ctx.getTabs().find(t => t.id === ctx.getActiveTabId());
+  if (!activeTab || ctx.getActiveTabId() === 'home') return;
+  toggleFavorite(activeTab.name, activeTab.filePath);
+  updateFavoriteButton(activeTab.filePath);
+}
+
+export function updateFavoriteButton(filePath) {
+  if (!els.btnFavoriteToggle) return;
+  const isFav = filePath && isFavorite(filePath);
+  els.btnFavoriteToggle.classList.toggle('favorited', isFav);
+  els.btnFavoriteToggle.title = isFav
+    ? (ctx.t?.('removeFavorite') || '즐겨찾기 제거')
+    : (ctx.t?.('addFavorite') || '즐겨찾기 추가');
+}
+
+function renderFavoritesDropdown() {
+  if (!els.favoritesList) return;
+  els.favoritesList.innerHTML = '';
+  if (favorites.length === 0) {
+    els.favoritesEmpty.style.display = 'block';
+    els.clearFavorites.style.display = 'none';
+    return;
+  }
+  els.favoritesEmpty.style.display = 'none';
+  els.clearFavorites.style.display = 'block';
+
+  favorites.forEach(file => {
+    const item = document.createElement('div');
+    item.className = 'recent-item';
+    item.innerHTML = `
+      <div class="recent-item-content">
+        <div class="recent-item-name">${file.name}</div>
+        <div class="recent-item-path">${file.path}</div>
+      </div>
+      <button class="recent-item-remove" title="${ctx.t?.('removeFromList') || '목록에서 제거'}">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    `;
+    item.querySelector('.recent-item-content').addEventListener('click', () => {
+      hideFavoritesDropdown();
+      loadFile(file.path);
+    });
+    item.querySelector('.recent-item-remove').addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeFromFavorites(file.path);
+      updateFavoriteButton(ctx.getTabs().find(t => t.id === ctx.getActiveTabId())?.filePath);
+    });
+    els.favoritesList.appendChild(item);
+  });
+}
+
+export function renderHomeFavorites() {
+  const homeList = document.getElementById('home-favorites-list');
+  const homeFavSection = document.getElementById('home-favorites');
+  if (!homeList || !homeFavSection) return;
+
+  if (favorites.length === 0) {
+    homeFavSection.style.display = 'none';
+    return;
+  }
+
+  homeFavSection.style.display = 'block';
+  homeList.innerHTML = '';
+  favorites.forEach(file => {
+    const item = document.createElement('div');
+    item.className = 'home-recent-item';
+    item.innerHTML = `
+      <svg class="home-recent-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      <div class="home-recent-info">
+        <div class="home-recent-name">${file.name}</div>
+        <div class="home-recent-path">${file.path}</div>
+      </div>
+    `;
+    item.addEventListener('click', () => loadFile(file.path));
+    homeList.appendChild(item);
+  });
+}
+
+function toggleFavoritesDropdown() {
+  if (els.favoritesDropdown.classList.contains('hidden')) {
+    showFavoritesDropdown();
+  } else {
+    hideFavoritesDropdown();
+  }
+}
+
+function showFavoritesDropdown() {
+  renderFavoritesDropdown();
+  els.favoritesDropdown.classList.remove('hidden');
+  const btnRect = els.btnFavorites.getBoundingClientRect();
+  els.favoritesDropdown.style.top = (btnRect.bottom + 4) + 'px';
+  els.favoritesDropdown.style.left = btnRect.left + 'px';
+}
+
+export function hideFavoritesDropdown() {
+  if (els.favoritesDropdown) els.favoritesDropdown.classList.add('hidden');
 }
 
 // 저장 시작/종료 마커 (워처 알림 억제용)

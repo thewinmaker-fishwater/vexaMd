@@ -92,6 +92,7 @@ export function switchToTab(tabId) {
     activeTabId = HOME_TAB_ID;
     els.content.innerHTML = ctx.getWelcomeHTML();
     els.content.classList.remove('view-double');
+    ctx.renderHomeFavorites?.();
     ctx.renderHomeRecentFiles?.();
     renderTabs();
     clearToc();

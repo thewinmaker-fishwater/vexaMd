@@ -30,6 +30,18 @@
       </svg>
     </button>
 
+    <button id="btn-favorite-toggle" title="즐겨찾기 추가 (Ctrl+B)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </button>
+
+    <button id="btn-favorites" title="즐겨찾기">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"/>
+      </svg>
+    </button>
+
     <div class="toolbar-divider"></div>
 
     <!-- Light/Dark Toggle (standalone) -->
@@ -380,6 +392,14 @@
     <div id="recent-list"></div>
     <div class="dropdown-empty" id="recent-empty">최근 파일이 없습니다</div>
     <button id="clear-recent" class="dropdown-btn">목록 지우기</button>
+  </div>
+
+  <!-- Favorites Dropdown -->
+  <div id="favorites-dropdown" class="dropdown hidden">
+    <div class="dropdown-header favorites-dropdown-header">즐겨찾기</div>
+    <div id="favorites-list"></div>
+    <div class="dropdown-empty hidden" id="favorites-empty">즐겨찾기가 없습니다</div>
+    <button id="clear-favorites" class="dropdown-btn">지우기</button>
   </div>
 
   <!-- Main Container with TOC Sidebar -->
@@ -818,6 +838,7 @@
           <div class="shortcut-grid">
             <div class="shortcut-item"><kbd>Ctrl+O</kbd><span>파일 열기</span></div>
             <div class="shortcut-item"><kbd>Ctrl+S</kbd><span>저장</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+B</kbd><span>즐겨찾기</span></div>
             <div class="shortcut-item"><kbd>Ctrl+W</kbd><span>탭 닫기</span></div>
             <div class="shortcut-item"><kbd>Ctrl+P</kbd><span>인쇄</span></div>
             <div class="shortcut-item"><kbd>Esc</kbd><span>홈으로</span></div>

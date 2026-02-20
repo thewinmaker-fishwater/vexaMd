@@ -51,8 +51,15 @@ export function updateUITexts(currentLanguage) {
   // Recent
   document.getElementById('recent-empty').textContent = lang.recentEmpty;
   document.getElementById('clear-recent').textContent = lang.clearList;
-  document.querySelector('.dropdown-header').textContent = lang.recentFiles;
+  document.querySelector('#recent-dropdown .dropdown-header').textContent = lang.recentFiles;
   document.querySelector('.drop-message').textContent = lang.dropMessage;
+
+  // Favorites
+  document.querySelector('.favorites-dropdown-header').textContent = lang.favorites;
+  document.getElementById('favorites-empty').textContent = lang.favoritesEmpty;
+  document.getElementById('clear-favorites').textContent = lang.clearFavorites;
+  document.getElementById('btn-favorites').title = lang.favorites;
+  // btn-favorite-toggle title updated dynamically by updateFavoriteButton
 
   // Color theme select
   const colorTheme = document.getElementById('color-theme');
@@ -119,7 +126,7 @@ export function updateUITexts(currentLanguage) {
   }
   const shortcutItems = document.querySelectorAll('.shortcut-item span');
   const shortcutTexts = [
-    lang.scOpenFile, lang.scSave, lang.scCloseTab, lang.scPrint, lang.scHome,
+    lang.scOpenFile, lang.scSave, lang.scFavorite, lang.scCloseTab, lang.scPrint, lang.scHome,
     lang.scToggleTheme, lang.scExportTheme, lang.scZoomIn, lang.scZoomOut, lang.scZoomReset,
     lang.scSearch, lang.scToc, lang.scPageNav, lang.scNextTab, lang.scPresentation
   ];
@@ -184,6 +191,7 @@ export function updateUITexts(currentLanguage) {
 
   if (tabManager.getActiveTabId() === tabManager.HOME_TAB_ID) {
     _contentEl.innerHTML = _getWelcomeHTML();
+    fileOps.renderHomeFavorites();
     fileOps.renderHomeRecentFiles();
   }
   if (tabManager.getActiveTabId() !== tabManager.HOME_TAB_ID && renderer.getPages().length > 0) {

@@ -192,3 +192,27 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ========== Favorites ========== */
+#favorites-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+/* Favorite toggle button star state */
+#btn-favorite-toggle.favorited svg {
+  fill: #f59e0b;
+  stroke: #f59e0b;
+}
+
+/* Favorites dropdown header star icon color */
+.favorites-dropdown-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Home favorites uses same star color */
+#home-favorites .home-recent-icon {
+  color: #f59e0b;
+}
