@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.tauri.app/config/2/capability",
+  "identifier": "default",
+  "description": "Default capabilities for MD Viewer",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:default",
+    "fs:allow-read",
+    "fs:allow-watch",
+    "fs:allow-unwatch",
+    "fs:write-all",
+    "fs:allow-download-write",
+    "fs:allow-desktop-write",
+    "fs:allow-document-write",
+    "fs:allow-home-write",
+    "shell:default",
+    "shell:allow-open",
+    "updater:default",
+    "process:allow-restart",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        { "path": "**" },
+        { "path": "$HOME/**" },
+        { "path": "$DOCUMENT/**" },
+        { "path": "$DOWNLOAD/**" },
+        { "path": "$DESKTOP/**" }
+      ]
+    }
+  ]
+}

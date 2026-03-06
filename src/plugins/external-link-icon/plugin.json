@@ -1,0 +1,22 @@
+{
+  "id": "external-link-icon",
+  "name": "External Link Icon",
+  "version": "1.0.0",
+  "description": "Adds an icon to external links and opens them in browser",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": true,
+    "ui": true,
+    "toolbar": false,
+    "settings": true
+  },
+  "settings": {
+    "showIcon": {
+      "type": "boolean",
+      "label": { "ko": "아이콘 표시", "en": "Show Icon", "ja": "アイコン表示" },
+      "default": true,
+      "help": { "ko": "외부 링크 옆에 아이콘 표시", "en": "Show icon next to external links" }
+    }
+  }
+}

@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vexa MD</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="stylesheet" href="/src/styles/index.css">
+</head>
+<body style="opacity: 0; transition: opacity 0.08s ease-in;">
+  <div id="toolbar">
+    <button id="btn-home" title="홈으로 (Esc)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        <path d="M9 22V12h6v10"/>
+      </svg>
+    </button>
+
+    <button id="btn-open" title="파일 열기 (Ctrl+O)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+        <path d="M13 2v7h7"/>
+      </svg>
+    </button>
+
+    <button id="btn-recent" title="최근 파일">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 6v6l4 2"/>
+      </svg>
+    </button>
+
+    <button id="btn-favorite-toggle" title="즐겨찾기 추가 (Ctrl+B)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </button>
+
+    <button id="btn-favorites" title="즐겨찾기">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"/>
+      </svg>
+    </button>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Light/Dark Toggle (standalone) -->
+    <button id="btn-theme" title="라이트/다크 전환 (Ctrl+D)">
+      <svg id="icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+      </svg>
+      <svg id="icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <circle cx="12" cy="12" r="5"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+      </svg>
+    </button>
+
+    <!-- Cursor/Hand Toggle -->
+    <button id="btn-cursor-mode" title="커서/손끌기 전환">
+      <!-- Arrow cursor icon (default) -->
+      <svg id="icon-cursor" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4l7.07 17 2.51-7.39L21 11.07z"/>
+      </svg>
+      <!-- Hand icon (simple open palm) -->
+      <svg id="icon-hand" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+        <path d="M8 13V4.5a1.5 1.5 0 013 0V12"/>
+        <path d="M11 11.5V2.5a1.5 1.5 0 013 0V12"/>
+        <path d="M14 10.5V4.5a1.5 1.5 0 013 0V12"/>
+        <path d="M17 11.5a1.5 1.5 0 013 0V16a7 7 0 01-7 7h-2a7 7 0 01-7-7V9.5a1.5 1.5 0 013 0V12"/>
+      </svg>
+    </button>
+
+    <!-- Format Dropdown -->
+    <div class="toolbar-dropdown-wrapper">
+      <button id="btn-format" title="서식">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="4" y1="21" x2="4" y2="14"/>
+          <line x1="4" y1="10" x2="4" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12" y2="3"/>
+          <line x1="20" y1="21" x2="20" y2="16"/>
+          <line x1="20" y1="12" x2="20" y2="3"/>
+          <line x1="1" y1="14" x2="7" y2="14"/>
+          <line x1="9" y1="8" x2="15" y2="8"/>
+          <line x1="17" y1="16" x2="23" y2="16"/>
+        </svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:2px;opacity:0.6">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <div id="format-dropdown" class="toolbar-dropdown-panel hidden">
+        <div class="dropdown-label">컬러 테마</div>
+        <select id="color-theme" title="컬러 테마">
+          <option value="default">기본 (그레이)</option>
+          <option value="purple">퍼플</option>
+          <option value="ocean">오션</option>
+          <option value="sunset">선셋</option>
+          <option value="forest">포레스트</option>
+          <option value="rose">로즈</option>
+          <option value="custom" id="custom-theme-option" hidden>커스텀</option>
+        </select>
+        <div class="dropdown-label">글꼴</div>
+        <select id="font-family" title="글꼴">
+          <option value="system">시스템 기본</option>
+          <option value="malgun">맑은 고딕</option>
+          <option value="nanum">나눔고딕</option>
+          <option value="pretendard">Pretendard</option>
+          <option value="noto">Noto Sans KR</option>
+        </select>
+        <div class="dropdown-label">글씨 크기</div>
+        <select id="font-size" title="글씨 크기">
+          <option value="small">작게</option>
+          <option value="medium" selected>보통</option>
+          <option value="large">크게</option>
+          <option value="xlarge">아주 크게</option>
+        </select>
+        <div class="dropdown-label">콘텐츠 너비</div>
+        <select id="content-width" title="콘텐츠 너비">
+          <option value="narrow">좁게 (900px)</option>
+          <option value="medium">보통 (1200px)</option>
+          <option value="wide">넓게 (1600px)</option>
+          <option value="full">전체 너비</option>
+        </select>
+        <div class="dropdown-label">언어</div>
+        <select id="language" title="언어/Language">
+          <option value="ko">한국어</option>
+          <option value="en">English</option>
+          <option value="ja">日本語</option>
+        </select>
+        <div class="dropdown-divider"></div>
+        <button id="btn-customize" title="테마 커스터마이저">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20a8 8 0 100-16 8 8 0 000 16z"/>
+            <path d="M12 14a2 2 0 100-4 2 2 0 000 4z"/>
+            <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
+          </svg>
+          <span>테마 커스터마이저</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <button id="btn-search" title="검색 (Ctrl+F)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="M21 21l-4.35-4.35"/>
+      </svg>
+    </button>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- View Mode -->
+    <div class="view-mode-group">
+      <button id="btn-view-single" class="view-btn active" title="한 페이지 보기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M3 9h18M3 15h18"/>
+        </svg>
+      </button>
+      <button id="btn-view-double" class="view-btn" title="두 페이지 보기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="8" height="18" rx="1"/>
+          <rect x="14" y="3" width="8" height="18" rx="1"/>
+        </svg>
+      </button>
+      <button id="btn-view-paging" class="view-btn" title="페이지 보기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="3" width="14" height="18" rx="2"/>
+          <path d="M9 21h6M12 18v3"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Zoom Controls -->
+    <div class="zoom-group">
+      <button id="btn-zoom-out" title="축소 (Ctrl+-)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+          <path d="M8 11h6"/>
+        </svg>
+      </button>
+      <span id="zoom-level" class="zoom-level" title="확대/축소 비율">100%</span>
+      <button id="btn-zoom-in" title="확대 (Ctrl++)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <path d="M21 21l-4.35-4.35"/>
+          <path d="M11 8v6M8 11h6"/>
+        </svg>
+      </button>
+      <button id="btn-zoom-reset" title="원래 크기 (Ctrl+0)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 109-9"/>
+          <path d="M3 3v6h6"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Tools Dropdown -->
+    <div class="toolbar-dropdown-wrapper">
+      <button id="btn-tools" title="도구">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7"/>
+          <rect x="14" y="3" width="7" height="7"/>
+          <rect x="14" y="14" width="7" height="7"/>
+          <rect x="3" y="14" width="7" height="7"/>
+        </svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-left:2px;opacity:0.6">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <div id="tools-dropdown" class="toolbar-dropdown-panel hidden">
+        <!-- Print -->
+        <button id="btn-print" title="인쇄 (Ctrl+P)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 9V2h12v7"/>
+            <path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8" rx="1"/>
+          </svg>
+          <span>인쇄</span>
+        </button>
+        <!-- Presentation Mode -->
+        <button id="btn-presentation" title="프레젠테이션 (F5)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <path d="M9 10l3 2 3-2"/>
+          </svg>
+          <span>프레젠테이션</span>
+        </button>
+        <!-- Export VMD (Read-only) -->
+        <button id="btn-export-vmd" title="읽기전용 내보내기 (.vmd)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M12 8v8M8 12l4 4 4-4"/>
+          </svg>
+          <span>읽기전용 내보내기</span>
+        </button>
+        <!-- VMD Key Manager -->
+        <button id="btn-vmd-key-manager" title="암호화 키 관리">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+          </svg>
+          <span>키 관리</span>
+        </button>
+        <!-- Export VMD to MD -->
+        <button id="btn-export-vmd-to-md" title="VMD → Markdown 내보내기">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <path d="M14 2v6h6"/>
+            <path d="M9 15l3 3 3-3"/>
+          </svg>
+          <span>MD로 내보내기</span>
+        </button>
+        <div class="dropdown-divider"></div>
+        <!-- TOC Toggle -->
+        <button id="btn-toc" title="목차 (Ctrl+Shift+T)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6h16M4 12h10M4 18h14"/>
+          </svg>
+          <span>목차</span>
+        </button>
+        <!-- Status Bar Toggle -->
+        <label id="btn-toggle-statusbar" class="dropdown-toggle-item" title="상태바 표시/숨김 (Ctrl+/)">
+          <input type="checkbox" id="statusbar-checkbox" checked>
+          <span>상태바</span>
+          <kbd class="dropdown-shortcut">Ctrl+/</kbd>
+        </label>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-label">편집 모드</div>
+        <!-- Edit Mode -->
+        <div class="edit-mode-group">
+          <button id="btn-mode-view" class="edit-mode-btn active" title="보기 모드">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+          <button id="btn-mode-edit" class="edit-mode-btn" title="편집 모드">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button id="btn-mode-split" class="edit-mode-btn" title="분할 모드">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+              <line x1="12" y1="3" x2="12" y2="21"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Save Button -->
+        <button id="btn-save" title="저장 (Ctrl+S)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span>저장</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Plugins -->
+    <button id="btn-plugins" title="플러그인">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+      </svg>
+    </button>
+
+    <div class="toolbar-divider"></div>
+
+    <!-- Help Menu -->
+    <div class="help-menu-wrapper">
+      <button id="btn-help" title="도움말">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+          <path d="M12 17h.01"/>
+        </svg>
+      </button>
+      <div id="help-dropdown" class="help-dropdown hidden">
+        <button class="help-menu-item" id="help-shortcuts">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h8M6 16h.01M18 16h.01"/>
+          </svg>
+          <span>단축키</span>
+        </button>
+        <button class="help-menu-item" id="help-check-update">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 12a9 9 0 1 1-9-9 9 9 0 0 1 9 9z"/>
+            <path d="M12 8v4l2 2"/>
+          </svg>
+          <span>업데이트 확인</span>
+        </button>
+        <div class="help-menu-divider"></div>
+        <button class="help-menu-item" id="help-about">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4M12 8h.01"/>
+          </svg>
+          <span>프로그램 정보</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Tab Bar -->
+  <div id="tab-bar">
+    <div id="tabs-container"></div>
+  </div>
+
+  <!-- Search Bar (콘텐츠 영역 상단) -->
+  <div id="search-bar" class="hidden">
+    <div class="search-box">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="검색어 입력..." />
+      <span id="search-count" class="search-count"></span>
+      <button id="search-prev" class="search-nav" title="이전 (Shift+Enter)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 15l-6-6-6 6"/>
+        </svg>
+      </button>
+      <button id="search-next" class="search-nav" title="다음 (Enter)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      <button id="search-close" class="search-nav" title="닫기 (Esc)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Recent Files Dropdown -->
+  <div id="recent-dropdown" class="dropdown hidden">
+    <div class="dropdown-header">최근 파일</div>
+    <div id="recent-list"></div>
+    <div class="dropdown-empty" id="recent-empty">최근 파일이 없습니다</div>
+    <button id="clear-recent" class="dropdown-btn">목록 지우기</button>
+  </div>
+
+  <!-- Favorites Dropdown -->
+  <div id="favorites-dropdown" class="dropdown hidden">
+    <div class="dropdown-header favorites-dropdown-header">즐겨찾기</div>
+    <div id="favorites-list"></div>
+    <div class="dropdown-empty hidden" id="favorites-empty">즐겨찾기가 없습니다</div>
+    <button id="clear-favorites" class="dropdown-btn">지우기</button>
+  </div>
+
+  <!-- Main Container with TOC Sidebar -->
+  <div id="main-container" class="mode-view">
+    <!-- TOC Sidebar -->
+    <aside id="toc-sidebar" class="hidden">
+      <div class="toc-header">
+        <span class="toc-title">목차</span>
+        <button id="toc-close" class="toc-close-btn" title="닫기">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <nav id="toc-nav">
+        <ul id="toc-list"></ul>
+      </nav>
+    </aside>
+
+    <!-- Editor Pane -->
+    <div id="editor-pane" class="hidden">
+      <textarea id="markdown-editor" placeholder="마크다운을 입력하세요..."></textarea>
+    </div>
+
+    <main id="content" class="markdown-body">
+      <!-- 초기 콘텐츠는 JS에서 동적으로 로드 -->
+    </main>
+  </div>
+
+  <!-- Status Bar -->
+  <div id="status-bar">
+    <div class="status-bar-left">
+      <span id="status-file-name"></span>
+    </div>
+    <div class="status-bar-center">
+      <span id="status-stats"></span>
+    </div>
+    <div class="status-bar-right">
+      <span id="status-zoom"></span>
+      <span id="status-cursor"></span>
+    </div>
+  </div>
+
+  <div id="drop-overlay">
+    <div class="drop-message">파일을 놓으세요</div>
+  </div>
+
+  <input type="file" id="import-input" accept=".json" style="display:none">
+
+  <!-- Theme Editor Modal -->
+  <div id="theme-editor-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content theme-editor">
+      <div class="modal-header">
+        <h2>테마 커스터마이저</h2>
+        <button class="modal-close" id="theme-editor-close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="editor-tabs">
+        <button class="editor-tab active" data-tab="ui">UI 에디터</button>
+        <button class="editor-tab" data-tab="css">CSS 편집</button>
+        <button class="editor-tab" data-tab="saved">저장된 테마</button>
+      </div>
+
+      <div class="editor-content">
+        <!-- UI Editor Tab -->
+        <div class="tab-panel active" id="tab-ui">
+          <div class="editor-section">
+            <h3>🎨 기본 색상</h3>
+            <div class="editor-grid">
+              <div class="editor-field">
+                <label>배경색</label>
+                <input type="color" id="custom-bg" value="#ffffff">
+              </div>
+              <div class="editor-field">
+                <label>텍스트 색상</label>
+                <input type="color" id="custom-text" value="#1f2328">
+              </div>
+              <div class="editor-field">
+                <label>강조 색상</label>
+                <input type="color" id="custom-accent" value="#656d76">
+              </div>
+              <div class="editor-field">
+                <label>테두리 색상</label>
+                <input type="color" id="custom-border" value="#d0d7de">
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <h3>📝 글꼴</h3>
+            <div class="editor-grid">
+              <div class="editor-field">
+                <label>본문 글꼴</label>
+                <select id="custom-font-family">
+                  <option value="system-ui">시스템 기본</option>
+                  <option value="'Noto Sans KR', sans-serif">Noto Sans KR</option>
+                  <option value="'Malgun Gothic', sans-serif">맑은 고딕</option>
+                  <option value="'Nanum Gothic', sans-serif">나눔고딕</option>
+                  <option value="Georgia, serif">Georgia (Serif)</option>
+                </select>
+              </div>
+              <div class="editor-field">
+                <label>기본 글자 크기</label>
+                <input type="range" id="custom-font-size" min="12" max="24" value="16">
+                <span class="range-value">16px</span>
+              </div>
+              <div class="editor-field">
+                <label>줄 간격</label>
+                <input type="range" id="custom-line-height" min="1.2" max="2.2" step="0.1" value="1.7">
+                <span class="range-value">1.7</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <h3>📦 코드 블록</h3>
+            <div class="editor-grid">
+              <div class="editor-field">
+                <label>배경색</label>
+                <input type="color" id="custom-code-bg" value="#f6f8fa">
+              </div>
+              <div class="editor-field">
+                <label>텍스트 색상</label>
+                <input type="color" id="custom-code-text" value="#1f2328">
+              </div>
+              <div class="editor-field">
+                <label>코드 글꼴</label>
+                <select id="custom-code-font">
+                  <option value="'SFMono-Regular', Consolas, monospace">기본 (Consolas)</option>
+                  <option value="'Fira Code', monospace">Fira Code</option>
+                  <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                  <option value="'D2Coding', monospace">D2Coding</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <h3>💬 인용문</h3>
+            <div class="editor-grid">
+              <div class="editor-field">
+                <label>배경색</label>
+                <input type="color" id="custom-blockquote-bg" value="#f6f8fa">
+              </div>
+              <div class="editor-field">
+                <label>테두리 색상</label>
+                <input type="color" id="custom-blockquote-border" value="#d0d7de">
+              </div>
+              <div class="editor-field">
+                <label>테두리 두께</label>
+                <input type="range" id="custom-blockquote-border-width" min="2" max="8" value="4">
+                <span class="range-value">4px</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <h3>📊 테이블</h3>
+            <div class="editor-grid">
+              <div class="editor-field">
+                <label>헤더 배경</label>
+                <input type="color" id="custom-table-header-bg" value="#f6f8fa">
+              </div>
+              <div class="editor-field">
+                <label>헤더 텍스트</label>
+                <input type="color" id="custom-table-header-text" value="#1f2328">
+              </div>
+              <div class="editor-field">
+                <label>테두리 반경</label>
+                <input type="range" id="custom-table-radius" min="0" max="16" value="8">
+                <span class="range-value">8px</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <h3>📰 제목</h3>
+            <div class="editor-grid">
+              <div class="editor-field">
+                <label>H1 색상</label>
+                <input type="color" id="custom-h1-color" value="#24292f">
+              </div>
+              <div class="editor-field">
+                <label>H2 색상</label>
+                <input type="color" id="custom-h2-color" value="#656d76">
+              </div>
+              <div class="editor-field">
+                <label>그라데이션 사용</label>
+                <input type="checkbox" id="custom-h1-gradient" checked>
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <h3>✏️ 텍스트 마크</h3>
+            <div class="editor-grid">
+              <div class="editor-field">
+                <label>링크 색상</label>
+                <input type="color" id="custom-link-color" value="#656d76">
+              </div>
+              <div class="editor-field">
+                <label>굵은 글씨</label>
+                <input type="color" id="custom-bold-color" value="#656d76">
+              </div>
+              <div class="editor-field">
+                <label>기울임 글씨</label>
+                <input type="color" id="custom-italic-color" value="#57606a">
+              </div>
+              <div class="editor-field">
+                <label>하이라이트 배경</label>
+                <input type="color" id="custom-mark-bg" value="#fff8c5">
+              </div>
+              <div class="editor-field">
+                <label>하이라이트 글씨</label>
+                <input type="color" id="custom-mark-text" value="#656d76">
+              </div>
+              <div class="editor-field">
+                <label>목록 마커</label>
+                <input type="color" id="custom-list-marker" value="#656d76">
+              </div>
+            </div>
+          </div>
+
+          <div class="editor-section">
+            <h3>🔧 툴바</h3>
+            <div class="editor-grid">
+              <div class="editor-field">
+                <label>툴바 배경</label>
+                <input type="color" id="custom-toolbar-bg" value="#f6f8fa">
+              </div>
+              <div class="editor-field">
+                <label>툴바 그라데이션</label>
+                <input type="color" id="custom-toolbar-bg2" value="#f6f8fa">
+              </div>
+              <div class="editor-field">
+                <label>탭바 배경</label>
+                <input type="color" id="custom-tabbar-bg" value="#ffffff">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CSS Editor Tab -->
+        <div class="tab-panel" id="tab-css">
+          <div class="css-editor-info">
+            <p>CSS 변수와 스타일을 직접 편집할 수 있습니다. 아래 템플릿을 참고하세요.</p>
+          </div>
+          <textarea id="custom-css">/* ========================================
+   SP MD Viewer - Custom Theme Template
+   ======================================== */
+
+/* === 기본 색상 변수 (Basic Color Variables) ===
+   이 변수들은 전체 UI에 적용됩니다.
+   --bg: 배경색
+   --text: 기본 텍스트 색상
+   --accent: 강조 색상 (링크, 버튼 등)
+   --border: 테두리 색상
+*/
+:root {
+  --bg: #ffffff;
+  --text: #1f2328;
+  --accent: #656d76;
+  --border: #d0d7de;
+}
+
+/* === 코드 블록 스타일 (Code Block) === */
+.markdown-body pre,
+.markdown-body code {
+  /* background: var(--code-bg); */
+  /* color: var(--code-text); */
+}
+
+/* === 제목 스타일 (Headings) === */
+.markdown-body h1 {
+  /* 그라데이션 적용 예시:
+  background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  */
+}
+
+.markdown-body h2,
+.markdown-body h3 {
+  /* color: var(--accent); */
+}
+
+/* === 인용문 스타일 (Blockquote) === */
+.markdown-body blockquote {
+  /* border-left: 4px solid var(--accent); */
+  /* background: var(--blockquote-bg); */
+}
+
+/* === 테이블 스타일 (Table) === */
+.markdown-body table th {
+  /* background: var(--table-header-bg); */
+}
+
+/* === 링크 스타일 (Links) === */
+.markdown-body a {
+  /* color: var(--accent); */
+}
+
+/* === 커스텀 스타일 추가 (Add your custom styles below) === */
+</textarea>
+        </div>
+
+        <!-- Saved Themes Tab -->
+        <div class="tab-panel" id="tab-saved">
+          <div class="saved-themes-header">
+            <div class="save-theme-form">
+              <input type="text" id="theme-name-input" class="theme-name-input" placeholder="테마 이름 입력">
+              <button id="save-current-theme" class="btn-primary">저장</button>
+            </div>
+          </div>
+          <div class="saved-themes-list" id="saved-themes-list">
+            <div class="saved-themes-empty" id="saved-themes-empty">저장된 테마가 없습니다</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="theme-reset" class="btn-secondary">초기화</button>
+        <button id="theme-import" class="btn-secondary">가져오기</button>
+        <button id="theme-export" class="btn-secondary">내보내기</button>
+        <button id="theme-cancel" class="btn-secondary">취소</button>
+        <button id="theme-preview" class="btn-primary">미리보기</button>
+        <button id="theme-apply" class="btn-primary">적용</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Presentation Mode Overlay -->
+  <div id="presentation-overlay" class="presentation-overlay hidden">
+    <div class="presentation-slide markdown-body">
+      <div class="presentation-content"></div>
+    </div>
+    <div class="presentation-controls">
+      <button id="pres-prev" class="pres-nav-btn" title="이전 슬라이드 (←)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+      <span id="pres-indicator" class="pres-indicator">1 / 1</span>
+      <button id="pres-next" class="pres-nav-btn" title="다음 슬라이드 (→)">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+      <button id="pres-exit" class="pres-exit-btn" title="종료 (Esc)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- About Modal -->
+  <div id="about-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content about-modal">
+      <div class="modal-header">
+        <h2>프로그램 정보</h2>
+        <button class="modal-close" id="about-close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="about-content">
+        <div class="about-logo">
+          <img src="/logo.png" alt="Vexa MD Logo" width="120">
+        </div>
+        <h3>Vexa MD</h3>
+        <p class="about-version">버전 1.0.0</p>
+        <p class="about-description">초경량 마크다운 뷰어</p>
+        <div class="about-info">
+          <p><strong>개발</strong>: Seven Peaks Software</p>
+          <p><strong>라이선스</strong>: Apache 2.0</p>
+        </div>
+      </div>
+      <div class="modal-footer about-footer">
+        <button id="about-ok" class="btn-primary">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Update Modal -->
+  <div id="update-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="update-body">
+        <h3 class="update-title">업데이트 사용 가능</h3>
+        <div class="update-version-info">
+          <span class="update-current">현재 버전: -</span>
+          <span class="update-new">새 버전: -</span>
+        </div>
+        <div class="update-notes-section hidden">
+          <div class="update-notes-label">변경 내역</div>
+          <div class="update-notes-content"></div>
+        </div>
+        <div class="update-progress-section hidden">
+          <div class="update-progress-track">
+            <div class="update-progress-bar"></div>
+          </div>
+          <div class="update-progress-text">0%</div>
+        </div>
+        <div class="update-buttons">
+          <button id="update-btn-later">나중에</button>
+          <button id="update-btn-now" class="btn-primary">지금 업데이트</button>
+          <button id="update-btn-restart" class="btn-primary hidden">재시작</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shortcuts Modal -->
+  <div id="shortcuts-modal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content shortcuts-modal">
+      <div class="modal-header">
+        <h2>단축키</h2>
+        <button class="modal-close" id="shortcuts-close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="shortcuts-content">
+        <div class="shortcuts-section">
+          <h4>파일</h4>
+          <div class="shortcut-grid">
+            <div class="shortcut-item"><kbd>Ctrl+O</kbd><span>파일 열기</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+S</kbd><span>저장</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+B</kbd><span>즐겨찾기</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+W</kbd><span>탭 닫기</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+P</kbd><span>인쇄</span></div>
+            <div class="shortcut-item"><kbd>Esc</kbd><span>홈으로</span></div>
+          </div>
+        </div>
+        <div class="shortcuts-section">
+          <h4>보기</h4>
+          <div class="shortcut-grid">
+            <div class="shortcut-item"><kbd>Ctrl+D</kbd><span>테마 전환</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+E</kbd><span>테마 내보내기</span></div>
+            <div class="shortcut-item"><kbd>Ctrl++</kbd><span>확대</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+-</kbd><span>축소</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+0</kbd><span>원래 크기</span></div>
+          </div>
+        </div>
+        <div class="shortcuts-section">
+          <h4>탐색</h4>
+          <div class="shortcut-grid">
+            <div class="shortcut-item"><kbd>Ctrl+F</kbd><span>검색</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+Shift+T</kbd><span>목차</span></div>
+            <div class="shortcut-item"><kbd>←/→</kbd><span>페이지 이동</span></div>
+            <div class="shortcut-item"><kbd>Ctrl+Tab</kbd><span>다음 탭</span></div>
+            <div class="shortcut-item"><kbd>F5</kbd><span>프레젠테이션</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer about-footer">
+        <button id="shortcuts-ok" class="btn-primary">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Modal -->
+  <div id="image-modal" class="image-modal hidden">
+    <div class="image-modal-backdrop"></div>
+    <div class="image-modal-container">
+      <div class="image-modal-toolbar">
+        <button class="image-modal-btn" id="image-zoom-out" title="축소">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35M8 11h6"/>
+          </svg>
+        </button>
+        <span class="image-zoom-info" id="image-zoom-info">100%</span>
+        <button class="image-modal-btn" id="image-zoom-in" title="확대">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35M11 8v6M8 11h6"/>
+          </svg>
+        </button>
+        <button class="image-modal-btn" id="image-zoom-reset" title="원래 크기">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+        <div class="image-modal-spacer"></div>
+        <button class="image-modal-btn image-modal-close" id="image-modal-close" title="닫기">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="image-modal-content">
+        <img class="image-modal-img" id="image-modal-img" src="" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

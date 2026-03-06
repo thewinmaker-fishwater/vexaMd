@@ -1,0 +1,65 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Vexa MD",
+  "version": "1.5.2",
+  "identifier": "com.vexamd.viewer",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:5180",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "title": "Vexa MD",
+        "width": 1000,
+        "height": 700,
+        "minWidth": 400,
+        "minHeight": 300,
+        "resizable": true,
+        "decorations": true,
+        "transparent": false,
+        "dragDropEnabled": true,
+        "visible": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true,
+    "targets": "all",
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "fileAssociations": [
+      {
+        "ext": ["md", "markdown"],
+        "mimeType": "text/markdown",
+        "description": "Markdown Document",
+        "role": "Viewer"
+      }
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJEM0ZCQTI0MTE4MTE5ODQKUldTRUdZRVJKTG8vTGZ4cERCY3BLV2RBWlJscGhySm40TEl5NEFSaXhoM2NkTExWUmpVa1loMmEK",
+      "endpoints": [
+        "https://github.com/thewinmaker-fishwater/vexaMd/releases/latest/download/latest.json"
+      ]
+    }
+  }
+}

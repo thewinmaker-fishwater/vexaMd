@@ -1,0 +1,31 @@
+import { defineConfig } from 'vite';
+
+export default defineConfig({
+  clearScreen: false,
+  server: {
+    port: 5180,
+    strictPort: false,
+  },
+  envPrefix: ['VITE_', 'TAURI_'],
+  build: {
+    target: 'esnext',
+    minify: 'terser',
+    sourcemap: false,
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        passes: 2,
+      },
+      mangle: {
+        toplevel: true,
+        properties: {
+          regex: /^_/,
+        },
+      },
+      format: {
+        comments: false,
+      },
+    },
+  },
+});

@@ -1,0 +1,14 @@
+{
+  "id": "copy-as-html",
+  "name": "Copy as HTML",
+  "version": "1.0.0",
+  "description": "Copy rendered markdown to clipboard as HTML",
+  "author": "Vexa MD Team",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": false,
+    "ui": true,
+    "toolbar": true,
+    "settings": false
+  }
+}

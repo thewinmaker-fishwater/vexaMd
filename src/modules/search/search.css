@@ -1,0 +1,117 @@
+/* ========================================
+   SP MD Viewer - Search Bar Styles
+   ======================================== */
+
+/* ========== Search Bar ========== */
+#search-bar {
+  position: fixed;
+  top: 116px; /* 80px toolbar + 36px tab bar */
+  right: 16px;
+  z-index: 98;
+  animation: slideDown 0.2s ease;
+}
+
+#search-bar.no-tabs {
+  top: 80px;
+}
+
+#search-bar.hidden {
+  display: none;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px var(--shadow);
+  transition: all 0.15s;
+}
+
+.search-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.search-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+#search-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 12px;
+  color: var(--text);
+  width: 120px;
+}
+
+#search-input::placeholder {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.search-count {
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  min-width: 32px;
+  text-align: center;
+}
+
+.search-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.search-nav:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.05);
+}
+
+.search-nav:active {
+  transform: scale(0.95);
+}
+
+.search-nav:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ========== Search Highlight ========== */
+.search-highlight {
+  background: var(--accent-light);
+  border-radius: 2px;
+  padding: 0 2px;
+}
+
+.search-highlight.current {
+  background: var(--accent);
+  color: white;
+}

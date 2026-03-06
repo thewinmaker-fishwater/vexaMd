@@ -1,0 +1,474 @@
+/**
+ * Vexa MD - Ultra Lightweight Markdown Viewer
+ * Seven Peaks Software
+ * Main Orchestrator
+ */
+
+import { i18n } from './i18n.js';
+import { toggleToc, clearToc } from './modules/toc/toc.js';
+import { pluginManager } from './core/plugin-manager.js';
+import { eventBus, EVENTS } from './core/events.js';
+import { pluginUI } from './modules/plugins/plugin-ui.js';
+import { Plugin } from './core/plugin.js';
+import { toolbar } from './components/toolbar.js';
+
+// Expose SDK for external plugins (blob URL cannot use ES import)
+window.VexaMD = { Plugin, version: '1.5.0' };
+
+// Modules
+import * as imageModal from './modules/image-modal/image-modal.js';
+import { printDocument, exportPdf } from './modules/print/print.js';
+import * as presentation from './modules/presentation/presentation-mode.js';
+import * as renderer from './modules/markdown/renderer.js';
+import * as search from './modules/search/search-manager.js';
+import * as tabManager from './modules/tabs/tab-manager.js';
+import * as zoom from './modules/zoom/zoom-manager.js';
+import * as fileOps from './modules/files/file-ops.js';
+import { saveSession, restoreSession } from './modules/session/session.js';
+import { exportVmd, exportVmdToMd, loadVmdFile } from './modules/vmd/vmd.js';
+import { showKeyManagerModal } from './modules/vmd/vmd-key-ui.js';
+import * as themeSystem from './modules/theme/theme-system.js';
+import * as shortcuts from './modules/shortcuts/shortcuts.js';
+import { initUpdater, checkForUpdate } from './modules/updater/updater.js';
+
+// Extracted modules
+import { getWelcomeHTML } from './modules/welcome/welcome.js';
+import { initUITexts, updateUITexts as _updateUITexts } from './modules/ui/ui-texts.js';
+import * as editorManager from './modules/editor/editor-manager.js';
+import * as statusBar from './modules/status-bar/status-bar.js';
+
+// ========== State ==========
+let currentLanguage = localStorage.getItem('language') || 'ko';
+const languageSelect = document.getElementById('language');
+const contentEl = document.getElementById('content');
+
+// ========== i18n helper ==========
+function t(key) {
+  return i18n[currentLanguage][key] || key;
+}
+
+function applyLanguage(lang) {
+  currentLanguage = lang;
+  localStorage.setItem('language', lang);
+  languageSelect.value = lang;
+  updateUITexts();
+}
+
+function updateUITexts() {
+  _updateUITexts(currentLanguage);
+}
+
+// ========== Export Buttons ==========
+function updateExportButtons() {
+  const activeTab = tabManager.getTabs().find(t => t.id === tabManager.getActiveTabId());
+  const hasFile = activeTab != null;
+  const isReadOnly = activeTab?.readOnly || false;
+  const btnExportVmd = document.getElementById('btn-export-vmd');
+  const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
+  if (btnExportVmd) btnExportVmd.disabled = !hasFile || isReadOnly;
+  if (btnExportVmdToMd) btnExportVmdToMd.disabled = !hasFile || !isReadOnly;
+  updateVmdBanner(activeTab);
+}
+
+function updateVmdBanner(tab) {
+  const existing = document.getElementById('vmd-key-banner');
+  if (existing) existing.remove();
+
+  if (!tab?.readOnly || !tab.filePath?.toLowerCase().endsWith('.vmd')) return;
+
+  const t = i18n[currentLanguage] || i18n.ko;
+  const keyName = tab.vmdKeyName || 'default';
+  const isDefault = keyName === 'default';
+  const label = isDefault
+    ? (t.vmdKeyDefault || '내장키')
+    : keyName;
+
+  const banner = document.createElement('div');
+  banner.id = 'vmd-key-banner';
+  banner.className = 'vmd-key-banner';
+  banner.innerHTML = `
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <rect x="3" y="11" width="18" height="11" rx="2"/>
+      <path d="M7 11V7a5 5 0 0110 0v4"/>
+    </svg>
+    <span>${t.readOnly || '읽기전용'}</span>
+    <span class="vmd-banner-separator">·</span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.78 7.78 5.5 5.5 0 0 1 7.78-7.78zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+    </svg>
+    <span>${label}</span>
+  `;
+  contentEl.prepend(banner);
+}
+
+// ========== Toolbar Dropdowns ==========
+const formatDropdown = document.getElementById('format-dropdown');
+const toolsDropdown = document.getElementById('tools-dropdown');
+const helpDropdown = document.getElementById('help-dropdown');
+const btnFormat = document.getElementById('btn-format');
+const btnTools = document.getElementById('btn-tools');
+const btnHelp = document.getElementById('btn-help');
+const aboutModal = document.getElementById('about-modal');
+const shortcutsModal = document.getElementById('shortcuts-modal');
+
+function closeAllToolbarDropdowns() {
+  formatDropdown?.classList.add('hidden');
+  toolsDropdown?.classList.add('hidden');
+  helpDropdown?.classList.add('hidden');
+}
+
+// ========== Render wrapper ==========
+function doRenderMarkdown(text, isNewFile) {
+  renderer.renderMarkdown(text, isNewFile, {
+    contentEl,
+    currentLanguage,
+    currentViewMode: zoom.getCurrentViewMode(),
+    attachImageClickListeners: imageModal.attachImageClickListeners,
+  });
+}
+
+// ========== doSaveSession ==========
+function doSaveSession() {
+  saveSession({
+    tabs: tabManager.getTabs(),
+    activeTabId: tabManager.getActiveTabId(),
+    HOME_TAB_ID: tabManager.HOME_TAB_ID,
+  });
+}
+
+// ========== VMD context builder ==========
+function buildVmdCtx() {
+  return {
+    tabs: tabManager.getTabs(),
+    activeTabId: tabManager.getActiveTabId(),
+    currentLanguage,
+    tauriApi: fileOps.getTauriApi(),
+    dialogSave: fileOps.getDialogSave(),
+    generateTabId: () => 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+    pushTab: tabManager.pushTab,
+    renderTabs: tabManager.renderTabs,
+    switchToTab: tabManager.switchToTab,
+    updateTabBarVisibility: () => {},
+    addToRecentFiles: fileOps.addToRecentFiles,
+    saveSession: doSaveSession,
+    closeTabsByKeyName: (keyName) => {
+      const tabs = tabManager.getTabs();
+      const toClose = tabs.filter(t => t.readOnly && t.vmdKeyName === keyName);
+      toClose.forEach(t => tabManager.closeTab(t.id));
+    },
+  };
+}
+
+// ========== Initialize ==========
+async function init() {
+  // Init extracted modules
+  const welcomeGetter = () => getWelcomeHTML(currentLanguage);
+
+  initUITexts({ getWelcomeHTML: welcomeGetter, contentEl });
+
+  editorManager.init({
+    t,
+    doRenderMarkdown,
+  });
+
+  // Theme system init (DOM refs)
+  themeSystem.init({
+    getDialogSave: fileOps.getDialogSave,
+    getFsWriteTextFile: fileOps.getFsWriteTextFile,
+    getTauriApi: fileOps.getTauriApi,
+  });
+  themeSystem.initStyles();
+
+  // Tab manager init
+  tabManager.init({
+    getWelcomeHTML: welcomeGetter,
+    renderHomeRecentFiles: fileOps.renderHomeRecentFiles,
+    renderHomeFavorites: fileOps.renderHomeFavorites,
+    setEditorMode: editorManager.setEditorMode,
+    applyTabZoom: zoom.applyTabZoom,
+    updateExportButtons,
+    renderMarkdown: (text, isNew) => doRenderMarkdown(text, isNew),
+    getCurrentViewMode: zoom.getCurrentViewMode,
+    loadEditorContent: editorManager.loadEditorContent,
+    updateEditModeButtonsDisabled: editorManager.updateEditModeButtonsDisabled,
+    getCurrentEditorMode: editorManager.getCurrentEditorMode,
+    hideSearchBar: search.hideSearchBar,
+    startWatching: fileOps.startWatching,
+    stopWatching: fileOps.stopWatching,
+    saveSession: doSaveSession,
+    getCurrentLanguage: () => currentLanguage,
+    getCurrentPage: renderer.getCurrentPage,
+    setCurrentPage: renderer.setCurrentPage,
+    goToPage: (p) => renderer.goToPage(p, contentEl),
+  });
+
+  // Zoom init
+  zoom.init({
+    getActiveTabId: tabManager.getActiveTabId,
+    HOME_TAB_ID: tabManager.HOME_TAB_ID,
+    getTabs: tabManager.getTabs,
+    onViewModeChange: (mode) => {
+      if (tabManager.getActiveTabId() !== tabManager.HOME_TAB_ID && renderer.getPages().length > 0) {
+        renderer.renderPages(contentEl, {
+          currentViewMode: mode,
+          currentLanguage,
+          attachImageClickListeners: imageModal.attachImageClickListeners,
+        });
+      }
+    },
+  });
+  zoom.setViewMode(localStorage.getItem('viewMode') || 'single');
+  zoom.applyTabZoom(tabManager.getActiveTabId());
+
+  // Image modal init
+  imageModal.init({});
+
+  // Presentation init
+  presentation.init({
+    getPages: renderer.getPages,
+    t,
+  });
+
+  // Search init
+  search.init({
+    getActiveTabId: () => tabManager.getActiveTabId(),
+    HOME_TAB_ID: tabManager.HOME_TAB_ID,
+  });
+
+  // File operations init
+  fileOps.init({
+    createTab: tabManager.createTab,
+    switchToTab: tabManager.switchToTab,
+    getTabs: tabManager.getTabs,
+    getActiveTabId: tabManager.getActiveTabId,
+    closeTab: tabManager.closeTab,
+    renderMarkdown: (text, isNew) => doRenderMarkdown(text, isNew),
+    t,
+    loadVmdFile: (path) => loadVmdFile(path, buildVmdCtx()),
+    importTheme: themeSystem.importTheme,
+    importThemeData: themeSystem.importThemeData,
+  });
+  fileOps.setupDragDrop();
+
+  // Shortcuts init
+  shortcuts.init({
+    handlePresentationKeydown: presentation.handleKeydown,
+    startPresentation: presentation.startPresentation,
+    openFile: fileOps.openFile,
+    toggleTheme: themeSystem.toggleTheme,
+    exportTheme: themeSystem.exportTheme,
+    printDocument: () => printDocument({ getTabs: tabManager.getTabs }),
+    saveCurrentFile: editorManager.saveCurrentFile,
+    zoomIn: zoom.zoomIn,
+    zoomOut: zoom.zoomOut,
+    zoomReset: zoom.zoomReset,
+    toggleSearchBar: () => search.toggleSearchBar(tabManager.getTabs().length),
+    searchNextMatch: search.searchNextMatch,
+    searchPrevMatch: search.searchPrevMatch,
+    toggleToc,
+    toggleStatusBar: statusBar.toggle,
+    toggleFavorite: () => {
+      const activeTab = tabManager.getTabs().find(t => t.id === tabManager.getActiveTabId());
+      if (activeTab) {
+        fileOps.toggleFavorite(activeTab.name, activeTab.filePath);
+        fileOps.updateFavoriteButton(activeTab.filePath);
+      }
+    },
+    closeCurrentTab: () => { if (tabManager.getActiveTabId()) tabManager.closeTab(tabManager.getActiveTabId()); },
+    handleEscape: () => {
+      const hasOpenDropdown = !formatDropdown?.classList.contains('hidden') ||
+        !toolsDropdown?.classList.contains('hidden') ||
+        !helpDropdown?.classList.contains('hidden');
+      if (hasOpenDropdown) { closeAllToolbarDropdowns(); }
+      else if (imageModal.isOpen()) { imageModal.closeImageModal(); }
+      else if (!aboutModal.classList.contains('hidden')) { aboutModal.classList.add('hidden'); }
+      else if (!shortcutsModal.classList.contains('hidden')) { shortcutsModal.classList.add('hidden'); }
+      else if (search.getIsSearchVisible()) { search.hideSearchBar(); }
+      fileOps.hideRecentDropdown();
+      fileOps.hideFavoritesDropdown();
+    },
+    nextTab: () => {
+      const allTabs = [tabManager.HOME_TAB_ID, ...tabManager.getTabs().map(t => t.id)];
+      const currentIndex = allTabs.indexOf(tabManager.getActiveTabId());
+      tabManager.switchToTab(allTabs[(currentIndex + 1) % allTabs.length]);
+    },
+    getIsSearchVisible: search.getIsSearchVisible,
+    getCurrentViewMode: zoom.getCurrentViewMode,
+    getPages: renderer.getPages,
+    getCurrentPage: renderer.getCurrentPage,
+    setCurrentPage: renderer.setCurrentPage,
+    goToPage: (p) => renderer.goToPage(p, contentEl),
+    handleDocumentClick: (e) => {
+      const recentDropdown = document.getElementById('recent-dropdown');
+      const btnRecent = document.getElementById('btn-recent');
+      if (!recentDropdown.contains(e.target) && !btnRecent.contains(e.target)) fileOps.hideRecentDropdown();
+      const favoritesDropdown = document.getElementById('favorites-dropdown');
+      const btnFavorites = document.getElementById('btn-favorites');
+      if (!favoritesDropdown.contains(e.target) && !btnFavorites.contains(e.target)) fileOps.hideFavoritesDropdown();
+      if (!helpDropdown.contains(e.target) && !btnHelp.contains(e.target)) helpDropdown.classList.add('hidden');
+      if (!e.target.closest('.toolbar-dropdown-wrapper') && !e.target.closest('.help-menu-wrapper')) closeAllToolbarDropdowns();
+    },
+  });
+
+  // Status bar init
+  statusBar.init({
+    getActiveTabId: tabManager.getActiveTabId,
+    getTabs: tabManager.getTabs,
+    HOME_TAB_ID: tabManager.HOME_TAB_ID,
+    getCurrentLanguage: () => currentLanguage,
+    getCurrentEditorMode: editorManager.getCurrentEditorMode,
+  });
+
+  // Update favorite button on tab switch
+  eventBus.on(EVENTS.TAB_SWITCHED, ({ tabId }) => {
+    if (tabId === tabManager.HOME_TAB_ID) {
+      fileOps.updateFavoriteButton(null);
+    } else {
+      const tab = tabManager.getTabs().find(t => t.id === tabId);
+      fileOps.updateFavoriteButton(tab?.filePath);
+    }
+  });
+
+  // Re-render tabs when window regains focus (fixes tab highlight on file activation)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      tabManager.renderTabs();
+    }
+  });
+
+  // Language
+  languageSelect.value = currentLanguage;
+  languageSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
+  updateUITexts();
+
+  // Home
+  document.getElementById('btn-home').addEventListener('click', () => { tabManager.switchToTab(tabManager.HOME_TAB_ID); clearToc(); });
+
+  // Print/PDF
+  const btnPrint = document.getElementById('btn-print');
+  const btnPdf = document.getElementById('btn-pdf');
+  if (btnPrint) btnPrint.addEventListener('click', () => printDocument({ getTabs: tabManager.getTabs }));
+  if (btnPdf) btnPdf.addEventListener('click', () => exportPdf({
+    tabs: tabManager.getTabs(), activeTabId: tabManager.getActiveTabId(),
+    HOME_TAB_ID: tabManager.HOME_TAB_ID, t
+  }));
+
+  // VMD exports
+  const btnExportVmd = document.getElementById('btn-export-vmd');
+  const btnExportVmdToMd = document.getElementById('btn-export-vmd-to-md');
+  if (btnExportVmd) btnExportVmd.addEventListener('click', () => exportVmd(buildVmdCtx()));
+  if (btnExportVmdToMd) btnExportVmdToMd.addEventListener('click', () => exportVmdToMd(buildVmdCtx()));
+  const btnKeyManager = document.getElementById('btn-vmd-key-manager');
+  if (btnKeyManager) btnKeyManager.addEventListener('click', () => showKeyManagerModal(buildVmdCtx()));
+
+  // Toolbar dropdowns
+  btnFormat?.addEventListener('click', (e) => {
+    e?.stopPropagation();
+    const isOpen = !formatDropdown.classList.contains('hidden');
+    closeAllToolbarDropdowns();
+    if (!isOpen) formatDropdown.classList.remove('hidden');
+  });
+  btnTools?.addEventListener('click', (e) => {
+    e?.stopPropagation();
+    const isOpen = !toolsDropdown.classList.contains('hidden');
+    closeAllToolbarDropdowns();
+    if (!isOpen) toolsDropdown.classList.remove('hidden');
+  });
+
+  // Help menu
+  btnHelp.addEventListener('click', (e) => {
+    e?.stopPropagation();
+    const isOpen = !helpDropdown.classList.contains('hidden');
+    closeAllToolbarDropdowns();
+    if (!isOpen) helpDropdown.classList.remove('hidden');
+  });
+  document.getElementById('help-shortcuts').addEventListener('click', () => { helpDropdown.classList.add('hidden'); shortcutsModal.classList.remove('hidden'); });
+  document.getElementById('help-check-update')?.addEventListener('click', () => {
+    helpDropdown.classList.add('hidden');
+    initUpdater({ getCurrentLanguage: () => currentLanguage });
+    checkForUpdate(false);
+  });
+  document.getElementById('help-about').addEventListener('click', () => { helpDropdown.classList.add('hidden'); aboutModal.classList.remove('hidden'); });
+  document.getElementById('about-close').addEventListener('click', () => aboutModal.classList.add('hidden'));
+  document.getElementById('about-ok').addEventListener('click', () => aboutModal.classList.add('hidden'));
+  aboutModal.querySelector('.modal-backdrop').addEventListener('click', () => aboutModal.classList.add('hidden'));
+  document.getElementById('shortcuts-close').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
+  document.getElementById('shortcuts-ok').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
+  shortcutsModal.querySelector('.modal-backdrop').addEventListener('click', () => shortcutsModal.classList.add('hidden'));
+
+  // Update modal backdrop
+  const updateModal = document.getElementById('update-modal');
+  updateModal?.querySelector('.modal-backdrop')?.addEventListener('click', () => updateModal.classList.add('hidden'));
+
+  // Plugin toolbar (listen for plugin UI changes)
+  toolbar.setupPluginListeners();
+  toolbar.container = document.getElementById('toolbar');
+
+  // Plugin system
+  const btnPlugins = document.getElementById('btn-plugins');
+  pluginManager.init().then(() => {
+    eventBus.emit(EVENTS.PLUGINS_LOADED, { plugins: pluginManager.getPluginList() });
+  }).catch(err => console.error('[Plugins] Failed to initialize:', err));
+  if (btnPlugins) {
+    pluginUI.init();
+    btnPlugins.addEventListener('click', () => pluginUI.open());
+  }
+
+  // Tauri init - 세션 복원 후 윈도우 표시
+  fileOps.initTauri().then(async () => {
+    fileOps.setupTauriEvents();
+    const tauriApi = fileOps.getTauriApi();
+
+    // 항상 세션 복원 먼저
+    await restoreSession({
+      tauriApi,
+      generateTabId: () => 'tab-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+      pushTab: tabManager.pushTab,
+      getTabs: tabManager.getTabs,
+      renderTabs: tabManager.renderTabs,
+      updateTabBarVisibility: () => {},
+      switchToTab: tabManager.switchToTab,
+      startWatching: fileOps.startWatching,
+      addToRecentFiles: fileOps.addToRecentFiles,
+      HOME_TAB_ID: tabManager.HOME_TAB_ID,
+    });
+
+    // CLI 인자로 전달된 파일도 열기 (더블클릭 등)
+    const args = tauriApi ? await tauriApi.invoke('get_cli_args').catch(() => []) : [];
+    if (args && args.length > 0) {
+      for (const filePath of args) {
+        await fileOps.loadFile(filePath);
+      }
+    }
+
+    // 세션/CLI 모두 없으면 홈탭 표시
+    if (tabManager.getTabs().length === 0) {
+      tabManager.switchToTab(tabManager.HOME_TAB_ID);
+    }
+    fileOps.renderHomeRecentFiles();
+    fileOps.renderHomeFavorites();
+
+    // 모든 준비 완료 후 윈도우 표시
+    if (tauriApi) {
+      await tauriApi.invoke('show_window').catch(() => {});
+    }
+    document.body.style.opacity = '1';
+
+    // 자동 업데이트 확인 (3초 후 백그라운드)
+    if (tauriApi) {
+      setTimeout(() => {
+        initUpdater({ getCurrentLanguage: () => currentLanguage });
+        checkForUpdate(true);
+      }, 3000);
+    }
+  }).catch(() => {
+    // Tauri 없는 환경 (웹) - 홈탭 표시
+    tabManager.switchToTab(tabManager.HOME_TAB_ID);
+    fileOps.renderHomeRecentFiles();
+    fileOps.renderHomeFavorites();
+    document.body.style.opacity = '1';
+  });
+}
+
+// Start
+init();

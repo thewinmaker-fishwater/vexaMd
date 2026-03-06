@@ -1,0 +1,42 @@
+{
+  "id": "my-plugin",
+  "name": "My Plugin",
+  "version": "1.0.0",
+  "description": "A template plugin for Vexa MD - customize this!",
+  "author": "Your Name",
+  "homepage": "",
+  "main": "index.js",
+  "capabilities": {
+    "markdown": false,
+    "ui": false,
+    "toolbar": false,
+    "settings": true
+  },
+  "settings": {
+    "greeting": {
+      "type": "string",
+      "label": { "ko": "인사말", "en": "Greeting", "ja": "挨拶" },
+      "default": "Hello",
+      "help": { "ko": "콘솔에 표시할 인사말", "en": "Greeting shown in console" }
+    },
+    "enabled": {
+      "type": "boolean",
+      "label": { "ko": "기능 활성화", "en": "Enable Feature", "ja": "機能を有効化" },
+      "default": true
+    },
+    "theme": {
+      "type": "select",
+      "label": { "ko": "테마", "en": "Theme", "ja": "テーマ" },
+      "default": "auto",
+      "options": ["auto", "light", "dark"]
+    },
+    "opacity": {
+      "type": "range",
+      "label": { "ko": "투명도", "en": "Opacity", "ja": "不透明度" },
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "step": 5
+    }
+  }
+}
