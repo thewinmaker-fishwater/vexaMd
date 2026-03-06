@@ -53,9 +53,9 @@ workspace-mdView/
 │   │   ├── presentation/         # 프레젠테이션
 │   │   │   └── presentation-mode.js
 │   │   ├── markdown/             # 마크다운 렌더링
-│   │   │   └── renderer.js       # marked 설정, renderMarkdown, renderPages
+│   │   │   └── renderer.js       # marked 설정, renderMarkdown, renderPages, 페이지 분량 가이드
 │   │   ├── search/               # 검색 기능
-│   │   │   ├── search-manager.js # 검색 수행/하이라이트/네비게이션
+│   │   │   ├── search-manager.js # 검색 수행/하이라이트/네비게이션 (F3/Shift+F3)
 │   │   │   └── search.css
 │   │   ├── tabs/                 # 탭 관리
 │   │   │   ├── tab-manager.js    # createTab, switchToTab, closeTab, 횡스크롤
@@ -80,7 +80,7 @@ workspace-mdView/
 │   │   │   ├── toc.js            # 목차 생성/스크롤 스파이
 │   │   │   └── toc.css
 │   │   ├── editor/               # 마크다운 편집기
-│   │   │   ├── editor-manager.js # 에디터 모드/입력/저장 관리
+│   │   │   ├── editor-manager.js # 에디터 모드/입력/저장/분할모드 커서 동기 스크롤
 │   │   │   └── editor.css
 │   │   ├── welcome/              # 웰컴 화면
 │   │   │   └── welcome.js        # 홈 화면 HTML 생성
@@ -166,8 +166,8 @@ tabs.init({
 | image-modal | image-modal.js | 이미지 클릭 확대 모달 |
 | print | print.js | 인쇄 및 PDF 내보내기 |
 | presentation | presentation-mode.js | 프레젠테이션 모드 |
-| renderer | renderer.js | 마크다운 렌더링, 페이징 |
-| search | search-manager.js | 텍스트 검색, 하이라이트 |
+| renderer | renderer.js | 마크다운 렌더링, 페이징, 페이지 분량 가이드 |
+| search | search-manager.js | 텍스트 검색, 하이라이트, F3 네비게이션 |
 | tabs | tab-manager.js | 탭 생성/전환/닫기, 횡스크롤, 스크롤 위치 저장 |
 | zoom | zoom-manager.js | 줌, 뷰모드, pan |
 | file-ops | file-ops.js | 파일 열기/저장, 드래그앤드롭, 파일 워처, 최근 파일 |
@@ -175,8 +175,8 @@ tabs.init({
 | vmd | vmd.js, vmd-key-ui.js | 읽기전용 포맷 (.vmd) 내보내기/열기, 키 관리 UI |
 | theme | theme-system.js | 테마 적용/에디터/프리셋/임포트/내보내기 |
 | shortcuts | shortcuts.js | 키보드 단축키, 외부 링크, 앵커, 코드 복사 |
-| toc | toc.js | 목차 사이드바, 스크롤 스파이 |
-| editor-manager | editor-manager.js | 에디터 모드 전환, 입력 처리, 저장 |
+| toc | toc.js | 목차 사이드바, 스크롤 스파이, 편집 모드 자동 숨김 |
+| editor-manager | editor-manager.js | 에디터 모드 전환, 입력 처리, 저장, 분할모드 커서 동기 스크롤 |
 | welcome | welcome.js | 홈 화면 웰컴 HTML 생성 |
 | ui-texts | ui-texts.js | i18n 기반 전체 UI 텍스트 업데이트 |
 | plugin-ui | plugin-ui.js | 플러그인 관리 UI (설치/삭제/에러/설정 폼) |
@@ -535,6 +535,8 @@ npm run tauri dev
 ```bash
 npm run tauri build
 ```
+- 프론트엔드: Vite + Terser로 소스 난독화 (변수 난독화, 콘솔 제거, 주석 제거)
+- 백엔드: Rust release 프로필 최적화 (LTO, strip, opt-level=z)
 
 ### 빌드 결과물
 ```
@@ -555,6 +557,7 @@ src-tauri/target/release/
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-03-06 | 페이지 분량 가이드, 분할모드 커서 동기 스크롤, 검색 F3, TOC 편집모드 숨김, Terser 난독화 |
 | 2026-02-20 | status-bar 모듈, text-utils.js 추가, CSS 15개 모듈로 업데이트 |
 | 2026-02-14 | 전면 동기화: Vexa MD 통일, 모듈/플러그인/Tauri 플러그인 목록 현행화, 자동 업데이트/CI 섹션 추가 |
 | 2026-01-31 | 플러그인 시스템 Phase 2, main.js 추가 축소 리팩토링 |
@@ -562,4 +565,4 @@ src-tauri/target/release/
 | 2026-01-25 | 플러그인 시스템 아키텍처 추가, CSS 모듈 로딩 순서 문서화 |
 | 2025-12-29 | 모듈화 아키텍처 문서화 |
 
-*마지막 업데이트: 2026-02-20*
+*마지막 업데이트: 2026-03-06*
