@@ -5,7 +5,7 @@
 
 import { i18n } from '../../i18n.js';
 
-let currentLanguage = 'ko';
+let currentLanguage = 'en';
 let updateObj = null;
 
 function t(key) {

@@ -461,9 +461,7 @@ function getStylesFromEditor() {
 }
 
 function generateCustomCss(styles) {
-  let css = `
-/* Vexa MD - Custom Theme */
-:root {
+  const cssVars = `
   --bg: ${styles.bg} !important;
   --text: ${styles.text} !important;
   --accent: ${styles.accent} !important;
@@ -473,7 +471,12 @@ function generateCustomCss(styles) {
   --blockquote-bg: ${styles.blockquoteBg} !important;
   --blockquote-border: ${styles.blockquoteBorder} !important;
   --table-header-bg: ${styles.tableHeaderBg} !important;
-  --table-header-text: ${styles.tableHeaderText} !important;
+  --table-header-text: ${styles.tableHeaderText} !important;`;
+  let css = `
+/* Vexa MD - Custom Theme */
+:root {${cssVars}
+}
+[data-theme="dark"] {${cssVars}
 }
 
 body {

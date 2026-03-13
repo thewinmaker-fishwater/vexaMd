@@ -22,8 +22,9 @@ let activeHeadingId = null;
  * 현재 언어의 번역 텍스트 가져오기
  */
 function t(key) {
-  const lang = localStorage.getItem('language') || 'ko';
-  return i18n[lang]?.[key] || i18n.ko[key] || key;
+  const stored = localStorage.getItem('language');
+  const lang = stored || ((navigator.language || '').startsWith('ko') ? 'ko' : (navigator.language || '').startsWith('ja') ? 'ja' : 'en');
+  return i18n[lang]?.[key] || i18n.en[key] || key;
 }
 
 /**

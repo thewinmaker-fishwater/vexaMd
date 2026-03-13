@@ -38,7 +38,13 @@ import * as editorManager from './modules/editor/editor-manager.js';
 import * as statusBar from './modules/status-bar/status-bar.js';
 
 // ========== State ==========
-let currentLanguage = localStorage.getItem('language') || 'ko';
+function detectSystemLanguage() {
+  const lang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+  if (lang.startsWith('ko')) return 'ko';
+  if (lang.startsWith('ja')) return 'ja';
+  return 'en';
+}
+let currentLanguage = localStorage.getItem('language') || detectSystemLanguage();
 const languageSelect = document.getElementById('language');
 const contentEl = document.getElementById('content');
 
